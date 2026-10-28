@@ -15,11 +15,10 @@ Revenue Pack Gateway
 """
 
 import os, hashlib, json, httpx
-from datetime import datetime
+from datetime import datetime, date, timezone
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Request, Depends
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import redis.asyncio as aioredis
 
@@ -32,7 +31,7 @@ SERVICES = {
 }
 
 REDIS_URL           = os.getenv("REDIS_URL",   "redis://redis:6379/0")
-ADMIN_TOKEN         = os.getenv("ADMIN_TOKEN", "change-me-in-production")
+ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
 LICENSE_PREFIX      = "revenue_license:"
 RATE_LIMIT_PREFIX   = "revenue_ratelimit:"
 RATE_LIMIT_PER_HOUR = int(os.getenv("RATE_LIMIT_PER_HOUR", "2000"))
@@ -42,15 +41,16 @@ app = FastAPI(
     version="1.0.0",
     description="Unified gateway for ai_monetization, ai_revenue, ai_uplift, ai_feedback",
 )
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
-
 redis_client: Optional[aioredis.Redis] = None
 
 
 @app.on_event("startup")
 async def startup():
     global redis_client
+    if len(ADMIN_TOKEN) < 32:
+        raise RuntimeError("ADMIN_TOKEN must be set to a random secret of at least 32 characters")
     redis_client = aioredis.from_url(REDIS_URL, decode_responses=True)
+    await redis_client.ping()
 
 
 @app.on_event("shutdown")
@@ -64,6 +64,19 @@ def _hash(raw: str) -> str:
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
+def _license_is_expired(value: str) -> bool:
+    """Accept date-only expiries through the end of that UTC date; normalize timestamps to UTC."""
+    try:
+        if len(value) == 10:
+            return datetime.now(timezone.utc).date() > date.fromisoformat(value)
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return datetime.now(timezone.utc) > parsed.astimezone(timezone.utc)
+    except (TypeError, ValueError):
+        raise HTTPException(403, "License expiry is invalid")
+
+
 async def validate_license(key: str) -> dict:
     if not key:
         raise HTTPException(401, "License key الزامی است")
@@ -74,7 +87,7 @@ async def validate_license(key: str) -> dict:
     if not info.get("active"):
         raise HTTPException(403, "License key غیرفعال است")
     exp = info.get("expires")
-    if exp and datetime.fromisoformat(exp) < datetime.now():
+    if exp and _license_is_expired(exp):
         raise HTTPException(403, "License key منقضی شده است")
     return info
 
@@ -89,7 +102,7 @@ async def check_rate_limit(key: str):
 
 
 async def get_license(request: Request) -> dict:
-    key = request.headers.get("X-License-Key") or request.query_params.get("license_key")
+    key = request.headers.get("X-License-Key")
     info = await validate_license(key)
     await check_rate_limit(key)
     return info
@@ -315,6 +328,17 @@ async def revoke_license(key_hash: str, request: Request):
 
 
 # ── HEALTH ────────────────────────────────────────────────────────────────────
+
+@app.get("/license/validate", tags=["License"])
+async def license_status(request: Request):
+    """Validate the supplied license; deliberately does not consume an API quota unit."""
+    info = await validate_license(request.headers.get("X-License-Key"))
+    return {
+        "status": "active",
+        "plan": info.get("plan"),
+        "expires": info.get("expires"),
+    }
+
 
 @app.get("/health", tags=["System"])
 async def health():
