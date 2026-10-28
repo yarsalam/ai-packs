@@ -284,12 +284,15 @@ async def health():
             except Exception:
                 services_status[name] = "down"
 
-    return {
+    payload = {
         "status": "healthy" if all(value == "ok" for value in services_status.values()) else ("degraded" if any(value == "ok" for value in services_status.values()) else "unavailable"),
         "gateway": "seo_pack_v1",
         "timestamp": datetime.now().isoformat(),
         "services": services_status,
     }
+    return JSONResponse(content=payload, status_code=503 if payload["status"] == "unavailable" else 200)
+
+
 
 
 @app.get("/", tags=["System"])
