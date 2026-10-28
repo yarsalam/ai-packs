@@ -16,7 +16,7 @@ The Hugging Face card for the sentiment model currently states that it was evalu
 
 ## Reproducibility requirements
 
-The distribution builder now supports `SENTIMENT_MODEL_REVISION` and `EMOTION_MODEL_REVISION`. The sample configuration defaults to `main` for convenience only; **a public release must replace each floating value with an immutable commit SHA**. Apply the same rule to the embedding model and all model artifacts downloaded by DeepFace/NudeNet. Store the selected IDs, revisions, licenses, checksums and download URLs in the release manifest.
+The builder now supports `EMBEDDING_MODEL_REVISION`, `SENTIMENT_MODEL_REVISION` and `EMOTION_MODEL_REVISION`; the generated sample pins the embedding model to `e8f8c211226b894fcb81acc59f3b34ba3efd5f42`, sentiment to `b6fcfc5`, and emotion to `e47c57d`. The sentiment/emotion refs are short immutable commit identifiers; verify they resolve at build time and record the resolved full commit SHA in the release manifest before public release. Apply the same rule to all model artifacts downloaded by DeepFace/NudeNet. Store selected IDs, revisions, licenses, checksums and download URLs in the final manifest.
 
 ## Required before calling a pack production-ready
 
