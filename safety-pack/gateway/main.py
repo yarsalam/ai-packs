@@ -12,7 +12,7 @@ Safety Pack Gateway
   3. ai_image یه pipeline داره: EXIF clean → NSFW check → analyze
 """
 
-import os, hashlib, json, httpx
+import os, hashlib, json, httpx, secrets
 from datetime import datetime, date, timezone
 from typing import Optional
 
@@ -330,13 +330,23 @@ async def create_license(request: Request):
     admin_token = request.headers.get("X-Admin-Token")
     if not admin_token or not secrets.compare_digest(admin_token, ADMIN_TOKEN):
         raise HTTPException(403, "Admin token نامعتبر")
-    import secrets
-    body    = await request.json()
+
+    body = await request.json()
+    plan = str(body.get("plan", "basic")).lower()
+    if plan not in PLAN_LIMITS:
+        raise HTTPException(422, "Unsupported plan. Choose free, basic, pro, or enterprise.")
+    expires = body.get("expires", "2099-12-31")
+    try:
+        expired = bool(expires) and _license_is_expired(str(expires))
+    except HTTPException as exc:
+        raise HTTPException(422, "Invalid license expiry; use YYYY-MM-DD or ISO timestamp") from exc
+    if expired:
+        raise HTTPException(422, "License expiry must be in the future")
     raw_key = secrets.token_urlsafe(32)
     info    = {
         "domain":  body.get("domain", "*"),
-        "plan":    body.get("plan", "basic"),
-        "expires": body.get("expires", "2099-12-31"),
+        "plan":    plan,
+        "expires": expires,
         "active":  True,
         "created": datetime.now().isoformat(),
     }
