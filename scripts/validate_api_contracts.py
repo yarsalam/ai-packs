@@ -32,9 +32,9 @@ CONTRACTS: list[dict[str, Any]] = [
     {"gateway":"revenue-pack/gateway/main.py","handler":"train_revenue_model","service":"revenue","target":'"/train"',"source":"ai_revenue/app.py","route":"/train"},
     {"gateway":"revenue-pack/gateway/main.py","handler":"train_uplift","service":"uplift","target":'"/train"',"source":"ai_uplift/app.py","route":"/train"},
     {"gateway":"revenue-pack/gateway/main.py","handler":"predict_uplift","service":"uplift","target":'"/predict-uplift"',"source":"ai_uplift/app.py","route":"/predict-uplift"},
-    {"gateway":"revenue-pack/gateway/main.py","handler":"train_feedback","service":"feedback","target":'"/feedback/train_incremental"',"source":"ai_feedback/app.py","route":"/feedback/train_incremental"},
-    {"gateway":"revenue-pack/gateway/main.py","handler":"train_feedback_batch","service":"feedback","target":'"/feedback/train_batch"',"source":"ai_feedback/app.py","route":"/feedback/train_batch"},
-    {"gateway":"revenue-pack/gateway/main.py","handler":"predict_conversion","service":"feedback","target":'"/feedback/predict"',"source":"ai_feedback/app.py","route":"/feedback/predict"},
+    {"gateway":"revenue-pack/gateway/main.py","handler":"feedback_train_incremental","service":"feedback","target":'"/feedback/train_incremental"',"source":"ai_feedback/app.py","route":"/feedback/train_incremental"},
+    {"gateway":"revenue-pack/gateway/main.py","handler":"feedback_train_batch","service":"feedback","target":'"/feedback/train_batch"',"source":"ai_feedback/app.py","route":"/feedback/train_batch"},
+    {"gateway":"revenue-pack/gateway/main.py","handler":"feedback_predict","service":"feedback","target":'"/feedback/predict"',"source":"ai_feedback/app.py","route":"/feedback/predict"},
     {"gateway":"revenue-pack/gateway/main.py","handler":"feedback_metrics","service":"feedback","target":'"/feedback/metrics"',"source":"ai_feedback/app.py","route":"/feedback/metrics"},
     # Matching, embeddings, assistant and support
     {"gateway":"matching-pack/gateway/main.py","handler":"match_embed","service":"match","target":'"/api/embed"',"source":"ml_service/routes/matching.py","route":"/embed","prefix_file":"ml_service/app.py","prefix":"/api"},
