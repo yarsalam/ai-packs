@@ -24,6 +24,13 @@ PACKS: dict[str, dict[str, Any]] = {
         "admin_env": "SEO_PACK_ADMIN_TOKEN",
         "tests": [
             {
+                "name": "public website URL technical HTML audit",
+                "method": "POST",
+                "path": "/seo/audit/url",
+                "payload": {"url": "https://example.com/"},
+                "check": "url_audit",
+            },
+            {
                 "name": "topical backlink similarity (embedding inference)",
                 "method": "POST",
                 "path": "/backlink/topic-similarity",
@@ -35,7 +42,7 @@ PACKS: dict[str, dict[str, Any]] = {
             },
         ],
         "capability_gaps": [
-            "URL-based page audit is not implemented: the current API accepts historical analytics or text pairs, not a site URL."
+            "Public internet-facing deployments need network-layer egress restrictions; application DNS checks alone cannot fully prevent DNS rebinding."
         ],
     },
     "safety-pack": {
@@ -174,6 +181,17 @@ def validate_payload(check: str, response: Any) -> tuple[bool, str]:
         score = response.get("similarity")
         ok = isinstance(score, (int, float)) and math.isfinite(score) and -1 <= score <= 1
         return ok, f"similarity={score!r}; checks numeric cosine range [-1, 1]"
+    if check == "url_audit":
+        status_code = response.get("status_code")
+        checks = response.get("checks")
+        title = response.get("title")
+        ok = (
+            isinstance(status_code, int) and 200 <= status_code < 300
+            and isinstance(title, str) and bool(title.strip())
+            and isinstance(checks, list) and len(checks) >= 8
+            and response.get("score_type") == "heuristic_on_page_checklist_not_google_ranking"
+        )
+        return ok, f"fetched_status={status_code!r}, title_present={bool(title)}, checks={len(checks) if isinstance(checks, list) else 'invalid'}"
     if check == "moderation":
         result = response.get("result", response)
         if not isinstance(result, dict) or not isinstance(result.get("allowed"), bool):
