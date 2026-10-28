@@ -42,7 +42,7 @@ SERVICE: dict[str, dict[str, Any]] = {
     "aeo_tracker": {
         "source": "ai_aeo_tracker", "port": 8030, "entrypoint": "app:app",
         "requirements": CORE + ["openai==1.65.5"],
-        "env": {"REDIS_URL": REDIS_URL, "OPENAI_API_KEY": DOLLAR + "{OPENAI_API_KEY:-}"},
+        "env": {"REDIS_URL": REDIS_URL, "REDIS_HOST": "redis", "REDIS_PORT": "6379", "REDIS_PASSWORD": DOLLAR + "{REDIS_PASSWORD}", "OPENAI_API_KEY": DOLLAR + "{OPENAI_API_KEY:-}"},
         "volumes": {}, "depends": ["redis"],
     },
     "ai_backlink_quality": {
