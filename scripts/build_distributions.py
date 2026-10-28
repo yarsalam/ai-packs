@@ -60,7 +60,7 @@ SERVICE: dict[str, dict[str, Any]] = {
     "seo_embedded_ai": {
         "source": "embedded_ai", "port": 8100, "entrypoint": "app:app",
         "requirements": CORE + ST_SENTENCE,
-        "env": {"REDIS_URL": REDIS_URL, "MODEL_NAME": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", "HF_HOME": "/models/huggingface"},
+        "env": {"REDIS_URL": REDIS_URL, "MODEL_NAME": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", "MODEL_REVISION": DOLLAR + "{EMBEDDING_MODEL_REVISION:-e8f8c211226b894fcb81acc59f3b34ba3efd5f42}", "HF_HOME": "/models/huggingface"},
         "volumes": {"seo_embedding_models": "/models"}, "depends": ["redis"],
     },
     "ai_moderation": {
@@ -84,7 +84,7 @@ SERVICE: dict[str, dict[str, Any]] = {
     "safety_embedded_ai": {
         "source": "embedded_ai", "port": 8100, "entrypoint": "app:app",
         "requirements": CORE + ST_SENTENCE,
-        "env": {"REDIS_URL": REDIS_URL, "MODEL_NAME": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", "HF_HOME": "/models/huggingface"},
+        "env": {"REDIS_URL": REDIS_URL, "MODEL_NAME": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", "MODEL_REVISION": DOLLAR + "{EMBEDDING_MODEL_REVISION:-e8f8c211226b894fcb81acc59f3b34ba3efd5f42}", "HF_HOME": "/models/huggingface"},
         "volumes": {"safety_embedding_models": "/models"}, "depends": ["redis"],
     },
     "ai_monetization": {
@@ -120,7 +120,7 @@ SERVICE: dict[str, dict[str, Any]] = {
     "matching_embedded_ai": {
         "source": "embedded_ai", "port": 8100, "entrypoint": "app:app",
         "requirements": CORE + ST_SENTENCE,
-        "env": {"REDIS_URL": REDIS_URL, "MODEL_NAME": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", "HF_HOME": "/models/huggingface"},
+        "env": {"REDIS_URL": REDIS_URL, "MODEL_NAME": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", "MODEL_REVISION": DOLLAR + "{EMBEDDING_MODEL_REVISION:-e8f8c211226b894fcb81acc59f3b34ba3efd5f42}", "HF_HOME": "/models/huggingface"},
         "volumes": {"matching_embedding_models": "/models"}, "depends": ["redis"],
     },
     "personality": {
@@ -191,11 +191,11 @@ DEST = Path("/models")
 MODELS = {
     "sentiment": {
         "id": os.getenv("SENTIMENT_MODEL_ID", "HooshvareLab/bert-fa-base-uncased-sentiment-snappfood"),
-        "revision": os.getenv("SENTIMENT_MODEL_REVISION", "main"),
+        "revision": os.getenv("SENTIMENT_MODEL_REVISION", "b6fcfc5"),
     },
     "emotion": {
         "id": os.getenv("EMOTION_MODEL_ID", "aref-j/emotion-classifier-bert-fa-v1"),
-        "revision": os.getenv("EMOTION_MODEL_REVISION", "main"),
+        "revision": os.getenv("EMOTION_MODEL_REVISION", "e47c57d"),
     },
 }
 
@@ -316,9 +316,9 @@ def build_compose(pack_name: str, pack: dict[str, Any]) -> dict[str, Any]:
             "environment": {
                 "HF_HOME": "/models/huggingface-cache",
                 "SENTIMENT_MODEL_ID": "HooshvareLab/bert-fa-base-uncased-sentiment-snappfood",
-                "SENTIMENT_MODEL_REVISION": "${SENTIMENT_MODEL_REVISION:-main}",
+                "SENTIMENT_MODEL_REVISION": "${SENTIMENT_MODEL_REVISION:-b6fcfc5}",
                 "EMOTION_MODEL_ID": "aref-j/emotion-classifier-bert-fa-v1",
-                "EMOTION_MODEL_REVISION": "${EMOTION_MODEL_REVISION:-main}",
+                "EMOTION_MODEL_REVISION": "${EMOTION_MODEL_REVISION:-e47c57d}",
             },
             "volumes": ["matching_personality_models:/models"],
         }
@@ -367,7 +367,7 @@ def readme_for(pack_name: str, pack: dict[str, Any]) -> str:
     docker compose --env-file .env ps
     docker compose --env-file .env logs -f gateway
 
-در اجرای اول، مدل‌های embedding و مدل‌های فارسی (در Matching Pack) از منبع اصلی دانلود می‌شوند؛ برای اجرای اولیه اتصال شبکه و فضای دیسک کافی لازم است. برای Matching، مقدارهای `SENTIMENT_MODEL_REVISION` و `EMOTION_MODEL_REVISION` را پیش از انتشار قابل‌تکرار روی commit ثابت مدل تنظیم کنید؛ مقدار پیش‌فرض `main` شناور است.
+در اجرای اول، مدل‌های embedding و مدل‌های فارسی (در Matching Pack) از منبع اصلی دانلود می‌شوند؛ برای اجرای اولیه اتصال شبکه و فضای دیسک کافی لازم است. revision مدل‌ها در `.env.example` روی commit مشخص تنظیم شده‌اند. برای بازتولید دقیق، همان revisionها را در release خود نگه دارید؛ اگر آن‌ها را تغییر دادید، ابتدا دانلود مدل و آزمون inference را تکرار کنید.
 
 ## سلامت سرویس
 
@@ -437,8 +437,8 @@ def build_one(pack_name: str, pack: dict[str, Any], upstream: Path, output: Path
         "REDIS_PASSWORD=CHANGE_ME",
         pack["admin_env"] + "=CHANGE_ME",
         "OPENAI_API_KEY=",
-        "SENTIMENT_MODEL_REVISION=main",
-        "EMOTION_MODEL_REVISION=main",
+        "SENTIMENT_MODEL_REVISION=b6fcfc5",
+        "EMOTION_MODEL_REVISION=e47c57d",
     ]
     (dist / ".env.example").write_text("\n".join(env_lines) + "\n", encoding="utf-8")
     (dist / "README.md").write_text(readme_for(pack_name, pack), encoding="utf-8")
