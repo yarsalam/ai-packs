@@ -92,10 +92,7 @@ cd wordpress-plugin && zip -r seo-pack.zip seo-pack/
 ```
 X-License-Key: sk-xxxx...
 ```
-یا:
-```
-?license_key=sk-xxxx...
-```
+کلید را فقط در header بفرستید؛ قرار دادن آن در URL پشتیبانی نمی‌شود.
 
 ## Rate Limit
 
