@@ -6,6 +6,7 @@
 
 - [ارزیابی فنی و تجاری](./docs/PRODUCT_AUDIT_2026-10-28.md)
 - [نقشهٔ راه تجاری‌سازی](./docs/COMMERCIALIZATION_ROADMAP.md)
+- [منشأ مدل‌ها و شروط انتشار تجاری](./docs/MODEL_PROVENANCE.md)
 
 ## چهار پک
 
