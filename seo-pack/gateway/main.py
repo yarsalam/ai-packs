@@ -210,6 +210,7 @@ async def _usage_snapshot(license_key: str, info: dict) -> dict:
         "weights": {
             "ordinary_request": 1,
             "text_analysis_or_recommendation": 2,
+            "remote_url_audit": 5,
             "batch_request": 5,
             "image_or_face_verification": 10,
             "model_training": 20,
