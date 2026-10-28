@@ -115,7 +115,7 @@ SERVICE: dict[str, dict[str, Any]] = {
         "source": "ml_service", "port": 8000, "entrypoint": "app:app",
         "requirements": CORE + ["numpy==1.26.4", "pydantic-settings==2.8.1"],
         "env": {"REDIS_URL": REDIS_URL, "EMBEDDING_SERVICE_URL": "http://matching_embedded_ai:8100"},
-        "volumes": {"matching_models": "/app/models"}, "depends": ["redis", "matching_embedded_ai"],
+        "volumes": {"matching_ml_models": "/app/models"}, "depends": ["redis", "matching_embedded_ai"],
     },
     "matching_embedded_ai": {
         "source": "embedded_ai", "port": 8100, "entrypoint": "app:app",
@@ -127,19 +127,19 @@ SERVICE: dict[str, dict[str, Any]] = {
         "source": "personality", "port": 8100, "entrypoint": "main:app",
         "requirements": CORE + TORCH_CPU,
         "env": {"TRANSFORMERS_OFFLINE": "1", "HF_HOME": "/models/huggingface-cache"},
-        "volumes": {"matching_models": "/models"}, "depends": ["model_init"],
+        "volumes": {"matching_personality_models": "/models"}, "depends": ["model_init"],
     },
     "ai_assistant": {
         "source": "ai_assistant", "port": 8022, "entrypoint": "app:app",
         "requirements": CORE + TORCH_CPU,
         "env": {"REDIS_URL": REDIS_URL, "TRANSFORMERS_OFFLINE": "1", "SENTIMENT_MODEL": "/models/sentiment", "HF_HOME": "/models/huggingface-cache"},
-        "volumes": {"matching_models": "/models", "assistant_models": "/app/models"}, "depends": ["redis", "model_init"],
+        "volumes": {"matching_personality_models": "/models", "assistant_models": "/app/models"}, "depends": ["redis", "model_init"],
     },
     "ai_support": {
         "source": "ai_support", "port": 8016, "entrypoint": "api.app:app",
         "requirements": CORE + TORCH_CPU,
         "env": {"REDIS_URL": REDIS_URL, "MODEL_PATH": "/models/sentiment", "TRANSFORMERS_OFFLINE": "1", "HF_HOME": "/models/huggingface-cache"},
-        "volumes": {"matching_models": "/models"}, "depends": ["redis", "model_init"],
+        "volumes": {"matching_personality_models": "/models"}, "depends": ["redis", "model_init"],
     },
 }
 
@@ -236,7 +236,7 @@ def volume_map(compose: dict[str, Any], spec: dict[str, Any], service_name: str)
     result = []
     for vol, mount in spec.get("volumes", {}).items():
         compose["volumes"].setdefault(vol, {})
-        read_only = vol == "matching_models" and service_name in {"personality", "ai_assistant", "ai_support"}
+        read_only = vol == "matching_personality_models" and service_name in {"personality", "ai_assistant", "ai_support"}
         result.append(f"{vol}:{mount}" + (":ro" if read_only else ""))
     return result
 
@@ -282,13 +282,13 @@ def build_compose(pack_name: str, pack: dict[str, Any]) -> dict[str, Any]:
         compose["services"][service_name] = service
 
     if pack.get("model_init"):
-        compose["volumes"].setdefault("matching_models", {})
+        compose["volumes"].setdefault("matching_personality_models", {})
         compose["services"]["model_init"] = {
             "build": {"context": "./model-init"}, "restart": "no",
             "environment": {"HF_HOME": "/models/huggingface-cache",
                             "SENTIMENT_MODEL_ID": "HooshvareLab/bert-fa-base-uncased-sentiment-snappfood",
                             "EMOTION_MODEL_ID": "aref-j/emotion-classifier-bert-fa-v1"},
-            "volumes": ["matching_models:/models"],
+            "volumes": ["matching_personality_models:/models"],
         }
         for service_name in ("personality", "ai_assistant", "ai_support"):
             compose["services"][service_name].setdefault("depends_on", {})["model_init"] = {"condition": "service_completed_successfully"}
@@ -398,8 +398,8 @@ def build_one(pack_name: str, pack: dict[str, Any], upstream: Path, output: Path
     (dist / "compose.yaml").write_text(yaml.safe_dump(build_compose(pack_name, pack), sort_keys=False, allow_unicode=True), encoding="utf-8")
     env_lines = [
         "COMPOSE_PROJECT_NAME=yarsalam-" + pack_name,
-        "REDIS_PASSWORD=replace_with_random_secret_from_openssl_rand_hex_32",
-        admin_env + "=replace_with_random_secret_from_openssl_rand_hex_32",
+        "REDIS_PASSWORD=CHANGE_ME",
+        admin_env + "=CHANGE_ME",
         "OPENAI_API_KEY=",
     ]
     (dist / ".env.example").write_text("\n".join(env_lines) + "\n", encoding="utf-8")
