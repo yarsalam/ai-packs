@@ -34,9 +34,14 @@ class FakeRedis:
     async def get(self, key):
         return self.values.get(key)
 
-    async def incr(self, _key):
+    async def incr(self, key):
+        return await self.incrby(key, 1)
+
+    async def incrby(self, key, amount):
+        value = int(self.values.get(key, 0)) + amount
+        self.values[key] = str(value)
         self.counter += 1
-        return self.counter
+        return value
 
     async def expire(self, key, seconds):
         self.expiry_calls.append((key, seconds))
@@ -145,3 +150,79 @@ def test_gateway_refuses_to_start_without_strong_admin_secret(gateway, monkeypat
     monkeypatch.setattr(gateway, "ADMIN_TOKEN", "")
     with pytest.raises(RuntimeError, match="ADMIN_TOKEN"):
         asyncio.run(gateway.startup())
+
+
+
+def _request(path, headers=None, query_string=b""):
+    scope = {
+        "type": "http",
+        "asgi": {"version": "3.0"},
+        "http_version": "1.1",
+        "method": "POST",
+        "scheme": "http",
+        "path": path,
+        "raw_path": path.encode(),
+        "query_string": query_string,
+        "headers": [(k.lower().encode(), v.encode()) for k, v in (headers or {}).items()],
+        "client": ("testclient", 123),
+        "server": ("testserver", 80),
+        "root_path": "",
+    }
+    return Request(scope)
+
+
+def test_unknown_license_plan_is_rejected(gateway, monkeypatch):
+    key = "test-license-key"
+    monkeypatch.setattr(
+        gateway,
+        "redis_client",
+        _fake_redis_for(gateway, key, plan="unlimited"),
+    )
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(gateway.validate_license(key))
+    assert exc.value.status_code == 403
+
+
+def test_training_requires_pro_or_enterprise(gateway, monkeypatch):
+    key = "test-license-key"
+    monkeypatch.setattr(
+        gateway,
+        "redis_client",
+        _fake_redis_for(gateway, key, plan="basic"),
+    )
+    request = _request("/feedback/train", {"X-License-Key": key})
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(gateway.get_license(request))
+    assert exc.value.status_code == 403
+    assert "Training" in exc.value.detail
+
+
+def test_usage_credits_are_counted_and_enforced(gateway, monkeypatch):
+    key = "test-license-key"
+    redis = _fake_redis_for(gateway, key, plan="pro")
+    monkeypatch.setattr(gateway, "redis_client", redis)
+    monkeypatch.setitem(gateway.PLAN_LIMITS["pro"], "hourly_units", 1)
+
+    request = _request("/ordinary-endpoint", {"X-License-Key": key})
+    assert asyncio.run(gateway.get_license(request))["plan"] == "pro"
+
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(gateway.get_license(request))
+    assert exc.value.status_code == 429
+    assert "Hourly" in exc.value.detail
+
+
+def test_usage_snapshot_reports_plan_quotas(gateway, monkeypatch):
+    key = "test-license-key"
+    redis = _fake_redis_for(gateway, key, plan="pro")
+    key_hash = _license_key_hash(gateway, key)
+    redis.values[f"{gateway.RATE_LIMIT_PREFIX}{key_hash}:hour"] = "7"
+    now = datetime.now(timezone.utc)
+    redis.values[f"{gateway.USAGE_PREFIX}{key_hash}:{now:%Y-%m}"] = "42"
+    monkeypatch.setattr(gateway, "redis_client", redis)
+
+    info = {"plan": "pro"}
+    snapshot = asyncio.run(gateway._usage_snapshot(key, info))
+    assert snapshot["usage_unit"] == "credits"
+    assert snapshot["hourly"]["used"] == 7
+    assert snapshot["monthly"]["used"] == 42
