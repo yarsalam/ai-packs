@@ -79,7 +79,7 @@ docker compose --env-file .env down
 
 ### نمونه‌های تست
 
-- **SEO:** شباهت موضوعی دو متن با استفاده از embedding واقعی.
+- **SEO:** درخواست HTTPS به `https://example.com/`، تحلیل metadata/heading/canonical/viewport/alt/links در HTML و سپس تست شباهت موضوعی دو متن با embedding.
 - **Safety:** یک متن فارسی معمولی که باید از بررسی معنایی عبور کند، و یک مثال rule-based که شامل واژهٔ ممنوعه است.
 - **Revenue:** رتبه‌بندی یک مجموعهٔ ساختگی از candidateهای promotion؛ پاسخ معتبر به‌تنهایی ثابت نمی‌کند مدل train شده یا scoreها کالیبره‌اند، چون سرویس می‌تواند fallback قاعده‌محور داشته باشد.
 - **Matching:** embedding متن فارسی و اجرای مدل احساسات فارسی.
@@ -94,7 +94,7 @@ docker compose --env-file .env down
 
 ## محدودیت‌های فعلی پیش از عرضهٔ عمومی
 
-1. SEO Pack هنوز endpoint ارزیابی URL سایت ندارد. تست فعلی شباهت متن/بک‌لینک است؛ برای آزمون واقعی URL باید ابتدا قابلیت crawl/audit امن با محافظت SSRF اضافه و جداگانه ارزیابی شود.
+1. SEO URL audit یک چک‌لیست تکنیکی HTML محدود است (پاسخ حداکثر ۱٫۵ MB، فقط HTTP(S) روی پورت پیش‌فرض و چند redirect)، نه crawler کامل، audit محتوا/لینک عمیق یا امتیاز رتبه‌بندی Google. DNS checks برنامه به‌تنهایی DNS rebinding را به‌طور کامل نمی‌بندد؛ پیش از انتشار عمومی، egress firewall/network policy باید دسترسی به شبکه خصوصی، loopback و metadata endpoints را مسدود کند.
 2. پاسخ موفق Revenue می‌تواند از fallback قاعده‌محور باشد. برای محصول فروشی به دادهٔ واقعی و مجاز، مدل آموزش‌دیده، holdout زمانی/مستقل و کالیبراسیون نیاز است.
 3. smoke test دقت مدل، false-positive/false-negative، latency در بار، هزینهٔ هر ۱۰۰۰ درخواست، شرایط مجوز مدل‌ها، صورتحساب/پرداخت، enforce شدن دامنهٔ license یا آمادگی حقوقی را تأیید نمی‌کند.
 4. در اولین اجرا دانلود مدل‌ها و وابستگی‌ها می‌تواند سنگین باشد. اگر دانلود Hugging Face/سایت خارجی قطع شد، اتصال شبکه و نیاز به VPN را بررسی کن؛ خطای دانلود را به‌عنوان موفقیت inference حساب نکن.
