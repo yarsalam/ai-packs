@@ -117,12 +117,17 @@ async def _proxy(service: str, path: str, request: Request) -> JSONResponse:
     body = await request.body()
     headers = {k: v for k, v in request.headers.items()
                if k.lower() not in ("host", "x-license-key", "content-length")}
-    async with httpx.AsyncClient(timeout=60.0) as client:  # 60s — مدل‌های NLP کند هستن
-        resp = await client.request(
-            method=request.method, url=url,
-            content=body, headers=headers,
-            params=dict(request.query_params),
-        )
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:  # 60s — مدل‌های NLP کند هستن
+            resp = await client.request(
+                method=request.method, url=url,
+                content=body, headers=headers,
+                params=dict(request.query_params),
+            )
+    except httpx.TimeoutException as exc:
+        raise HTTPException(504, "Upstream service timed out") from exc
+    except httpx.HTTPError as exc:
+        raise HTTPException(502, "Upstream service unavailable") from exc
     try:
         return JSONResponse(content=resp.json(), status_code=resp.status_code)
     except Exception:
@@ -408,7 +413,7 @@ async def health():
             except Exception as e:
                 status[name] = {"status": "down", "error": str(e)}
     return {
-        "status":    "healthy",
+        "status": "healthy" if all(item.get("status") == "ok" for item in status.values()) else ("degraded" if any(item.get("status") == "ok" for item in status.values()) else "unavailable"),
         "gateway":   "matching_pack_v1",
         "timestamp": datetime.now().isoformat(),
         "services":  status,
