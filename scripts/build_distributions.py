@@ -189,8 +189,14 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 DEST = Path("/models")
 MODELS = {
-    "sentiment": os.getenv("SENTIMENT_MODEL_ID", "HooshvareLab/bert-fa-base-uncased-sentiment-snappfood"),
-    "emotion": os.getenv("EMOTION_MODEL_ID", "aref-j/emotion-classifier-bert-fa-v1"),
+    "sentiment": {
+        "id": os.getenv("SENTIMENT_MODEL_ID", "HooshvareLab/bert-fa-base-uncased-sentiment-snappfood"),
+        "revision": os.getenv("SENTIMENT_MODEL_REVISION", "main"),
+    },
+    "emotion": {
+        "id": os.getenv("EMOTION_MODEL_ID", "aref-j/emotion-classifier-bert-fa-v1"),
+        "revision": os.getenv("EMOTION_MODEL_REVISION", "main"),
+    },
 }
 
 def is_complete(target: Path) -> bool:
@@ -199,22 +205,25 @@ def is_complete(target: Path) -> bool:
     has_weights = any(target.glob("*.safetensors")) or any(target.glob("pytorch_model*.bin"))
     return has_config and has_tokenizer and has_weights
 
-for name, model_id in MODELS.items():
+for name, spec in MODELS.items():
+    model_id, revision = spec["id"], spec["revision"]
     target = DEST / name
-    if is_complete(target):
-        print(f"{name}: already initialized from {model_id}", flush=True)
+    revision_marker = target / ".source-revision"
+    if is_complete(target) and revision_marker.is_file() and revision_marker.read_text().strip() == revision:
+        print(f"{name}: already initialized from {model_id}@{revision}", flush=True)
         continue
     if target.exists():
-        # Interrupted downloads must be retried cleanly; config.json alone is not enough.
+        # Rebuild on interrupted downloads or when an operator changes the model revision.
         shutil.rmtree(target)
     target.mkdir(parents=True, exist_ok=True)
-    print(f"Downloading {model_id} -> {target}", flush=True)
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
-    model = AutoModelForSequenceClassification.from_pretrained(model_id)
+    print(f"Downloading {model_id}@{revision} -> {target}", flush=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_id, revision=revision)
+    model = AutoModelForSequenceClassification.from_pretrained(model_id, revision=revision)
     tokenizer.save_pretrained(target)
     model.save_pretrained(target)
     if not is_complete(target):
         raise RuntimeError(f"{name}: downloaded model files are incomplete")
+    revision_marker.write_text(revision + "\\n", encoding="utf-8")
     print(f"{name}: ready", flush=True)
 '''
 
@@ -304,9 +313,13 @@ def build_compose(pack_name: str, pack: dict[str, Any]) -> dict[str, Any]:
         compose["volumes"].setdefault("matching_personality_models", {})
         compose["services"]["model_init"] = {
             "build": {"context": "./model-init"}, "restart": "no",
-            "environment": {"HF_HOME": "/models/huggingface-cache",
-                            "SENTIMENT_MODEL_ID": "HooshvareLab/bert-fa-base-uncased-sentiment-snappfood",
-                            "EMOTION_MODEL_ID": "aref-j/emotion-classifier-bert-fa-v1"},
+            "environment": {
+                "HF_HOME": "/models/huggingface-cache",
+                "SENTIMENT_MODEL_ID": "HooshvareLab/bert-fa-base-uncased-sentiment-snappfood",
+                "SENTIMENT_MODEL_REVISION": "${SENTIMENT_MODEL_REVISION:-main}",
+                "EMOTION_MODEL_ID": "aref-j/emotion-classifier-bert-fa-v1",
+                "EMOTION_MODEL_REVISION": "${EMOTION_MODEL_REVISION:-main}",
+            },
             "volumes": ["matching_personality_models:/models"],
         }
         for service_name in ("personality", "ai_assistant", "ai_support"):
@@ -354,7 +367,7 @@ def readme_for(pack_name: str, pack: dict[str, Any]) -> str:
     docker compose --env-file .env ps
     docker compose --env-file .env logs -f gateway
 
-در اجرای اول، مدل‌های embedding و مدل‌های فارسی (در صورت نیاز این پک) از منبع اصلی دانلود می‌شوند؛ برای اجرای اولیه اتصال شبکه و فضای دیسک کافی لازم است.
+در اجرای اول، مدل‌های embedding و مدل‌های فارسی (در Matching Pack) از منبع اصلی دانلود می‌شوند؛ برای اجرای اولیه اتصال شبکه و فضای دیسک کافی لازم است. برای Matching، مقدارهای `SENTIMENT_MODEL_REVISION` و `EMOTION_MODEL_REVISION` را پیش از انتشار قابل‌تکرار روی commit ثابت مدل تنظیم کنید؛ مقدار پیش‌فرض `main` شناور است.
 
 ## سلامت سرویس
 
@@ -368,6 +381,8 @@ def readme_for(pack_name: str, pack: dict[str, Any]) -> str:
       -d '{{"domain":"customer.example","plan":"pro","expires":"2027-12-31"}}'
 
 کلید را فقط در backend مشتری ذخیره کنید و برای هر درخواست با هدر X-License-Key بفرستید. سهمیهٔ مصرف از GET /usage قابل مشاهده است. آموزش مدل فقط برای پلن‌های Pro و Enterprise فعال است.
+
+**SEO Pack:** `OPENAI_API_KEY` برای قابلیت‌های AEO الزامی است. بدون آن، AEO پاسخ 503 می‌دهد؛ سایر بخش‌های SEO می‌توانند مستقل اجرا شوند.
 
 ## وضعیت تجاری
 
@@ -422,6 +437,8 @@ def build_one(pack_name: str, pack: dict[str, Any], upstream: Path, output: Path
         "REDIS_PASSWORD=CHANGE_ME",
         pack["admin_env"] + "=CHANGE_ME",
         "OPENAI_API_KEY=",
+        "SENTIMENT_MODEL_REVISION=main",
+        "EMOTION_MODEL_REVISION=main",
     ]
     (dist / ".env.example").write_text("\n".join(env_lines) + "\n", encoding="utf-8")
     (dist / "README.md").write_text(readme_for(pack_name, pack), encoding="utf-8")
