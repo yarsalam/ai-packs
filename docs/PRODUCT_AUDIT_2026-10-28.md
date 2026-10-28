@@ -33,6 +33,9 @@
 - جلوگیری از startup با `ADMIN_TOKEN` خالی/ضعیف، به‌علاوهٔ الزام صریح secret در Compose و ping اولیهٔ Redis.
 - اصلاح تفسیر تاریخ انقضا: تاریخ `YYYY-MM-DD` تا پایان همان روز UTC معتبر می‌ماند.
 
+- مسیر `POST /seo/audit/url` اضافه شده است: دریافت محدود HTML از URL عمومی و خروجی چک‌لیست title/description/H1/canonical/lang/viewport/alt/links. این قابلیت crawler کامل یا امتیاز رتبه‌بندی Google نیست؛ DNS rebinding فقط با بررسی کد حل نمی‌شود و برای دسترسی عمومی egress firewall/network policy لازم است.
+- runner تست زنده برای هر چهار پک در `scripts/smoke_test_packs.py` و راهنمای `docs/LIVE_SMOKE_TESTING.md` اضافه شده است؛ با این حال smoke test واقعی باید در محیطی که Docker و مدل‌ها را اجرا می‌کند انجام شود.
+
 **این اصلاحات، hardening اولیه هستند؛ آن‌ها جای تست امنیت، تست بار، مدیریت صورتحساب یا ممیزی داده/مدل را نمی‌گیرند.**
 
 ## تصمیم معماری موردنیاز
