@@ -1,0 +1,93 @@
+# docker-compose.seo-pack.yml
+# این فایل رو با docker-compose.yml اصلی ادغام کن:
+#   docker-compose -f docker-compose.yml -f docker-compose.seo-pack.yml up -d
+#
+# یا standalone اجرا کن (برای تست):
+#   docker-compose -f docker-compose.seo-pack.yml up -d
+
+networks:
+  ai_network:
+    external: true        # از همون network اصلی استفاده می‌کنه
+    name: yarsalam_network
+
+services:
+
+  # ── Gateway ─────────────────────────────────────────────────────────────
+  seo_pack_gateway:
+    build:
+      context: ./gateway
+    container_name: seo_pack_gateway
+    ports:
+      - "127.0.0.1:9000:8000"    # فقط از localhost قابل دسترسه — Nginx جلوشه
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - AI_SEO_URL=http://ai_seo:8021
+      - AEO_TRACKER_URL=http://aeo_tracker:8030
+      - AI_BACKLINK_URL=http://ai_backlink_quality:8032
+      - AI_RECOMMENDER_URL=http://ai_seo_recommender:8033
+      - ADMIN_TOKEN=${SEO_PACK_ADMIN_TOKEN:-change-me}
+      - RATE_LIMIT_PER_HOUR=500
+    depends_on:
+      - redis
+      - ai_seo
+      - aeo_tracker
+      - ai_backlink_quality
+      - ai_seo_recommender
+    networks:
+      - ai_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── ۴ سرویس اصلی (اگه standalone اجرا می‌کنی) ──────────────────────────
+  # اگه با docker-compose اصلی ادغام کردی، این ۴ تا رو پاک کن
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    restart: unless-stopped
+    networks:
+      - ai_network
+
+  ai_seo:
+    build: ../../python-ai/services/ai_seo
+    container_name: ai_seo
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MODEL_PATH=/app/models
+    networks:
+      - ai_network
+    restart: unless-stopped
+
+  aeo_tracker:
+    build:
+      context: ../../python-ai/services/ai_aeo_tracker
+    container_name: aeo_tracker
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      - redis
+    networks:
+      - ai_network
+    restart: unless-stopped
+
+  ai_backlink_quality:
+    build:
+      context: ../../python-ai/services/ai_backlink_quality
+    container_name: ai_backlink_quality
+    networks:
+      - ai_network
+    restart: unless-stopped
+
+  ai_seo_recommender:
+    build:
+      context: ../../python-ai/services/ai_seo_recommender
+    container_name: ai_seo_recommender
+    networks:
+      - ai_network
+    restart: unless-stopped

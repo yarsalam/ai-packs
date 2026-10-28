@@ -1,0 +1,112 @@
+# docker-compose.revenue-pack.yml
+# ادغام با docker-compose اصلی:
+#   docker-compose -f docker-compose.yml -f docker-compose.revenue-pack.yml up -d
+
+networks:
+  ai_network:
+    external: true
+    name: yarsalam_network
+
+volumes:
+  revenue_models:
+  uplift_models:
+  feedback_models:
+  monetization_models:
+
+services:
+
+  revenue_pack_gateway:
+    build:
+      context: ./gateway
+    container_name: revenue_pack_gateway
+    ports:
+      - "127.0.0.1:9002:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - AI_MONETIZATION_URL=http://ai_monetization:8015
+      - AI_REVENUE_URL=http://ai_revenue:8000
+      - AI_UPLIFT_URL=http://ai_uplift:8031
+      - AI_FEEDBACK_URL=http://ai_feedback:8004
+      - ADMIN_TOKEN=${REVENUE_PACK_ADMIN_TOKEN:-change-me}
+      - RATE_LIMIT_PER_HOUR=2000
+    depends_on:
+      - redis
+      - ai_monetization
+      - ai_revenue
+      - ai_uplift
+      - ai_feedback
+    networks:
+      - ai_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    restart: unless-stopped
+    networks:
+      - ai_network
+
+  ai_monetization:
+    build:
+      context: ../../python-ai/services/ai_monetization
+      additional_contexts:
+        wheels: ../../python-ai/downloaded_wheels
+    container_name: ai_monetization
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - MODEL_PATH=/app/models
+      - MODEL_VERSION=v1
+    volumes:
+      - monetization_models:/app/models
+    depends_on:
+      - redis
+    networks:
+      - ai_network
+    restart: unless-stopped
+
+  ai_revenue:
+    build:
+      context: ../../python-ai/services/ai_revenue
+      additional_contexts:
+        wheels: ../../python-ai/downloaded_wheels
+    container_name: ai_revenue
+    environment:
+      - MODEL_DIR=/app/models
+    volumes:
+      - revenue_models:/app/models
+    networks:
+      - ai_network
+    restart: unless-stopped
+
+  ai_uplift:
+    build:
+      context: ../../python-ai/services/ai_uplift
+      additional_contexts:
+        wheels: ../../python-ai/downloaded_wheels
+    container_name: ai_uplift
+    environment:
+      - UPLIFT_MODEL_PATH=/app/models/uplift_model.pkl
+    volumes:
+      - uplift_models:/app/models
+    networks:
+      - ai_network
+    restart: unless-stopped
+
+  ai_feedback:
+    build:
+      context: ../../python-ai/services/ai_feedback
+      additional_contexts:
+        wheels: ../../python-ai/downloaded_wheels
+    container_name: ai_feedback
+    environment:
+      - MODEL_PATH=/app/models/conversion_model.pkl
+    volumes:
+      - feedback_models:/app/models
+    networks:
+      - ai_network
+    restart: unless-stopped

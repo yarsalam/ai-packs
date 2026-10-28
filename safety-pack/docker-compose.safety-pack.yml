@@ -1,0 +1,119 @@
+# docker-compose.safety-pack.yml
+# ادغام با docker-compose اصلی:
+#   docker-compose -f docker-compose.yml -f docker-compose.safety-pack.yml up -d
+#
+# نکته: ai_moderation به embedded_ai:8100 وابسته‌ست
+# اگه embedded_ai رو جدا ران می‌کنی، آدرسش رو در EMBEDDING_SERVICE_URL تنظیم کن
+
+networks:
+  ai_network:
+    external: true
+    name: yarsalam_network
+
+services:
+
+  safety_pack_gateway:
+    build:
+      context: ./gateway
+    container_name: safety_pack_gateway
+    ports:
+      - "127.0.0.1:9001:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - AI_MODERATION_URL=http://ai_moderation:8018
+      - AI_VERIFICATION_URL=http://ai_verification:8017
+      - AI_IMAGE_URL=http://ai_image:8100
+      - ADMIN_TOKEN=${SAFETY_PACK_ADMIN_TOKEN:-change-me}
+      - RATE_LIMIT_PER_HOUR=1000
+    depends_on:
+      - redis
+      - ai_moderation
+      - ai_verification
+      - ai_image
+    networks:
+      - ai_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── سرویس‌های پایه (اگه standalone) ─────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    restart: unless-stopped
+    networks:
+      - ai_network
+
+  ai_moderation:
+    build:
+      context: ../../python-ai/services/ai_moderation
+      additional_contexts:
+        wheels: ../../python-ai/downloaded_wheels
+    container_name: ai_moderation
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MODEL_CACHE=/app/models
+      - EMBEDDING_SERVICE_URL=http://embedded_ai:8100   # ← وابستگی مهم
+    volumes:
+      - moderation_models:/app/models
+    depends_on:
+      - redis
+      - embedded_ai
+    networks:
+      - ai_network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  ai_verification:
+    build: ../../python-ai/services/ai_verification
+    container_name: ai_verification
+    environment:
+      - MODEL_CACHE=/app/models
+      - VERIFICATION_THRESHOLD=0.4
+    volumes:
+      - verification_models:/app/models
+    networks:
+      - ai_network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  ai_image:
+    build:
+      context: ../../python-ai/services/ai_image
+      additional_contexts:
+        wheels: ../../python-ai/downloaded_wheels
+    container_name: ai_image
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+    networks:
+      - ai_network
+    restart: unless-stopped
+
+  embedded_ai:
+    build: ../../python-ai/services/embedded_ai
+    container_name: embedded_ai
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - MODEL_NAME=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+    depends_on:
+      - redis
+    networks:
+      - ai_network
+    restart: unless-stopped
+
+volumes:
+  moderation_models:
+  verification_models:

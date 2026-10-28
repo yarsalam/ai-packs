@@ -1,0 +1,132 @@
+# docker-compose.matching-pack.yml
+# ادغام با docker-compose اصلی:
+#   docker-compose -f docker-compose.yml -f docker-compose.matching-pack.yml up -d
+#
+# ⚠️ نکات مهم volume:
+#   - personality: مدل‌های HuggingFace باید از قبل دانلود و روی سرور باشن
+#   - ai_support: مدل BERT فارسی باید روی سرور باشه
+#   اگه مدل‌ها روی سرور نیستن، سرویس‌ها start می‌شن ولی 503 می‌دن
+
+networks:
+  ai_network:
+    external: true
+    name: yarsalam_network
+
+volumes:
+  personality_models:
+  support_models:
+  embedding_cache:
+
+services:
+
+  matching_pack_gateway:
+    build:
+      context: ./gateway
+    container_name: matching_pack_gateway
+    ports:
+      - "127.0.0.1:9003:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - ML_SERVICE_URL=http://ml_service:8000
+      - EMBEDDED_AI_URL=http://embedded_ai:8100
+      - PERSONALITY_URL=http://personality:8100
+      - AI_ASSISTANT_URL=http://ai_assistant:8022
+      - AI_SUPPORT_URL=http://ai_support:8016
+      - ADMIN_TOKEN=${MATCHING_PACK_ADMIN_TOKEN:-change-me}
+      - RATE_LIMIT_PER_HOUR=3000
+    depends_on:
+      - redis
+      - ml_service
+      - embedded_ai
+      - personality
+      - ai_assistant
+      - ai_support
+    networks:
+      - ai_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    restart: unless-stopped
+    networks:
+      - ai_network
+
+  embedded_ai:
+    build: ../../python-ai/services/embedded_ai
+    container_name: embedded_ai
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - MODEL_NAME=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+    depends_on:
+      - redis
+    networks:
+      - ai_network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  ml_service:
+    build:
+      context: ../../python-ai/services/ml_service
+      additional_contexts:
+        wheels: ../../python-ai/downloaded_wheels
+    container_name: ml_service
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - EMBEDDING_SERVICE_URL=http://embedded_ai:8100   # وابستگی مهم
+    depends_on:
+      - redis
+      - embedded_ai
+    networks:
+      - ai_network
+    restart: unless-stopped
+
+  personality:
+    build: ../../python-ai/services/personality
+    container_name: personality
+    volumes:
+      # مدل‌های HuggingFace از قبل دانلود شده روی سرور
+      - personality_models:/models
+    networks:
+      - ai_network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 4G    # مدل‌های Transformer حافظه زیادی می‌خوان
+
+  ai_assistant:
+    build: ../../python-ai/services/ai_assistant
+    container_name: ai_assistant
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    networks:
+      - ai_network
+    restart: unless-stopped
+
+  ai_support:
+    build:
+      context: ../../python-ai/services/ai_support
+      additional_contexts:
+        wheels: ../../python-ai/downloaded_wheels
+    container_name: ai_support
+    volumes:
+      # مدل BERT فارسی (HooshvareLab/bert-fa-base-uncased-sentiment-snappfood)
+      - support_models:/app/models
+    networks:
+      - ai_network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 3G

@@ -1,0 +1,414 @@
+"""
+Matching Pack Gateway
+=====================
+جلوی ۵ سرویس Matching می‌ایسته:
+  - ml_service   :8000  → /match/*       (matching + recommendation + embedding cache)
+  - embedded_ai  :8100  → /embed/*       (SentenceTransformer multilingual)
+  - personality  :8100  → /personality/* (sentiment + emotion با مدل‌های محلی)
+  - ai_assistant :8022  → /assistant/*   (analyze behavior + advice + chat)
+  - ai_support   :8016  → /support/*     (ticket analysis + BERT فارسی)
+
+وابستگی‌های مهم:
+  - ml_service داخلاً به embedded_ai:8100 وصله (EmbeddingClient)
+  - personality مدل‌های /models/sentiment و /models/emotion روی volume می‌خواد
+  - ai_support مدل BERT فارسی روی /app/models می‌خواد
+  - ai_assistant به Redis برای cache وصله
+  - embedded_ai به Redis برای cache embedding وصله
+"""
+
+import os, hashlib, json, httpx
+from datetime import datetime
+from typing import Optional
+
+from fastapi import FastAPI, HTTPException, Request, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import redis.asyncio as aioredis
+
+# ── Config ────────────────────────────────────────────────────────────────────
+SERVICES = {
+    "match":       os.getenv("ML_SERVICE_URL",    "http://ml_service:8000"),
+    "embed":       os.getenv("EMBEDDED_AI_URL",   "http://embedded_ai:8100"),
+    "personality": os.getenv("PERSONALITY_URL",   "http://personality:8100"),
+    "assistant":   os.getenv("AI_ASSISTANT_URL",  "http://ai_assistant:8022"),
+    "support":     os.getenv("AI_SUPPORT_URL",    "http://ai_support:8016"),
+}
+
+REDIS_URL           = os.getenv("REDIS_URL",   "redis://redis:6379/0")
+ADMIN_TOKEN         = os.getenv("ADMIN_TOKEN", "change-me-in-production")
+LICENSE_PREFIX      = "matching_license:"
+RATE_LIMIT_PREFIX   = "matching_ratelimit:"
+RATE_LIMIT_PER_HOUR = int(os.getenv("RATE_LIMIT_PER_HOUR", "3000"))
+
+app = FastAPI(
+    title="Matching Pack Gateway",
+    version="1.0.0",
+    description="Unified gateway for ml_service, embedded_ai, personality, ai_assistant, ai_support",
+)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+redis_client: Optional[aioredis.Redis] = None
+
+
+@app.on_event("startup")
+async def startup():
+    global redis_client
+    redis_client = aioredis.from_url(REDIS_URL, decode_responses=True)
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    if redis_client:
+        await redis_client.aclose()
+
+
+# ── License ───────────────────────────────────────────────────────────────────
+def _hash(raw: str) -> str:
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+
+async def validate_license(key: str) -> dict:
+    if not key:
+        raise HTTPException(401, "License key الزامی است")
+    data = await redis_client.get(f"{LICENSE_PREFIX}{_hash(key)}")
+    if not data:
+        raise HTTPException(403, "License key نامعتبر است")
+    info = json.loads(data)
+    if not info.get("active"):
+        raise HTTPException(403, "License key غیرفعال است")
+    exp = info.get("expires")
+    if exp and datetime.fromisoformat(exp) < datetime.now():
+        raise HTTPException(403, "License key منقضی شده است")
+    return info
+
+
+async def check_rate_limit(key: str):
+    rk = f"{RATE_LIMIT_PREFIX}{_hash(key)}"
+    count = await redis_client.incr(rk)
+    if count == 1:
+        await redis_client.expire(rk, 3600)
+    if count > RATE_LIMIT_PER_HOUR:
+        raise HTTPException(429, f"Rate limit: {RATE_LIMIT_PER_HOUR} req/hour")
+
+
+async def get_license(request: Request) -> dict:
+    key = request.headers.get("X-License-Key") or request.query_params.get("license_key")
+    info = await validate_license(key)
+    await check_rate_limit(key)
+    return info
+
+
+# ── Generic proxy ─────────────────────────────────────────────────────────────
+async def _proxy(service: str, path: str, request: Request) -> JSONResponse:
+    url  = f"{SERVICES[service]}/{path.lstrip('/')}"
+    body = await request.body()
+    headers = {k: v for k, v in request.headers.items()
+               if k.lower() not in ("host", "x-license-key", "content-length")}
+    async with httpx.AsyncClient(timeout=60.0) as client:  # 60s — مدل‌های NLP کند هستن
+        resp = await client.request(
+            method=request.method, url=url,
+            content=body, headers=headers,
+            params=dict(request.query_params),
+        )
+    try:
+        return JSONResponse(content=resp.json(), status_code=resp.status_code)
+    except Exception:
+        return JSONResponse(content={"raw": resp.text}, status_code=resp.status_code)
+
+
+# ── ML SERVICE routes (:8000) ─────────────────────────────────────────────────
+
+@app.post("/match/embed", tags=["Matching"])
+async def match_embed(request: Request, _: dict = Depends(get_license)):
+    """
+    Embed یه متن و cache کردن embedding روی Redis با key کاربر.
+
+    Body: {"text": "توضیح درباره کاربر...", "user_id": 123}
+    Returns: embedding (384-dim), model, version
+    """
+    return await _proxy("match", "/api/embed", request)
+
+
+@app.post("/match/recommend", tags=["Matching"])
+async def match_recommend(request: Request, _: dict = Depends(get_license)):
+    """
+    پیشنهاد بهترین کاربران از لیست کاندیداها برای یه کاربر.
+
+    Body:
+    {
+      "user_id": 123,
+      "candidates": [456, 789, 101, 202],
+      "limit": 10
+    }
+
+    embedding کاربر باید از قبل در Redis باشه (اول /match/embed بزن).
+    Returns: ranked list از کاندیداها با similarity score
+    """
+    return await _proxy("match", "/api/recommend", request)
+
+
+@app.post("/match/predict", tags=["Matching"])
+async def match_predict(request: Request, _: dict = Depends(get_license)):
+    """
+    Match score بین دو کاربر.
+
+    Body: {"user_a": 123, "user_b": 456}
+    Returns: {"score": 0.87, "user_a": 123, "user_b": 456}
+    """
+    return await _proxy("match", "/api/predict", request)
+
+
+@app.post("/match/track-events", tags=["Matching"])
+async def match_track_events(request: Request, _: dict = Depends(get_license)):
+    """
+    Track رویدادهای کاربر (like, skip, message) برای بهبود مدل.
+
+    Body: {"user_id": 123, "events": [{"type": "like", "target": 456}, ...]}
+    """
+    return await _proxy("match", "/api/internal/track-events", request)
+
+
+# ── EMBEDDED AI routes (:8100) ────────────────────────────────────────────────
+
+@app.post("/embed/text", tags=["Embedding"])
+async def embed_text(request: Request, _: dict = Depends(get_license)):
+    """
+    تبدیل یه متن به embedding vector.
+    مدل: paraphrase-multilingual-MiniLM-L12-v2 (فارسی + انگلیسی)
+
+    Body: {"text": "متن شما"}
+    Returns: {"embedding": [...384 float...], "model_name": "...", "dimension": 384}
+    """
+    return await _proxy("embed", "/embed", request)
+
+
+@app.post("/embed/batch", tags=["Embedding"])
+async def embed_batch(request: Request, _: dict = Depends(get_license)):
+    """
+    Embed دسته‌ای چند متن.
+
+    Body: {"texts": ["متن اول", "متن دوم", ...]}
+    """
+    return await _proxy("embed", "/embed/batch", request)
+
+
+@app.post("/embed/similarity", tags=["Embedding"])
+async def embed_similarity(request: Request, _: dict = Depends(get_license)):
+    """
+    Cosine similarity بین دو vector.
+
+    Body: {"vector_a": [...], "vector_b": [...]}
+    Returns: {"similarity": 0.87}
+    """
+    return await _proxy("embed", "/similarity", request)
+
+
+# ── PERSONALITY routes (:8100) ────────────────────────────────────────────────
+
+@app.post("/personality/sentiment", tags=["Personality"])
+async def personality_sentiment(request: Request, _: dict = Depends(get_license)):
+    """
+    تحلیل sentiment چند پیام.
+    مدل محلی روی /models/sentiment (Transformers pipeline)
+
+    Body: {"messages": ["خیلی خوشحالم!", "امروز بد بود"]}
+    Returns: {"sentiments": [{"label": "positive", "score": 0.98}, ...]}
+
+    ⚠️ اولین call کند است — مدل lazy-load می‌شود.
+    """
+    return await _proxy("personality", "/analyze_sentiment", request)
+
+
+@app.post("/personality/emotion", tags=["Personality"])
+async def personality_emotion(request: Request, _: dict = Depends(get_license)):
+    """
+    تشخیص emotion چند پیام.
+    مدل محلی روی /models/emotion
+
+    Body: {"messages": ["دلم برات تنگ شده", "خیلی عصبانیم"]}
+    Returns: {"emotions": [{"label": "love", "score": 0.92}, ...]}
+    """
+    return await _proxy("personality", "/analyze_emotion", request)
+
+
+# ── AI ASSISTANT routes (:8022) ───────────────────────────────────────────────
+
+@app.post("/assistant/analyze", tags=["Assistant"])
+async def assistant_analyze(request: Request, _: dict = Depends(get_license)):
+    """
+    آنالیز کامل یه کاربر: personality + behavior + sentiment.
+    نتیجه در Redis cache می‌شه (7 روز).
+
+    Body:
+    {
+      "user_id": 123,
+      "bio": "علاقه‌مند به کوهنوردی و موسیقی...",
+      "messages": ["سلام خوش اومدی", "چه سرگرمی‌هایی داری؟"],
+      "events": [
+        {"type": "like", "target_id": 456, "timestamp": "2025-01-01T10:00:00"},
+        {"type": "skip", "target_id": 789, "timestamp": "2025-01-01T10:01:00"}
+      ]
+    }
+
+    Returns: personality (traits), behavior (rates), sentiment
+    """
+    return await _proxy("assistant", "/api/assistant/analyze", request)
+
+
+@app.get("/assistant/advice/{user_id}", tags=["Assistant"])
+async def assistant_advice(user_id: int, request: Request, _: dict = Depends(get_license)):
+    """
+    پیشنهادات شخصی‌سازی‌شده برای بهبود پروفایل و match rate.
+    ابتدا /assistant/analyze باید صدا زده شده باشه.
+
+    Returns: tips (لیست توصیه‌ها)، personality_summary، action_items
+    """
+    return await _proxy("assistant", f"/api/assistant/advice/{user_id}", request)
+
+
+@app.post("/assistant/chat", tags=["Assistant"])
+async def assistant_chat(request: Request, _: dict = Depends(get_license)):
+    """
+    چت با دستیار هوشمند — راهنمایی در استفاده از اپ.
+
+    Body: {"user_id": 123, "message": "چطور پروفایلم رو بهتر کنم؟"}
+    """
+    return await _proxy("assistant", "/api/assistant/chat", request)
+
+
+# ── AI SUPPORT routes (:8016) ─────────────────────────────────────────────────
+
+@app.post("/support/analyze", tags=["Support"])
+async def support_analyze(request: Request, _: dict = Depends(get_license)):
+    """
+    آنالیز تیکت پشتیبانی با BERT فارسی.
+
+    Body:
+    {
+      "ticketId": 1001,
+      "content": "نمیتونم وارد حسابم بشم. رمزم رو فراموش کردم.",
+      "userId": 123,
+      "userTier": "premium",
+      "totalPurchases": 5
+    }
+
+    Returns:
+      category (technical/billing/account/feature_request/report),
+      priority (urgent/high/medium/low),
+      suggested_response (پیام پیشنهادی),
+      estimated_resolution_hours,
+      revenue_impact_score
+    """
+    return await _proxy("support", "/api/analyze", request)
+
+
+@app.get("/support/tickets/{ticket_id}/analysis", tags=["Support"])
+async def support_get_analysis(ticket_id: int, request: Request, _: dict = Depends(get_license)):
+    """تحلیل cache شده یه تیکت (بعد از POST /support/analyze)"""
+    return await _proxy("support", f"/api/tickets/{ticket_id}/analysis", request)
+
+
+@app.post("/support/feedback", tags=["Support"])
+async def support_feedback(request: Request, _: dict = Depends(get_license)):
+    """
+    فیدبک بعد از حل تیکت — مدل از آن یاد می‌گیرد.
+
+    Body:
+    {
+      "ticketId": 1001,
+      "rating": 5,
+      "comment": "مشکل حل شد",
+      "resolutionTime": 30
+    }
+    """
+    return await _proxy("support", "/api/feedback", request)
+
+
+@app.get("/support/seo-insights", tags=["Support"])
+async def support_seo_insights(request: Request, _: dict = Depends(get_license)):
+    """
+    تحلیل محتوای تیکت‌ها برای بهبود SEO.
+    کلمات پرتکرار در مشکلات کاربران → keyword opportunity
+    """
+    return await _proxy("support", "/api/seo-insights", request)
+
+
+# ── ADMIN ─────────────────────────────────────────────────────────────────────
+
+@app.post("/admin/license/create", tags=["Admin"])
+async def create_license(request: Request):
+    if request.headers.get("X-Admin-Token") != ADMIN_TOKEN:
+        raise HTTPException(403, "Admin token نامعتبر")
+    import secrets
+    body    = await request.json()
+    raw_key = secrets.token_urlsafe(32)
+    info    = {
+        "domain":  body.get("domain", "*"),
+        "plan":    body.get("plan", "basic"),
+        "expires": body.get("expires", "2099-12-31"),
+        "active":  True,
+        "created": datetime.now().isoformat(),
+    }
+    await redis_client.set(f"{LICENSE_PREFIX}{_hash(raw_key)}", json.dumps(info))
+    return {"license_key": raw_key, "key_hash": _hash(raw_key), **info}
+
+
+@app.delete("/admin/license/{key_hash}", tags=["Admin"])
+async def revoke_license(key_hash: str, request: Request):
+    if request.headers.get("X-Admin-Token") != ADMIN_TOKEN:
+        raise HTTPException(403, "Admin token نامعتبر")
+    data = await redis_client.get(f"{LICENSE_PREFIX}{key_hash}")
+    if not data:
+        raise HTTPException(404, "License پیدا نشد")
+    info = json.loads(data)
+    info["active"] = False
+    await redis_client.set(f"{LICENSE_PREFIX}{key_hash}", json.dumps(info))
+    return {"status": "revoked"}
+
+
+# ── HEALTH ────────────────────────────────────────────────────────────────────
+
+@app.get("/health", tags=["System"])
+async def health():
+    status = {}
+    async with httpx.AsyncClient(timeout=8.0) as client:
+        for name, url in SERVICES.items():
+            try:
+                r = await client.get(f"{url}/health")
+                body = r.json()
+                status[name] = {
+                    "status": "ok" if r.status_code == 200 else "degraded",
+                    **{k: v for k, v in body.items()
+                       if k in ("model_loaded", "models_loaded", "redis", "cache_size")},
+                }
+            except Exception as e:
+                status[name] = {"status": "down", "error": str(e)}
+    return {
+        "status":    "healthy",
+        "gateway":   "matching_pack_v1",
+        "timestamp": datetime.now().isoformat(),
+        "services":  status,
+        "note": "personality سرویس اولین بار slow-start دارد (lazy model load)",
+    }
+
+
+@app.get("/", tags=["System"])
+async def root():
+    return {
+        "name": "Matching Pack Gateway",
+        "version": "1.0.0",
+        "services": {
+            "match":       ["POST /match/embed", "POST /match/recommend", "POST /match/predict", "POST /match/track-events"],
+            "embed":       ["POST /embed/text", "POST /embed/batch", "POST /embed/similarity"],
+            "personality": ["POST /personality/sentiment", "POST /personality/emotion"],
+            "assistant":   ["POST /assistant/analyze", "GET /assistant/advice/{user_id}", "POST /assistant/chat"],
+            "support":     ["POST /support/analyze", "GET /support/tickets/{id}/analysis", "POST /support/feedback", "GET /support/seo-insights"],
+        },
+        "dependencies": {
+            "ml_service":  "embedded_ai:8100 (EmbeddingClient داخلی)",
+            "personality": "/models/sentiment و /models/emotion (volume)",
+            "ai_support":  "/app/models (BERT فارسی، volume)",
+            "ai_assistant": "Redis (cache کاربران)",
+            "embedded_ai": "Redis (cache embedding)",
+        },
+    }
