@@ -183,6 +183,7 @@ MODEL_INIT_REQUIREMENTS = "\n".join([
     "transformers==4.49.0", "tokenizers==0.21.0", "safetensors==0.5.3", "accelerate==1.4.0",
 ]) + "\n"
 MODEL_INIT_SCRIPT = '''import os
+import shutil
 from pathlib import Path
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
@@ -191,17 +192,29 @@ MODELS = {
     "sentiment": os.getenv("SENTIMENT_MODEL_ID", "HooshvareLab/bert-fa-base-uncased-sentiment-snappfood"),
     "emotion": os.getenv("EMOTION_MODEL_ID", "aref-j/emotion-classifier-bert-fa-v1"),
 }
+
+def is_complete(target: Path) -> bool:
+    has_config = (target / "config.json").is_file()
+    has_tokenizer = any((target / item).is_file() for item in ("tokenizer.json", "vocab.txt", "spiece.model"))
+    has_weights = any(target.glob("*.safetensors")) or any(target.glob("pytorch_model*.bin"))
+    return has_config and has_tokenizer and has_weights
+
 for name, model_id in MODELS.items():
     target = DEST / name
-    if (target / "config.json").exists():
+    if is_complete(target):
         print(f"{name}: already initialized from {model_id}", flush=True)
         continue
+    if target.exists():
+        # Interrupted downloads must be retried cleanly; config.json alone is not enough.
+        shutil.rmtree(target)
+    target.mkdir(parents=True, exist_ok=True)
     print(f"Downloading {model_id} -> {target}", flush=True)
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     model = AutoModelForSequenceClassification.from_pretrained(model_id)
-    target.mkdir(parents=True, exist_ok=True)
     tokenizer.save_pretrained(target)
     model.save_pretrained(target)
+    if not is_complete(target):
+        raise RuntimeError(f"{name}: downloaded model files are incomplete")
     print(f"{name}: ready", flush=True)
 '''
 
@@ -304,6 +317,8 @@ def build_compose(pack_name: str, pack: dict[str, Any]) -> dict[str, Any]:
         "ADMIN_TOKEN": required_env(pack["admin_env"], "Set " + pack["admin_env"] + " to a random secret of at least 32 characters"),
         "RATE_LIMIT_PER_HOUR": str(pack["rate"]),
     }
+    if pack_name == "safety-pack":
+        gateway_env["MAX_UPLOAD_BYTES"] = "10485760"
     for env_name, service_name in pack["gateway_services"].items():
         gateway_env[env_name] = f"http://{service_name}:{SERVICE[service_name]['port']}"
     gateway = {
