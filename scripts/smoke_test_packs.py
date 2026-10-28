@@ -246,9 +246,15 @@ def test_pack(pack_name: str, cfg: dict[str, Any], dist_dir: Path,
 
     try:
         status, health, elapsed = request_json(base_url, "/health", timeout=min(timeout, 15))
-        health_ok = status == 200 and isinstance(health, dict) and health.get("status") == "healthy"
+        health_status = health.get("status") if isinstance(health, dict) else None
+        health_ok = status == 200 and health_status == "healthy"
+        reachable = status == 200 and health_status in {"healthy", "degraded"}
         add_result(results, "gateway and all configured service health checks", health_ok,
                    status, elapsed, json.dumps(health, ensure_ascii=False)[:600])
+        # A degraded optional dependency (e.g. AEO without OPENAI_API_KEY) should
+        # be reported but must not prevent smoke-testing independent routes.
+        if not reachable:
+            return {"pack": pack_name, "base_url": base_url, "tests": results}
     except Exception as exc:
         add_result(results, "gateway and all configured service health checks", False,
                    None, None, f"{type(exc).__name__}: {exc}")
