@@ -306,13 +306,22 @@ async def create_license(request: Request):
 
     import json, secrets
     body = await request.json()
-
+    plan = str(body.get("plan", "basic")).lower()
+    if plan not in PLAN_LIMITS:
+        raise HTTPException(422, "Unsupported plan. Choose free, basic, pro, or enterprise.")
+    expires = body.get("expires", "2099-12-31")
+    try:
+        expired = bool(expires) and _license_is_expired(str(expires))
+    except HTTPException as exc:
+        raise HTTPException(422, "Invalid license expiry; use YYYY-MM-DD or ISO timestamp") from exc
+    if expired:
+        raise HTTPException(422, "License expiry must be in the future")
     raw_key = secrets.token_urlsafe(32)
     key_hash = _hash_key(raw_key)
     info = {
         "domain":  body.get("domain", "*"),
-        "plan":    body.get("plan", "basic"),
-        "expires": body.get("expires", "2099-12-31"),
+        "plan":    plan,
+        "expires": expires,
         "active":  True,
         "created": datetime.now().isoformat(),
     }
