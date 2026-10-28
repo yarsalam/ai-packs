@@ -18,7 +18,7 @@ class License {
         if (empty($key)) return false;
         $cached = get_transient('revenue_pack_license_valid');
         if ($cached !== false) return (bool) $cached;
-        $result = ApiClient::get_instance()->health_check();
+        $result = ApiClient::get_instance()->license_status();
         $valid  = isset($result['status']) && $result['status'] !== 'error';
         set_transient('revenue_pack_license_valid', $valid, 6 * HOUR_IN_SECONDS);
         return $valid;
