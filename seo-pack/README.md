@@ -79,6 +79,7 @@ cd wordpress-plugin && zip -r seo-pack.zip seo-pack/
 | Endpoint | سرویس پشتی | عملکرد |
 |----------|------------|--------|
 | `POST /seo/predict/traffic` | ai_seo :8021 | پیش‌بینی ترافیک |
+| `POST /seo/audit/url` | ai_seo :8021 | چک‌لیست فنی HTML برای URL عمومی (غیر از امتیاز رتبه‌بندی گوگل) |
 | `POST /seo/feedback/campaign` | ai_seo :8021 | فیدبک کمپین |
 | `POST /aeo/check-mentions` | aeo_tracker :8030 | چک AEO |
 | `GET  /aeo/history/{brand}` | aeo_tracker :8030 | تاریخچه AEO |
