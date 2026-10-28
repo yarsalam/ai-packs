@@ -138,14 +138,19 @@ async def _proxy(service: str, path: str, request: Request) -> JSONResponse:
         if k.lower() not in ("host", "x-license-key", "content-length")
     }
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        resp = await client.request(
-            method=request.method,
-            url=url,
-            content=body,
-            headers=headers,
-            params=dict(request.query_params),
-        )
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.request(
+                method=request.method,
+                url=url,
+                content=body,
+                headers=headers,
+                params=dict(request.query_params),
+            )
+    except httpx.TimeoutException as exc:
+        raise HTTPException(504, "Upstream service timed out") from exc
+    except httpx.HTTPError as exc:
+        raise HTTPException(502, "Upstream service unavailable") from exc
 
     return JSONResponse(
         content=resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {"raw": resp.text},
@@ -280,7 +285,7 @@ async def health():
                 services_status[name] = "down"
 
     return {
-        "status": "healthy",
+        "status": "healthy" if all(value == "ok" for value in services_status.values()) else ("degraded" if any(value == "ok" for value in services_status.values()) else "unavailable"),
         "gateway": "seo_pack_v1",
         "timestamp": datetime.now().isoformat(),
         "services": services_status,
