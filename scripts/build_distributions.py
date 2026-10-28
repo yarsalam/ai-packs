@@ -405,7 +405,7 @@ def build_one(pack_name: str, pack: dict[str, Any], upstream: Path, output: Path
     env_lines = [
         "COMPOSE_PROJECT_NAME=yarsalam-" + pack_name,
         "REDIS_PASSWORD=CHANGE_ME",
-        admin_env + "=CHANGE_ME",
+        pack["admin_env"] + "=CHANGE_ME",
         "OPENAI_API_KEY=",
     ]
     (dist / ".env.example").write_text("\n".join(env_lines) + "\n", encoding="utf-8")
