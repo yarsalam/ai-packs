@@ -389,6 +389,8 @@ def readme_for(pack_name: str, pack: dict[str, Any]) -> str:
 
 **SEO Pack:** `OPENAI_API_KEY` برای قابلیت‌های AEO الزامی است. بدون آن، AEO پاسخ 503 می‌دهد؛ سایر بخش‌های SEO می‌توانند مستقل اجرا شوند.
 
+**SEO URL Audit:** `POST /seo/audit/url` یک چک‌لیست محدود HTML برای یک URL عمومی می‌سازد؛ امتیاز رتبه‌بندی Google یا crawler کامل نیست. پیش از انتشار عمومی، outbound egress firewall برای جلوگیری از دسترسی به شبکه خصوصی و metadata endpointها الزامی است.
+
 ## وضعیت تجاری
 
 - سهمیه‌های اولیه برحسب credit در هر ساعت و ماه فعلاً فرضیه‌اند؛ باید پس از سنجش هزینهٔ واقعی inference و پایلوت مشتری تنظیم شوند.
