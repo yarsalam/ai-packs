@@ -336,6 +336,8 @@ async def create_license(request: Request):
     if plan not in PLAN_LIMITS:
         raise HTTPException(422, "Unsupported plan. Choose free, basic, pro, or enterprise.")
     expires = body.get("expires", "2099-12-31")
+    if not isinstance(expires, str) or not expires.strip():
+        raise HTTPException(422, "License expiry is required")
     try:
         expired = bool(expires) and _license_is_expired(str(expires))
     except HTTPException as exc:
