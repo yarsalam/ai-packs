@@ -10,6 +10,7 @@ from typing import Any
 CONTRACTS: list[dict[str, Any]] = [
     # SEO
     {"gateway":"seo-pack/gateway/main.py","handler":"seo_predict_traffic","service":"seo","target":'"/predict/traffic"',"source":"ai_seo/api/app.py","route":"/predict/traffic"},
+    {"gateway":"seo-pack/gateway/main.py","handler":"seo_audit_url","service":"seo","target":'"/audit/url"',"source":"ai_seo/api/app.py","route":"/audit/url"},
     {"gateway":"seo-pack/gateway/main.py","handler":"seo_campaign_feedback","service":"seo","target":'"/feedback/campaign"',"source":"ai_seo/api/app.py","route":"/feedback/campaign"},
     {"gateway":"seo-pack/gateway/main.py","handler":"aeo_check_mentions","service":"aeo","target":'"/check-mentions"',"source":"ai_aeo_tracker/app.py","route":"/check-mentions"},
     {"gateway":"seo-pack/gateway/main.py","handler":"aeo_history","service":"aeo","target":'f"/history/{brand}"',"source":"ai_aeo_tracker/app.py","route":"/history/{brand}"},
