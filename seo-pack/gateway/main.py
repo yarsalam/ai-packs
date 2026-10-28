@@ -127,6 +127,9 @@ async def validate_license(license_key: str) -> dict:
 async def _usage_weight(path: str) -> int:
     if path in TRAINING_PATHS:
         return 20
+    # A remote URL fetch performs network I/O and bounded HTML parsing.
+    if path == "/seo/audit/url":
+        return 5
     # Polling an async image job is cheap; running image/face inference is expensive.
     if path.startswith("/image/status/"):
         return 1
