@@ -194,7 +194,7 @@ def test_training_requires_pro_or_enterprise(gateway, monkeypatch):
     with pytest.raises(HTTPException) as exc:
         asyncio.run(gateway.get_license(request))
     assert exc.value.status_code == 403
-    assert "Training" in exc.value.detail
+    assert "training" in exc.value.detail.lower()
 
 
 def test_usage_credits_are_counted_and_enforced(gateway, monkeypatch):
