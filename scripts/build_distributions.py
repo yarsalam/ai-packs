@@ -437,6 +437,7 @@ def build_one(pack_name: str, pack: dict[str, Any], upstream: Path, output: Path
         "REDIS_PASSWORD=CHANGE_ME",
         pack["admin_env"] + "=CHANGE_ME",
         "OPENAI_API_KEY=",
+        "EMBEDDING_MODEL_REVISION=e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
         "SENTIMENT_MODEL_REVISION=b6fcfc5",
         "EMOTION_MODEL_REVISION=e47c57d",
     ]
