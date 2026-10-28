@@ -510,13 +510,15 @@ async def health():
             try:
                 r = await client.get(f"{url}/health")
                 body = r.json()
+                reported = str(body.get("status", "")).lower()
+                healthy = r.status_code == 200 and (not reported or reported in {"healthy", "ok", "ready"})
                 status[name] = {
-                    "status": "ok" if r.status_code == 200 else "degraded",
+                    "status": "ok" if healthy else "degraded",
                     **{k: v for k, v in body.items()
                        if k in ("model_loaded", "models_loaded", "redis", "cache_size")},
                 }
-            except Exception as e:
-                status[name] = {"status": "down", "error": str(e)}
+            except Exception:
+                status[name] = {"status": "down", "error": "dependency_unavailable"}
     payload = {
         "status": "healthy" if all(item.get("status") == "ok" for item in status.values()) else ("degraded" if any(item.get("status") == "ok" for item in status.values()) else "unavailable"),
         "gateway":   "matching_pack_v1",
@@ -541,11 +543,5 @@ async def root():
             "assistant":   ["POST /assistant/analyze", "GET /assistant/advice/{user_id}", "POST /assistant/chat"],
             "support":     ["POST /support/analyze", "GET /support/tickets/{id}/analysis", "POST /support/feedback", "GET /support/seo-insights"],
         },
-        "dependencies": {
-            "ml_service":  "embedded_ai:8100 (EmbeddingClient داخلی)",
-            "personality": "/models/sentiment و /models/emotion (volume)",
-            "ai_support":  "/app/models (BERT فارسی، volume)",
-            "ai_assistant": "Redis (cache کاربران)",
-            "embedded_ai": "Redis (cache embedding)",
-        },
+        "integration_notes": ["Check service readiness at /health", "Model initialization must complete before Matching endpoints are used"],
     }
