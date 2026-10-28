@@ -33,6 +33,19 @@ LICENSE_PREFIX       = "safety_license:"
 RATE_LIMIT_PREFIX    = "safety_ratelimit:"
 RATE_LIMIT_PER_HOUR  = int(os.getenv("RATE_LIMIT_PER_HOUR", "1000"))
 
+# Billable usage credits are provisional defaults; adjust after measuring inference cost.
+PLAN_LIMITS = {
+    "free": {"hourly_units": 60, "monthly_units": 1000},
+    "basic": {"hourly_units": min(200, RATE_LIMIT_PER_HOUR), "monthly_units": 5000},
+    "pro": {"hourly_units": RATE_LIMIT_PER_HOUR, "monthly_units": 50000},
+    "enterprise": {"hourly_units": RATE_LIMIT_PER_HOUR * 5, "monthly_units": 250000},
+}
+USAGE_PREFIX = "safety_usage:"
+TRAINING_PATHS = {
+    "/recommend/train", "/monetization/retrain", "/revenue/train",
+    "/uplift/train", "/feedback/train", "/feedback/train/batch",
+}
+
 app = FastAPI(
     title="Safety Pack Gateway",
     version="1.0.0",
@@ -87,22 +100,93 @@ async def validate_license(license_key: str) -> dict:
     exp = info.get("expires")
     if exp and _license_is_expired(exp):
         raise HTTPException(403, "License key منقضی شده است")
+    plan = str(info.get("plan", "basic")).lower()
+    if plan not in PLAN_LIMITS:
+        raise HTTPException(403, "License plan is not supported")
+    info["plan"] = plan
     return info
+async def _usage_weight(path: str) -> int:
+    if path in TRAINING_PATHS:
+        return 20
+    if path == "/verify/face" or path.startswith("/image/"):
+        return 10
+    if path.endswith("/batch"):
+        return 5
+    if path.startswith("/personality/") or path.startswith("/assistant/") or path.startswith("/match/"):
+        return 2
+    if path.startswith("/seo/") or path.startswith("/aeo/") or path.startswith("/backlink/") or path.startswith("/recommend/"):
+        return 2
+    return 1
 
 
-async def check_rate_limit(license_key: str):
-    key = f"{RATE_LIMIT_PREFIX}{_hash(license_key)}"
-    count = await redis_client.incr(key)
-    if count == 1:
-        await redis_client.expire(key, 3600)
-    if count > RATE_LIMIT_PER_HOUR:
-        raise HTTPException(429, f"Rate limit: {RATE_LIMIT_PER_HOUR} req/hour")
+async def _meter_usage(license_key: str, info: dict, path: str) -> None:
+    plan = info.get("plan", "basic")
+    limits = PLAN_LIMITS[plan]
+    if path in TRAINING_PATHS and plan not in ("pro", "enterprise"):
+        raise HTTPException(403, "Model training requires a Pro or Enterprise plan")
+
+    key_hash = _hash_key(license_key) if "_hash_key" in globals() else _hash(license_key)
+    weight = await _usage_weight(path)
+    now = datetime.now(timezone.utc)
+    hour_key = f"{RATE_LIMIT_PREFIX}{key_hash}:hour"
+    month_key = f"{USAGE_PREFIX}{key_hash}:{now:%Y-%m}"
+
+    hourly_units = await redis_client.incrby(hour_key, weight)
+    if hourly_units == weight:
+        await redis_client.expire(hour_key, 3600)
+
+    monthly_units = await redis_client.incrby(month_key, weight)
+    if monthly_units == weight:
+        if now.month == 12:
+            next_month = datetime(now.year + 1, 1, 1, tzinfo=timezone.utc)
+        else:
+            next_month = datetime(now.year, now.month + 1, 1, tzinfo=timezone.utc)
+        ttl = max(3600, int((next_month - now).total_seconds()) + 86400)
+        await redis_client.expire(month_key, ttl)
+
+    if hourly_units > limits["hourly_units"]:
+        raise HTTPException(429, f"Hourly usage quota exceeded for plan '{plan}'")
+    if monthly_units > limits["monthly_units"]:
+        raise HTTPException(429, f"Monthly usage quota exceeded for plan '{plan}'")
+
+
+async def _usage_snapshot(license_key: str, info: dict) -> dict:
+    plan = info.get("plan", "basic")
+    limits = PLAN_LIMITS[plan]
+    key_hash = _hash_key(license_key) if "_hash_key" in globals() else _hash(license_key)
+    now = datetime.now(timezone.utc)
+    hourly = await redis_client.get(f"{RATE_LIMIT_PREFIX}{key_hash}:hour")
+    monthly = await redis_client.get(f"{USAGE_PREFIX}{key_hash}:{now:%Y-%m}")
+    hourly_used = int(hourly or 0)
+    monthly_used = int(monthly or 0)
+    return {
+        "plan": plan,
+        "usage_unit": "credits",
+        "hourly": {
+            "used": hourly_used,
+            "limit": limits["hourly_units"],
+            "remaining": max(0, limits["hourly_units"] - hourly_used),
+        },
+        "monthly": {
+            "used": monthly_used,
+            "limit": limits["monthly_units"],
+            "remaining": max(0, limits["monthly_units"] - monthly_used),
+            "period": now.strftime("%Y-%m"),
+        },
+        "weights": {
+            "ordinary_request": 1,
+            "text_analysis_or_recommendation": 2,
+            "batch_request": 5,
+            "image_or_face_verification": 10,
+            "model_training": 20,
+        },
+    }
 
 
 async def get_license(request: Request) -> dict:
     key = request.headers.get("X-License-Key")
     info = await validate_license(key)
-    await check_rate_limit(key)
+    await _meter_usage(key, info, request.url.path)
     return info
 
 
@@ -243,7 +327,8 @@ async def image_status(filename: str, request: Request, _: dict = Depends(get_li
 
 @app.post("/admin/license/create", tags=["Admin"])
 async def create_license(request: Request):
-    if request.headers.get("X-Admin-Token") != ADMIN_TOKEN:
+    admin_token = request.headers.get("X-Admin-Token")
+    if not admin_token or not secrets.compare_digest(admin_token, ADMIN_TOKEN):
         raise HTTPException(403, "Admin token نامعتبر")
     import secrets
     body    = await request.json()
@@ -261,7 +346,8 @@ async def create_license(request: Request):
 
 @app.delete("/admin/license/{key_hash}", tags=["Admin"])
 async def revoke_license(key_hash: str, request: Request):
-    if request.headers.get("X-Admin-Token") != ADMIN_TOKEN:
+    admin_token = request.headers.get("X-Admin-Token")
+    if not admin_token or not secrets.compare_digest(admin_token, ADMIN_TOKEN):
         raise HTTPException(403, "Admin token نامعتبر")
     data = await redis_client.get(f"{LICENSE_PREFIX}{key_hash}")
     if not data:
@@ -273,6 +359,13 @@ async def revoke_license(key_hash: str, request: Request):
 
 
 # ── HEALTH ────────────────────────────────────────────────────────────────────
+
+@app.get("/usage", tags=["Usage"])
+async def get_usage(request: Request):
+    key = request.headers.get("X-License-Key")
+    info = await validate_license(key)
+    return await _usage_snapshot(key, info)
+
 
 @app.get("/license/validate", tags=["License"])
 async def license_status(request: Request):
