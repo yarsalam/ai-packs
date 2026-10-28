@@ -71,13 +71,13 @@ SERVICE: dict[str, dict[str, Any]] = {
     },
     "ai_verification": {
         "source": "ai_verification", "port": 8017, "entrypoint": "app:app",
-        "requirements": CORE + ["numpy==1.26.4", "tensorflow==2.18.0", "tf-keras==2.18.0", "deepface==0.0.93", "opencv-python-headless==4.11.0.86", "Pillow==11.1.0"],
+        "requirements": CORE + ["numpy==1.26.4", "tensorflow==2.18.0", "tf-keras==2.18.0", "deepface==0.0.93", "opencv-python==4.11.0.86", "Pillow==11.1.0"],
         "env": {"VERIFICATION_THRESHOLD": "0.4", "HOME": "/models"},
         "volumes": {"safety_verification_models": "/models"}, "depends": [],
     },
     "ai_image": {
         "source": "ai_image", "port": 8100, "entrypoint": "app:app",
-        "requirements": CORE + ["numpy==1.26.4", "tensorflow==2.18.0", "tf-keras==2.18.0", "deepface==0.0.93", "opencv-python-headless==4.11.0.86", "Pillow==11.1.0", "nudenet==3.4.2"],
+        "requirements": CORE + ["numpy==1.26.4", "tensorflow==2.18.0", "tf-keras==2.18.0", "deepface==0.0.93", "opencv-python==4.11.0.86", "Pillow==11.1.0", "nudenet==3.4.2"],
         "env": {"REDIS_URL": REDIS_URL, "HOME": "/models", "MAX_IMAGE_BYTES": "10485760"},
         "volumes": {"safety_image_models": "/models"}, "depends": ["redis"],
     },
@@ -242,11 +242,17 @@ def volume_map(compose: dict[str, Any], spec: dict[str, Any], service_name: str)
 
 def build_compose(pack_name: str, pack: dict[str, Any]) -> dict[str, Any]:
     name_expr = DOLLAR + "{COMPOSE_PROJECT_NAME:-yarsalam-" + pack_name + "}"
+    redis_password_length = DOLLAR + DOLLAR + "{#REDIS_PASSWORD}"
+    redis_password_value = DOLLAR + DOLLAR + "{REDIS_PASSWORD}"
+    redis_start_command = (
+        '[ "' + redis_password_length + '" -ge 32 ] || { echo "REDIS_PASSWORD must be at least 32 characters" >&2; exit 1; }; '
+        'exec redis-server --appendonly yes --requirepass "' + redis_password_value + '"'
+    )
     compose: dict[str, Any] = {"name": name_expr, "services": {}, "volumes": {"redis_data": {}}}
     compose["services"]["redis"] = {
         "image": "redis:7.4-alpine",
         "restart": "unless-stopped",
-        "command": ["redis-server", "--appendonly", "yes", "--requirepass", required_env("REDIS_PASSWORD", "Set REDIS_PASSWORD in .env")],
+        "command": ["sh", "-ec", redis_start_command],
         "environment": {"REDIS_PASSWORD": required_env("REDIS_PASSWORD", "Set REDIS_PASSWORD in .env")},
         "volumes": ["redis_data:/data"],
         "healthcheck": {"test": ["CMD-SHELL", 'redis-cli --no-auth-warning -a "$$REDIS_PASSWORD" ping | grep -q PONG'], "interval": "10s", "timeout": "5s", "retries": 5, "start_period": "5s"},
@@ -407,7 +413,7 @@ def build_one(pack_name: str, pack: dict[str, Any], upstream: Path, output: Path
     manifest = {
         "pack": pack_name, "label": pack["label"],
         "upstream_repository": "https://github.com/yarsalam/mobApp",
-        "upstream_ref": upstream.name, "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "upstream_ref": str((__import__("subprocess").run(["git", "-C", str(upstream), "rev-parse", "HEAD"], capture_output=True, text=True).stdout or "unknown").strip()), "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "services": pack["services"], "gateway_port": pack["port"],
         "models_downloaded_at_install": bool(pack.get("model_init") or any("embedded_ai" in s for s in pack["services"])),
     }
