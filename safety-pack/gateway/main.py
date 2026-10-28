@@ -32,6 +32,7 @@ ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
 LICENSE_PREFIX       = "safety_license:"
 RATE_LIMIT_PREFIX    = "safety_ratelimit:"
 RATE_LIMIT_PER_HOUR  = int(os.getenv("RATE_LIMIT_PER_HOUR", "1000"))
+MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
 
 # Billable usage credits are provisional defaults; adjust after measuring inference cost.
 PLAN_LIMITS = {
@@ -213,6 +214,18 @@ async def _proxy_json(service: str, path: str, request: Request) -> JSONResponse
         return JSONResponse(content={"raw": resp.text}, status_code=resp.status_code)
 
 
+async def _read_bounded_image(file: UploadFile) -> tuple[str, bytes, str]:
+    """Bound per-file memory before forwarding image data to the model service."""
+    if not file.content_type or not file.content_type.lower().startswith("image/"):
+        raise HTTPException(415, "Uploaded file must have an image content type")
+    contents = await file.read(MAX_UPLOAD_BYTES + 1)
+    if len(contents) > MAX_UPLOAD_BYTES:
+        raise HTTPException(413, f"Each image must be <= {MAX_UPLOAD_BYTES} bytes")
+    if not contents:
+        raise HTTPException(400, "Uploaded image is empty")
+    return (file.filename or "upload.jpg", contents, file.content_type)
+
+
 # ── File Proxy (verification, image) — streams multipart ────────────────────
 async def _proxy_files(service: str, path: str, files: list, data: dict = None) -> JSONResponse:
     """
@@ -272,12 +285,12 @@ async def verify_face(
     
     حداکثر حجم: 10MB هر فایل
     """
-    selfie_bytes  = await selfie.read()
-    profile_bytes = await profile_photo.read()
+    selfie_file = await _read_bounded_image(selfie)
+    profile_file = await _read_bounded_image(profile_photo)
 
     files = [
-        ("selfie",        (selfie.filename,        selfie_bytes,  selfie.content_type)),
-        ("profile_photo", (profile_photo.filename, profile_bytes, profile_photo.content_type)),
+        ("selfie", selfie_file),
+        ("profile_photo", profile_file),
     ]
     return await _proxy_files("verification", "/verify", files)
 
@@ -298,8 +311,8 @@ async def image_upload(
     اگه NSFW باشه: 400 + reason
     اگه OK باشه: 200 + status: accepted
     """
-    file_bytes = await file.read()
-    files = [("file", (file.filename, file_bytes, file.content_type))]
+    image_file = await _read_bounded_image(file)
+    files = [("file", image_file)]
     return await _proxy_files("image", "/image/upload", files)
 
 
@@ -312,8 +325,8 @@ async def image_analyze(
     تحلیل کامل تصویر: quality score + face detection
     Returns: quality_score, faces (list)
     """
-    file_bytes = await file.read()
-    files = [("file", (file.filename, file_bytes, file.content_type))]
+    image_file = await _read_bounded_image(file)
+    files = [("file", image_file)]
     return await _proxy_files("image", "/image/analyze", files)
 
 
