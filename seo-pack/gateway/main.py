@@ -425,10 +425,10 @@ async def root():
         "name": "SEO Pack Gateway",
         "version": "1.0.0",
         "endpoints": {
-            "seo":       ["/seo/predict/traffic", "/seo/feedback/campaign"],
+            "seo":       ["/seo/predict/traffic", "/seo/audit/url", "/seo/feedback/campaign"],
             "aeo":       ["/aeo/check-mentions", "/aeo/history/{brand}"],
             "backlink":  ["/backlink/trust-flow", "/backlink/topic-similarity"],
             "recommend": ["/recommend/train", "/recommend/recommend"],
         },
-        "auth": "X-License-Key header یا ?license_key= query param",
+        "auth": "X-License-Key header only; license keys in query strings are rejected",
     }
