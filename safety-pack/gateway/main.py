@@ -410,7 +410,13 @@ async def health():
         for name, url in SERVICES.items():
             try:
                 r = await client.get(f"{url}/health")
-                status[name] = "ok" if r.status_code == 200 else "degraded"
+                try:
+                    body = r.json()
+                except ValueError:
+                    body = {}
+                reported = str(body.get("status", "")).lower()
+                healthy = r.status_code == 200 and (not reported or reported in {"healthy", "ok", "ready"})
+                status[name] = "ok" if healthy else "degraded"
             except Exception:
                 status[name] = "down"
     payload = {
