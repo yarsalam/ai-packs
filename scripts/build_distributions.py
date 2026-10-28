@@ -181,13 +181,16 @@ CMD ["python", "download_models.py"]
 MODEL_INIT_REQUIREMENTS = "\n".join([
     "--extra-index-url https://download.pytorch.org/whl/cpu", "torch==2.6.0+cpu",
     "transformers==4.49.0", "tokenizers==0.21.0", "safetensors==0.5.3", "accelerate==1.4.0",
+    "huggingface-hub==0.29.3",
 ]) + "\n"
 MODEL_INIT_SCRIPT = '''import os
 import shutil
 from pathlib import Path
+from huggingface_hub import HfApi
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 DEST = Path("/models")
+API = HfApi()
 MODELS = {
     "sentiment": {
         "id": os.getenv("SENTIMENT_MODEL_ID", "HooshvareLab/bert-fa-base-uncased-sentiment-snappfood"),
@@ -206,25 +209,27 @@ def is_complete(target: Path) -> bool:
     return has_config and has_tokenizer and has_weights
 
 for name, spec in MODELS.items():
-    model_id, revision = spec["id"], spec["revision"]
+    model_id, requested_revision = spec["id"], spec["revision"]
+    # Resolve short SHAs to a full immutable commit before cache checks or downloading.
+    resolved_revision = API.model_info(model_id, revision=requested_revision).sha
     target = DEST / name
     revision_marker = target / ".source-revision"
-    if is_complete(target) and revision_marker.is_file() and revision_marker.read_text().strip() == revision:
-        print(f"{name}: already initialized from {model_id}@{revision}", flush=True)
+    if is_complete(target) and revision_marker.is_file() and revision_marker.read_text().strip() == resolved_revision:
+        print(f"{name}: already initialized from {model_id}@{resolved_revision}", flush=True)
         continue
     if target.exists():
         # Rebuild on interrupted downloads or when an operator changes the model revision.
         shutil.rmtree(target)
     target.mkdir(parents=True, exist_ok=True)
-    print(f"Downloading {model_id}@{revision} -> {target}", flush=True)
-    tokenizer = AutoTokenizer.from_pretrained(model_id, revision=revision)
-    model = AutoModelForSequenceClassification.from_pretrained(model_id, revision=revision)
+    print(f"Downloading {model_id}@{resolved_revision} -> {target}", flush=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_id, revision=resolved_revision)
+    model = AutoModelForSequenceClassification.from_pretrained(model_id, revision=resolved_revision)
     tokenizer.save_pretrained(target)
     model.save_pretrained(target)
     if not is_complete(target):
         raise RuntimeError(f"{name}: downloaded model files are incomplete")
-    revision_marker.write_text(revision + "\\n", encoding="utf-8")
-    print(f"{name}: ready", flush=True)
+    revision_marker.write_text(resolved_revision + "\\n", encoding="utf-8")
+    print(f"{name}: ready from immutable commit {resolved_revision}", flush=True)
 '''
 
 def sha256_file(path: Path) -> str:
@@ -443,12 +448,56 @@ def build_one(pack_name: str, pack: dict[str, Any], upstream: Path, output: Path
     ]
     (dist / ".env.example").write_text("\n".join(env_lines) + "\n", encoding="utf-8")
     (dist / "README.md").write_text(readme_for(pack_name, pack), encoding="utf-8")
+    model_sources = []
+    if any("embedded_ai" in service for service in pack["services"]):
+        model_sources.append({
+            "id": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+            "revision_env": "EMBEDDING_MODEL_REVISION",
+            "default_revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+            "license_metadata": "apache-2.0",
+            "source_url": "https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        })
+    if pack.get("model_init"):
+        model_sources.extend([
+            {
+                "id": "HooshvareLab/bert-fa-base-uncased-sentiment-snappfood",
+                "revision_env": "SENTIMENT_MODEL_REVISION",
+                "default_revision": "b6fcfc5",
+                "revision_resolved_to_full_sha_at_install": True,
+                "license_metadata": "apache-2.0",
+                "source_url": "https://huggingface.co/HooshvareLab/bert-fa-base-uncased-sentiment-snappfood",
+            },
+            {
+                "id": "aref-j/emotion-classifier-bert-fa-v1",
+                "revision_env": "EMOTION_MODEL_REVISION",
+                "default_revision": "e47c57d",
+                "revision_resolved_to_full_sha_at_install": True,
+                "license_metadata": "mit",
+                "source_url": "https://huggingface.co/aref-j/emotion-classifier-bert-fa-v1",
+            },
+        ])
+    if pack_name == "safety-pack":
+        model_sources.append({
+            "id": "DeepFace/NudeNet model assets",
+            "revision_env": None,
+            "default_revision": None,
+            "license_metadata": "manual-review-required",
+            "source_url": "https://github.com/serengil/deepface and https://github.com/notAI-tech/NudeNet",
+            "note": "Transitive pretrained weights are not pinned by the distribution builder yet; resolve and lock before public release.",
+        })
     manifest = {
         "pack": pack_name, "label": pack["label"],
         "upstream_repository": "https://github.com/yarsalam/mobApp",
         "upstream_ref": str((__import__("subprocess").run(["git", "-C", str(upstream), "rev-parse", "HEAD"], capture_output=True, text=True).stdout or "unknown").strip()), "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "services": pack["services"], "gateway_port": pack["port"],
         "models_downloaded_at_install": bool(pack.get("model_init") or any("embedded_ai" in s for s in pack["services"])),
+        "model_sources": model_sources,
+        "release_gates": [
+            "Build and run every service image and perform actual inference smoke tests.",
+            "Verify all model and dependency licenses for the intended commercial distribution.",
+            "Publish benchmark results on representative Persian data.",
+            "Resolve model revisions to immutable full commit SHAs.",
+        ],
     }
     (dist / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     manifest["files"] = {
