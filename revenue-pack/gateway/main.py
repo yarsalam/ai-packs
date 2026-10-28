@@ -458,14 +458,16 @@ async def health():
             try:
                 r = await client.get(f"{url}/health")
                 body = r.json()
+                reported = str(body.get("status", "")).lower()
+                healthy = r.status_code == 200 and (not reported or reported in {"healthy", "ok", "ready"})
                 status[name] = {
-                    "status": "ok" if r.status_code == 200 else "degraded",
+                    "status": "ok" if healthy else "degraded",
                     # اطلاعات مفید از هر سرویس
                     **{k: v for k, v in body.items()
                        if k in ("model_trained", "cv_score", "model_phase", "training_samples")},
                 }
-            except Exception as e:
-                status[name] = {"status": "down", "error": str(e)}
+            except Exception:
+                status[name] = {"status": "down", "error": "dependency_unavailable"}
     payload = {
         "status": "healthy" if all(item.get("status") == "ok" for item in status.values()) else ("degraded" if any(item.get("status") == "ok" for item in status.values()) else "unavailable"),
         "gateway":   "revenue_pack_v1",
@@ -483,36 +485,24 @@ async def root():
         "name": "Revenue Pack Gateway",
         "version": "1.0.0",
         "services": {
-            "monetization": {
-                "url": SERVICES["monetization"],
                 "endpoints": [
                     "POST /monetization/predict-promotion",
                     "POST /monetization/feedback",
                     "POST /monetization/retrain",
                 ],
-            },
-            "revenue": {
-                "url": SERVICES["revenue"],
                 "endpoints": [
                     "POST /revenue/predict/ltv",
                     "POST /revenue/train",
                 ],
-            },
-            "uplift": {
-                "url": SERVICES["uplift"],
                 "endpoints": [
                     "POST /uplift/train",
                     "POST /uplift/predict",
                 ],
-            },
-            "feedback": {
-                "url": SERVICES["feedback"],
                 "endpoints": [
                     "POST /feedback/train",
                     "POST /feedback/train/batch",
                     "POST /feedback/predict",
                     "GET  /feedback/metrics",
                 ],
-            },
         },
     }
