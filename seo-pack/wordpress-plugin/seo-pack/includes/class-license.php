@@ -25,7 +25,7 @@ class License {
         if ($cached !== false) return (bool) $cached;
 
         $client = ApiClient::get_instance();
-        $result = $client->health_check();
+        $result = $client->license_status();
         $valid  = isset($result['status']) && $result['status'] !== 'error';
 
         set_transient('seo_pack_license_valid', $valid, 6 * HOUR_IN_SECONDS);
