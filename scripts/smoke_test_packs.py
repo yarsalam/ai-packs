@@ -198,7 +198,7 @@ def validate_payload(check: str, response: Any) -> tuple[bool, str]:
             return False, "Response has no boolean 'allowed' field"
         layer = result.get("layer")
         review = result.get("review_required", False)
-        ok = layer != "semantic_error" and not review
+        ok = result.get("allowed") is True and layer != "semantic_error" and not review
         return ok, f"allowed={result.get('allowed')!r}, layer={layer!r}, review_required={review!r}"
     if check == "blocked":
         ok = response.get("allowed") is False and response.get("reason") == "banned_keyword"
@@ -224,7 +224,12 @@ def validate_payload(check: str, response: Any) -> tuple[bool, str]:
     if check == "sentiment":
         predictions = response.get("sentiments")
         ok = isinstance(predictions, list) and len(predictions) == 2 and all(
-            isinstance(item, dict) and "label" in item and "score" in item for item in predictions
+            isinstance(item, dict)
+            and isinstance(item.get("label"), str)
+            and isinstance(item.get("score"), (int, float))
+            and math.isfinite(item.get("score"))
+            and 0 <= item.get("score") <= 1
+            for item in predictions
         )
         return ok, f"predictions={len(predictions) if isinstance(predictions, list) else 'invalid'}"
     return False, f"Unknown response check: {check}"
