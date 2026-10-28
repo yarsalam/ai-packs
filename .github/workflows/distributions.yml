@@ -42,6 +42,9 @@ jobs:
       - name: Build four stand-alone distributions
         run: python scripts/build_distributions.py --mobapp-root upstream/mobApp --output-dir dist
 
+      - name: Validate Gateway-to-microservice API contracts
+        run: python scripts/validate_api_contracts.py --mobapp-root upstream/mobApp
+
       - name: Validate distribution structure and Compose configuration
         shell: bash
         run: |
