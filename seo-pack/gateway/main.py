@@ -259,6 +259,12 @@ async def seo_predict_traffic(request: Request, _: dict = Depends(get_license)):
     return await _proxy("seo", "/predict/traffic", request)
 
 
+@app.post("/seo/audit/url", tags=["SEO"])
+async def seo_audit_url(request: Request, _: dict = Depends(get_license)):
+    """چک‌لیست فنی HTML برای یک URL عمومی؛ این مسیر امتیاز رتبه‌بندی Google نیست."""
+    return await _proxy("seo", "/audit/url", request)
+
+
 @app.post("/seo/feedback/campaign", tags=["SEO"])
 async def seo_campaign_feedback(request: Request, _: dict = Depends(get_license)):
     """ارسال فیدبک کمپین برای self-learning"""
