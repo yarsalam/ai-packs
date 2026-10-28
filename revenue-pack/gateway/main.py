@@ -483,26 +483,27 @@ async def health():
 async def root():
     return {
         "name": "Revenue Pack Gateway",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "services": {
-                "endpoints": [
-                    "POST /monetization/predict-promotion",
-                    "POST /monetization/feedback",
-                    "POST /monetization/retrain",
-                ],
-                "endpoints": [
-                    "POST /revenue/predict/ltv",
-                    "POST /revenue/train",
-                ],
-                "endpoints": [
-                    "POST /uplift/train",
-                    "POST /uplift/predict",
-                ],
-                "endpoints": [
-                    "POST /feedback/train",
-                    "POST /feedback/train/batch",
-                    "POST /feedback/predict",
-                    "GET  /feedback/metrics",
-                ],
+            "monetization": [
+                "POST /monetization/predict-promotion",
+                "POST /monetization/feedback",
+                "POST /monetization/retrain",
+            ],
+            "revenue": [
+                "POST /revenue/predict/ltv",
+                "POST /revenue/train",
+            ],
+            "uplift": [
+                "POST /uplift/train",
+                "POST /uplift/predict",
+            ],
+            "feedback": [
+                "POST /feedback/train",
+                "POST /feedback/train/batch",
+                "POST /feedback/predict",
+                "GET /feedback/metrics",
+            ],
+            "usage": ["GET /usage", "GET /license/validate", "GET /health"],
         },
     }
