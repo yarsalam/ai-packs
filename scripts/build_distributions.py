@@ -342,7 +342,7 @@ def readme_for(pack_name: str, pack: dict[str, Any]) -> str:
 ## صدور کلید آزمایشی
 
     curl -X POST http://127.0.0.1:{port}/admin/license/create \\
-      -H "X-Admin-Token: $" + admin_env + " \\
+      -H "X-Admin-Token: ${admin_env}" \\
       -H "Content-Type: application/json" \\
       -d '{{"domain":"customer.example","plan":"pro","expires":"2027-12-31"}}'
 
