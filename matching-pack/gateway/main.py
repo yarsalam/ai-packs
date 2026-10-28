@@ -113,13 +113,25 @@ async def validate_license(key: str) -> dict:
 async def _usage_weight(path: str) -> int:
     if path in TRAINING_PATHS:
         return 20
-    if path == "/verify/face" or path.startswith("/image/"):
+    # Polling an async image job is cheap; running image/face inference is expensive.
+    if path.startswith("/image/status/"):
+        return 1
+    if path == "/verify/face" or path in {"/image/upload", "/image/analyze"}:
         return 10
     if path.endswith("/batch"):
         return 5
-    if path.startswith("/personality/") or path.startswith("/assistant/") or path.startswith("/match/"):
-        return 2
-    if path.startswith("/seo/") or path.startswith("/aeo/") or path.startswith("/backlink/") or path.startswith("/recommend/"):
+    if (
+        path.startswith("/moderate/")
+        or path.startswith("/personality/")
+        or path.startswith("/assistant/")
+        or path.startswith("/match/")
+        or path.startswith("/support/")
+        or path.startswith("/embed/")
+        or path.startswith("/seo/")
+        or path.startswith("/aeo/")
+        or path.startswith("/backlink/")
+        or path.startswith("/recommend/")
+    ):
         return 2
     return 1
 
