@@ -326,7 +326,7 @@ async def create_license(request: Request):
     if not admin_token or not secrets.compare_digest(admin_token, ADMIN_TOKEN):
         raise HTTPException(403, "Admin token نامعتبر است")
 
-    import json, secrets
+    import json
     body = await request.json()
     plan = str(body.get("plan", "basic")).lower()
     if plan not in PLAN_LIMITS:
