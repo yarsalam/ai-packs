@@ -8,6 +8,7 @@
 - [نقشهٔ راه تجاری‌سازی](./docs/COMMERCIALIZATION_ROADMAP.md)
 - [منشأ مدل‌ها و شروط انتشار تجاری](./docs/MODEL_PROVENANCE.md)
 - [راهنمای آزمون زندهٔ چهار پک](./docs/LIVE_SMOKE_TESTING.md)
+- [نتایج Smoke Test محلی چهار پک — ۲۹ اکتبر ۲۰۲۶](./docs/LIVE_SMOKE_RESULTS_2026-10-29.md)
 
 ## چهار پک
 
