@@ -25,7 +25,7 @@ services:
       - AEO_TRACKER_URL=http://aeo_tracker:8030
       - AI_BACKLINK_URL=http://ai_backlink_quality:8032
       - AI_RECOMMENDER_URL=http://ai_seo_recommender:8033
-      - ADMIN_TOKEN=${SEO_PACK_ADMIN_TOKEN:-change-me}
+      - ADMIN_TOKEN=${SEO_PACK_ADMIN_TOKEN:?Set SEO_PACK_ADMIN_TOKEN to a random secret of at least 32 characters}
       - RATE_LIMIT_PER_HOUR=500
     depends_on:
       - redis

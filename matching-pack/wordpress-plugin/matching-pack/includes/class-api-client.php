@@ -147,6 +147,10 @@ class ApiClient {
         return $this->request('GET', "/support/seo-insights?days={$days}");
     }
 
+    public function license_status(): array {
+        return $this->request('GET', '/license/validate');
+    }
+
     // ── HEALTH ────────────────────────────────────────────────────────────────
     public function health_check(): array {
         $r = wp_remote_get($this->base_url . '/health', [
