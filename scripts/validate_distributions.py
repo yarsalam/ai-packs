@@ -70,6 +70,9 @@ def validate_pack(dist_root: Path, pack_name: str) -> dict:
                 item.suffix.lower() in forbidden_suffixes
                 or item.name == ".env"
                 or item.name.startswith(".env.")
+                or item.name == ".gitignore"
+                or item.name.startswith("test_")
+                or item.name.endswith("_test.py")
             ):
                 fail(f"{pack_name}: non-runtime file leaked into service context: {item.relative_to(pack)}")
         for source in folder.rglob("*.py"):
