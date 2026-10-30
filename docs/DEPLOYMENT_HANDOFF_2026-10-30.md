@@ -50,6 +50,14 @@ Image معیوب قبلی:
 
 بنابراین اصلاح موردنیاز، Build و انتشار **فقط image ai_assistant** است؛ باقی Matching services یا سه Pack دیگر نباید مجدداً Build یا بی‌دلیل جایگزین شوند.
 
+### نتیجهٔ CI در 2026-10-30
+
+- PR #4: https://github.com/yarsalam/ai-packs/pull/4 — Draft/open، base=`feat/safety-ghcr-deployment`، head commit=`eb6875f7cab6573c390b7eea402d336e23c8659b`.
+- PR #5: https://github.com/yarsalam/ai-packs/pull/5 — Draft/open، base=`main`؛ فقط ثبت workflow_dispatch روی شاخهٔ پیش‌فرض، بدون Build/Publish.
+- Workflow run #53، ID `41118292186` — SUCCESS: ساخت چهار توزیع مستقل، Gateway contract checks، Validate ساختار/Compose و Build gateway images. مرحلهٔ افزودن ZIPها به GitHub Release skipped بوده، چون release event اجرا نشده؛ این شکست نیست.
+- Workflow run #77، ID `41118292374` — SUCCESS: چهار Gateway contract test همگی موفق؛ توزیع Matching با فیلتر runtime ساخته و validate شد؛ Compose override معتبر بود؛ فقط Image `ai_assistant` build شد و importهای `pandas`, `app`, `core.behavior.analyze_behavior` در خود Image با موفقیت اجرا شدند.
+- Image جدید فقط در Runner ساخته و import-tested شده است. در این CI هیچ GHCR push، pull از VPS، restart یا تغییر volume انجام نشد.
+
 ### Workflow اضافه‌شده در این شاخه
 
 فایل: `.github/workflows/publish-matching-ai-assistant.yml`
@@ -117,7 +125,7 @@ docker compose --env-file "$ENV_FILE" -p yarsalam-matching-pack \
 ## کارهای باز به ترتیب
 
 1. PR محدود ai_assistant را به `feat/safety-ghcr-deployment` باز کن و CI Build/Import-check آن را سبز کن. فایل publisher فقط دستی و فقط برای ai_assistant publish می‌کند.
-2. PR اصلاح ai_assistant را review کن؛ بعد از تأیید، Workflow دستی را با mobApp commit SHA ثابت اجرا کن.
+2. PR #4 اصلاح ai_assistant و PR #5 ثبت workflow_dispatch را review کن. بعد از تأیید/merge لازم، در Actions شاخهٔ `fix/matching-ai-assistant-runtime-image` را انتخاب و publisher را با MobApp SHA ثابت اجرا کن. انتظار tag از شکل `sha-<AI_PACKS_SHA>-mobapp-93bcb0d9ddf7` است؛ مقدار کامل را فقط از خروجی Workflow بردار.
 3. صحت GHCR package visibility/authentication را از VPS بررسی کن؛ در صورت نیاز به ارتباط خارجی از VPN استفاده شود. تا پیش از انتشار، روی VPS چیزی تغییر نده.
 4. پس از انتشار موفق و تأیید کاربر، فقط image مربوط به ai_assistant را با override و `--no-deps` جایگزین کن.
 5. سپس برای mobApp و admin-panel، Build خارج از VPS، runtime-only image و Compose image-only را تکمیل کن. هرکدام PR و اعتبارسنجی جدا داشته باشند.
