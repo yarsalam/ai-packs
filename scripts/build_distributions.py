@@ -421,7 +421,7 @@ def build_one(pack_name: str, pack: dict[str, Any], upstream: Path, output: Path
     if dist.exists():
         shutil.rmtree(dist)
     dist.mkdir(parents=True)
-    shutil.copytree(ROOT / pack_name / "gateway", dist / "gateway")
+    shutil.copytree(ROOT / pack_name / "gateway", dist / "gateway", ignore=RUNTIME_IGNORES)
     plugin_source, plugin_slug = pack["plugin"]
     shutil.copytree(ROOT / plugin_source, dist / "wordpress-plugin" / plugin_slug)
     gd = dist / "gateway" / "Dockerfile"
