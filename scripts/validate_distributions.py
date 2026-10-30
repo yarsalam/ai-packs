@@ -53,7 +53,7 @@ def validate_pack(dist_root: Path, pack_name: str) -> dict:
                 fail(f"{pack_name}/{service_name}: undeclared named volume {source}")
 
     # All Python source files included in a distribution must remain local.
-    for relative in ("services",):
+    for relative in ("services", "gateway"):
         folder = pack / relative
         if not folder.is_dir():
             fail(f"{pack_name}: missing {relative}")
