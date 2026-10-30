@@ -52,7 +52,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: yarsalam/mobApp
-          ref: ${{ inputs.mobapp_ref || '93bcb0d9ddf78ed31580d4aa2e3758b6397c1f0b' }}
+          ref: ${{ github.event_name == 'pull_request' && 'fix/seo-public-url-audit-endpoint' || (inputs.mobapp_ref || '93bcb0d9ddf78ed31580d4aa2e3758b6397c1f0b') }}
           path: upstream/mobApp
 
       - name: Set up Python
