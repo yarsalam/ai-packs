@@ -99,8 +99,8 @@ docker compose --env-file "$ENV_FILE" -p yarsalam-matching-pack \
 
 ## PRهای Runtime-only تکمیلی (2026-10-30)
 
-- پنل ادمین: PR #31 https://github.com/yarsalam/admin-panel/pull/31 — Next.js standalone، multi-stage runtime-only image، Docker context filtering و Compose image-only؛ Draft/open و هنوز CI اجرا نشده. PR #32 https://github.com/yarsalam/admin-panel/pull/32 — ثبت stubهای دستی validation/publish در main؛ Draft/open.
-- Backend اصلی mobApp: PR #8 https://github.com/yarsalam/mobApp/pull/8 — Compose مستقل با فقط Image سرویس backend، network خارجی موجود و حفظ مسیر public assets با PUBLIC_ASSETS_DIR؛ Draft/open و base آن شاخهٔ feat/ci-runtime-backend-image است.
+- پنل ادمین: PR #31 https://github.com/yarsalam/admin-panel/pull/31 — Next.js standalone، multi-stage runtime-only image، Docker context filtering و Compose image-only؛ Draft/open، head فعلی `0c5aaebbc789af145e3f2852ed2ed591b907876c` و هنوز CI اجرا نشده. PR #32 https://github.com/yarsalam/admin-panel/pull/32 — ثبت stubهای دستی validation/publish در main؛ Draft/open. فایل env موجود روی سرور `.env` است (نه `.env.production`)، و Compose/راهنمای PR31 با آن هماهنگ شده‌اند.
+- Backend اصلی mobApp: PR #8 https://github.com/yarsalam/mobApp/pull/8 — Compose مستقل با فقط Image سرویس backend، network خارجی موجود و حفظ مسیر public assets با PUBLIC_ASSETS_DIR؛ Draft/open، head فعلی `ce8754ff35bfb7cf02161a3bc62a1d93f4beaa54` و base آن شاخهٔ feat/ci-runtime-backend-image است.
 - برای هیچ‌یک از این سه PR هنوز Image نهایی GHCR منتشر یا روی VPS Deploy نشده است.
 - روی VPS فعلاً فقط باید runtime artifacts، Compose حداقلی و env خصوصی باقی بمانند؛ سرویس‌ها و داده‌های موجود قبل از هر replacement با docker inspect بررسی شوند.
 
