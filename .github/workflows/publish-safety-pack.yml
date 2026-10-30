@@ -1,0 +1,27 @@
+name: Publish Safety Pack container images
+
+on:
+  workflow_dispatch:
+    inputs:
+      mobapp_ref:
+        description: "Exact commit, branch, or tag from yarsalam/mobApp"
+        required: true
+        default: "93bcb0d9ddf78ed31580d4aa2e3758b6397c1f0b"
+        type: string
+
+# Registration-only workflow on main.
+# To build and publish images, select feat/safety-ghcr-deployment
+# in the Actions branch selector after this file reaches the default branch.
+permissions:
+  contents: read
+
+jobs:
+  registration_notice:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain the release branch
+        run: |
+          echo "This is the default-branch workflow registration stub."
+          echo "For the validated Safety Pack publisher, select branch:"
+          echo "feat/safety-ghcr-deployment"
+          echo "No images are built or published by this stub."
