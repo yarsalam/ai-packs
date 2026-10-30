@@ -1,0 +1,315 @@
+{
+  "name": "yarsalam-matching-pack",
+  "services": {
+    "redis": {
+      "image": "redis:7.4-alpine",
+      "restart": "unless-stopped",
+      "command": [
+        "sh",
+        "-ec",
+        "test \"$${#REDIS_PASSWORD}\" -ge 32 || { echo \"REDIS_PASSWORD must be at least 32 characters\" >&2; exit 1; }; exec redis-server --appendonly yes --requirepass \"$${REDIS_PASSWORD}\""
+      ],
+      "environment": {
+        "REDIS_PASSWORD": "${REDIS_PASSWORD:?Set REDIS_PASSWORD in the private env file}"
+      },
+      "volumes": [
+        "redis_data:/data"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD-SHELL",
+          "redis-cli --no-auth-warning -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"
+        ],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 5,
+        "start_period": "5s"
+      },
+      "networks": [
+        "default"
+      ]
+    },
+    "ml_service": {
+      "image": "ghcr.io/yarsalam/ai-packs/matching-pack-ml-service:${IMAGE_TAG:-latest}",
+      "restart": "unless-stopped",
+      "init": true,
+      "environment": {
+        "REDIS_URL": "redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in the private env file}@redis:6379/0",
+        "EMBEDDING_SERVICE_URL": "http://matching_embedded_ai:8100"
+      },
+      "volumes": [
+        "matching_ml_models:/app/models"
+      ],
+      "depends_on": {
+        "redis": {
+          "condition": "service_healthy"
+        },
+        "matching_embedded_ai": {
+          "condition": "service_healthy"
+        }
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-fsS",
+          "http://127.0.0.1:8000/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "120s"
+      },
+      "networks": {
+        "default": {},
+        "yarsalam_network": {
+          "aliases": [
+            "ml_service"
+          ]
+        }
+      }
+    },
+    "matching_embedded_ai": {
+      "image": "ghcr.io/yarsalam/ai-packs/matching-pack-matching-embedded-ai:${IMAGE_TAG:-latest}",
+      "restart": "unless-stopped",
+      "init": true,
+      "environment": {
+        "REDIS_URL": "redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in the private env file}@redis:6379/0",
+        "MODEL_NAME": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        "MODEL_REVISION": "${EMBEDDING_MODEL_REVISION:-e8f8c211226b894fcb81acc59f3b34ba3efd5f42}",
+        "HF_HOME": "/models/huggingface"
+      },
+      "volumes": [
+        "matching_embedding_models:/models"
+      ],
+      "depends_on": {
+        "redis": {
+          "condition": "service_healthy"
+        }
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-fsS",
+          "http://127.0.0.1:8100/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "120s"
+      },
+      "networks": {
+        "default": {}
+      }
+    },
+    "personality": {
+      "image": "ghcr.io/yarsalam/ai-packs/matching-pack-personality:${IMAGE_TAG:-latest}",
+      "restart": "unless-stopped",
+      "init": true,
+      "environment": {
+        "TRANSFORMERS_OFFLINE": "1",
+        "HF_HOME": "/models/huggingface-cache"
+      },
+      "volumes": [
+        "matching_personality_models:/models:ro"
+      ],
+      "depends_on": {
+        "model_init": {
+          "condition": "service_completed_successfully"
+        }
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-fsS",
+          "http://127.0.0.1:8100/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "120s"
+      },
+      "networks": {
+        "default": {},
+        "yarsalam_network": {
+          "aliases": [
+            "personality"
+          ]
+        }
+      }
+    },
+    "ai_assistant": {
+      "image": "ghcr.io/yarsalam/ai-packs/matching-pack-ai-assistant:${IMAGE_TAG:-latest}",
+      "restart": "unless-stopped",
+      "init": true,
+      "environment": {
+        "REDIS_URL": "redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in the private env file}@redis:6379/0",
+        "TRANSFORMERS_OFFLINE": "1",
+        "SENTIMENT_MODEL": "/models/sentiment",
+        "HF_HOME": "/models/huggingface-cache"
+      },
+      "volumes": [
+        "matching_personality_models:/models:ro",
+        "assistant_models:/app/models"
+      ],
+      "depends_on": {
+        "redis": {
+          "condition": "service_healthy"
+        },
+        "model_init": {
+          "condition": "service_completed_successfully"
+        }
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-fsS",
+          "http://127.0.0.1:8022/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "120s"
+      },
+      "networks": {
+        "default": {},
+        "yarsalam_network": {
+          "aliases": [
+            "ai_assistant"
+          ]
+        }
+      }
+    },
+    "ai_support": {
+      "image": "ghcr.io/yarsalam/ai-packs/matching-pack-ai-support:${IMAGE_TAG:-latest}",
+      "restart": "unless-stopped",
+      "init": true,
+      "environment": {
+        "REDIS_URL": "redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in the private env file}@redis:6379/0",
+        "MODEL_PATH": "/models/sentiment",
+        "TRANSFORMERS_OFFLINE": "1",
+        "HF_HOME": "/models/huggingface-cache"
+      },
+      "volumes": [
+        "matching_personality_models:/models:ro"
+      ],
+      "depends_on": {
+        "redis": {
+          "condition": "service_healthy"
+        },
+        "model_init": {
+          "condition": "service_completed_successfully"
+        }
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-fsS",
+          "http://127.0.0.1:8016/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "120s"
+      },
+      "networks": {
+        "default": {},
+        "yarsalam_network": {
+          "aliases": [
+            "ai_support"
+          ]
+        }
+      }
+    },
+    "model_init": {
+      "image": "ghcr.io/yarsalam/ai-packs/matching-pack-model-init:${IMAGE_TAG:-latest}",
+      "restart": "no",
+      "environment": {
+        "HF_HOME": "/models/huggingface-cache",
+        "SENTIMENT_MODEL_ID": "HooshvareLab/bert-fa-base-uncased-sentiment-snappfood",
+        "SENTIMENT_MODEL_REVISION": "${SENTIMENT_MODEL_REVISION:-b6fcfc5}",
+        "EMOTION_MODEL_ID": "aref-j/emotion-classifier-bert-fa-v1",
+        "EMOTION_MODEL_REVISION": "${EMOTION_MODEL_REVISION:-e47c57d}"
+      },
+      "volumes": [
+        "matching_personality_models:/models"
+      ],
+      "networks": [
+        "default"
+      ]
+    },
+    "gateway": {
+      "image": "ghcr.io/yarsalam/ai-packs/matching-pack-gateway:${IMAGE_TAG:-latest}",
+      "restart": "unless-stopped",
+      "init": true,
+      "ports": [
+        "127.0.0.1:9003:8000"
+      ],
+      "environment": {
+        "REDIS_URL": "redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in the private env file}@redis:6379/0",
+        "ADMIN_TOKEN": "${MATCHING_PACK_ADMIN_TOKEN:?Set MATCHING_PACK_ADMIN_TOKEN in the private env file}",
+        "RATE_LIMIT_PER_HOUR": "3000",
+        "ML_SERVICE_URL": "http://ml_service:8000",
+        "EMBEDDED_AI_URL": "http://matching_embedded_ai:8100",
+        "PERSONALITY_URL": "http://personality:8100",
+        "AI_ASSISTANT_URL": "http://ai_assistant:8022",
+        "AI_SUPPORT_URL": "http://ai_support:8016"
+      },
+      "depends_on": {
+        "ml_service": {
+          "condition": "service_healthy"
+        },
+        "matching_embedded_ai": {
+          "condition": "service_healthy"
+        },
+        "personality": {
+          "condition": "service_healthy"
+        },
+        "ai_assistant": {
+          "condition": "service_healthy"
+        },
+        "ai_support": {
+          "condition": "service_healthy"
+        }
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-fsS",
+          "http://127.0.0.1:8000/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "60s"
+      },
+      "networks": {
+        "default": {},
+        "yarsalam_network": {
+          "aliases": [
+            "matching-pack-gateway"
+          ]
+        }
+      }
+    }
+  },
+  "volumes": {
+    "redis_data": {},
+    "matching_ml_models": {},
+    "matching_embedding_models": {},
+    "matching_personality_models": {},
+    "assistant_models": {}
+  },
+  "networks": {
+    "default": {},
+    "yarsalam_network": {
+      "external": true,
+      "name": "yarsalam_network"
+    }
+  }
+}
