@@ -1,0 +1,149 @@
+name: Publish Safety Pack container images
+
+on:
+  workflow_dispatch:
+    inputs:
+      mobapp_ref:
+        description: "Exact commit, branch, or tag from yarsalam/mobApp"
+        required: true
+        default: "93bcb0d9ddf78ed31580d4aa2e3758b6397c1f0b"
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: publish-safety-pack-images
+  cancel-in-progress: false
+
+jobs:
+  build-and-push:
+    name: Build and publish Safety Pack images
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout ai-packs
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Checkout mobApp service source
+        uses: actions/checkout@v4
+        with:
+          repository: yarsalam/mobApp
+          ref: ${{ inputs.mobapp_ref }}
+          path: upstream/mobApp
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install distribution builder dependency
+        run: python -m pip install PyYAML==6.0.2
+
+      - name: Build and validate only Safety Pack distribution
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          from scripts.build_distributions import PACKS, build_one
+          from scripts.validate_distributions import validate_pack
+
+          pack_name = "safety-pack"
+          output = Path("dist")
+          output.mkdir(exist_ok=True)
+          built = build_one(
+              pack_name,
+              PACKS[pack_name],
+              Path("upstream/mobApp").resolve(),
+              output.resolve(),
+          )
+          result = validate_pack(output.resolve(), pack_name)
+          print({"built": str(built), "validation": result})
+          PY
+
+      - name: Validate committed runtime Compose file
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose \
+            --env-file dist/safety-pack/.env.example \
+            -f deploy/compose/safety-pack.yaml \
+            config --quiet
+          python - <<'PY'
+          import yaml
+          from scripts.build_distributions import PACKS
+
+          compose = yaml.safe_load(open("deploy/compose/safety-pack.yaml", encoding="utf-8"))
+          expected = set(PACKS["safety-pack"]["services"]) | {"redis", "gateway"}
+          actual = set(compose["services"])
+          if actual != expected:
+              raise SystemExit(f"Compose services mismatch: expected={sorted(expected)}, actual={sorted(actual)}")
+          for service in expected - {"redis"}:
+              image = compose["services"][service].get("image", "")
+              if not image.startswith("ghcr.io/yarsalam/ai-packs/safety-pack-"):
+                  raise SystemExit(f"Unexpected image reference for {service}: {image}")
+          print("Runtime Compose validation passed.")
+          PY
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push service images one by one
+        shell: bash
+        env:
+          IMAGE_OWNER: yarsalam
+          IMAGE_REPOSITORY: ai-packs
+          IMAGE_TAG: sha-${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          services=(
+            safety_embedded_ai
+            ai_moderation
+            ai_verification
+            ai_image
+            gateway
+          )
+
+          for service in "${services[@]}"; do
+            if [[ "$service" == "gateway" ]]; then
+              context="dist/safety-pack/gateway"
+              image_component="gateway"
+            else
+              context="dist/safety-pack/services/$service"
+              image_component="${service//_/-}"
+            fi
+
+            image="ghcr.io/$IMAGE_OWNER/$IMAGE_REPOSITORY/safety-pack-$image_component"
+
+            echo "===== BUILD AND PUSH $service ====="
+            docker buildx build \
+              --platform linux/amd64 \
+              --file "$context/Dockerfile" \
+              --label "org.opencontainers.image.source=https://github.com/yarsalam/ai-packs" \
+              --tag "$image:$IMAGE_TAG" \
+              --tag "$image:latest" \
+              --cache-from "type=gha,scope=safety-$service" \
+              --cache-to "type=gha,mode=max,scope=safety-$service" \
+              --push \
+              "$context"
+
+            echo "Published $image:$IMAGE_TAG"
+          done
+
+      - name: Print deployment image tag
+        run: |
+          echo "Pack: safety-pack"
+          echo "Image tag: sha-${GITHUB_SHA:0:12}"
+          echo "Runtime Compose: deploy/compose/safety-pack.yaml"
