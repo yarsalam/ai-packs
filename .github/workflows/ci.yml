@@ -31,3 +31,71 @@ jobs:
         env:
           GATEWAY_MODULE_PATH: ${{ matrix.gateway }}/main.py
         run: python -m pytest -q tests/test_gateway_contract.py
+
+  matching-assistant-runtime-image:
+    name: Build and import-check only Matching ai_assistant
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout ai-packs PR source
+        uses: actions/checkout@v4
+
+      - name: Checkout pinned mobApp source
+        uses: actions/checkout@v4
+        with:
+          repository: yarsalam/mobApp
+          ref: 93bcb0d9ddf78ed31580d4aa2e3758b6397c1f0b
+          path: upstream/mobApp
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install distribution validation dependency
+        run: python -m pip install PyYAML==6.0.2
+
+      - name: Build and validate Matching distribution; require pandas
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          from scripts.build_distributions import PACKS, SERVICE, build_one
+          from scripts.validate_distributions import validate_pack
+
+          if "pandas==2.2.3" not in SERVICE["ai_assistant"]["requirements"]:
+              raise SystemExit("ai_assistant pandas pin is missing")
+          output = Path("dist").resolve()
+          output.mkdir(parents=True, exist_ok=True)
+          built = build_one("matching-pack", PACKS["matching-pack"], Path("upstream/mobApp").resolve(), output)
+          result = validate_pack(output, "matching-pack")
+          req = (built / "services/ai_assistant/requirements.txt").read_text(encoding="utf-8").splitlines()
+          if "pandas==2.2.3" not in req:
+              raise SystemExit("generated ai_assistant requirements do not contain pandas==2.2.3")
+          print({"distribution": str(built), "validation": result})
+          PY
+
+      - name: Validate image-only Compose and single-service override
+        run: |
+          docker compose \
+            --env-file deploy/env/matching-pack.env.example \
+            -f deploy/compose/matching-pack.json \
+            -f deploy/compose/matching-ai-assistant-override.yaml \
+            config --quiet
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build only ai_assistant image for validation
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --file dist/matching-pack/services/ai_assistant/Dockerfile \
+            --tag ai-assistant-runtime-check:ci \
+            --load \
+            dist/matching-pack/services/ai_assistant
+
+      - name: Verify pandas and application imports inside image
+        run: |
+          docker run --rm --entrypoint python ai-assistant-runtime-check:ci -c \
+            "import pandas; import app; from core.behavior import analyze_behavior; print('ai_assistant imports OK; pandas=' + pandas.__version__)"
