@@ -1,0 +1,216 @@
+name: Validate and publish remaining AI Pack images
+
+on:
+  pull_request:
+    branches: [main, fix/commercial-readiness-baseline]
+    paths:
+      - ".github/workflows/publish-other-ai-packs.yml"
+      - "deploy/compose/**"
+      - "deploy/env/**"
+      - "scripts/**"
+      - "seo-pack/**"
+      - "revenue-pack/**"
+      - "matching-pack/**"
+  workflow_dispatch:
+    inputs:
+      pack_name:
+        description: "Pack to publish to GHCR"
+        required: true
+        default: "seo-pack"
+        type: choice
+        options:
+          - seo-pack
+          - revenue-pack
+          - matching-pack
+          - all
+      mobapp_ref:
+        description: "Exact yarsalam/mobApp commit, branch, or tag"
+        required: true
+        default: "93bcb0d9ddf78ed31580d4aa2e3758b6397c1f0b"
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: publish-other-ai-packs
+  cancel-in-progress: false
+
+jobs:
+  build-and-validate:
+    name: Build and validate SEO, Revenue, and Matching images
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - name: Checkout ai-packs
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Checkout mobApp source
+        uses: actions/checkout@v4
+        with:
+          repository: yarsalam/mobApp
+          ref: ${{ inputs.mobapp_ref || '93bcb0d9ddf78ed31580d4aa2e3758b6397c1f0b' }}
+          path: upstream/mobApp
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build validation dependency
+        run: python -m pip install PyYAML==6.0.2
+
+      - name: Build selected standalone distributions and validate routes
+        id: packs
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SELECTED_PACK: ${{ inputs.pack_name || 'all' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from scripts.build_distributions import PACKS, build_one
+          from scripts.validate_distributions import validate_pack
+
+          if os.environ["EVENT_NAME"] == "pull_request":
+              selected = ["seo-pack", "revenue-pack", "matching-pack"]
+          elif os.environ["SELECTED_PACK"] == "all":
+              selected = ["seo-pack", "revenue-pack", "matching-pack"]
+          else:
+              selected = [os.environ["SELECTED_PACK"]]
+
+          output = Path("dist")
+          output.mkdir(exist_ok=True)
+          for pack in selected:
+              if pack not in PACKS or pack == "safety-pack":
+                  raise SystemExit(f"Unsupported selected pack: {pack}")
+              built = build_one(pack, PACKS[pack], Path("upstream/mobApp").resolve(), output.resolve())
+              result = validate_pack(output.resolve(), pack)
+              print({"built": str(built), "validation": result})
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output_file:
+              output_file.write("packs=" + " ".join(selected) + "\n")
+          PY
+          python scripts/validate_api_contracts.py --mobapp-root upstream/mobApp
+
+      - name: Validate image-only Compose files
+        env:
+          PACK_LIST: ${{ steps.packs.outputs.packs }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for pack in $PACK_LIST; do
+            compose="deploy/compose/$pack.json"
+            [[ -f "$compose" ]] || { echo "Missing $compose"; exit 1; }
+            docker compose --env-file "dist/$pack/.env.example" -f "$compose" config --quiet
+            PACK_NAME="$pack" COMPOSE_FILE="$compose" python - <<'PY'
+          import os
+          import yaml
+          from scripts.build_distributions import PACKS
+
+          pack = os.environ["PACK_NAME"]
+          compose = yaml.safe_load(open(os.environ["COMPOSE_FILE"], encoding="utf-8"))
+          expected = set(PACKS[pack]["services"]) | {"redis", "gateway"}
+          if PACKS[pack].get("model_init"):
+              expected.add("model_init")
+          actual = set(compose.get("services", {}))
+          if actual != expected:
+              raise SystemExit(f"{pack}: services mismatch expected={sorted(expected)} actual={sorted(actual)}")
+          for service, spec in compose["services"].items():
+              if service == "redis":
+                  continue
+              if "build" in spec or not str(spec.get("image", "")).startswith("ghcr.io/yarsalam/ai-packs/"):
+                  raise SystemExit(f"{pack}/{service}: expected image-only GHCR service")
+          if compose.get("networks", {}).get("yarsalam_network", {}).get("external") is not True:
+              raise SystemExit(f"{pack}: existing yarsalam_network must be external")
+          print(f"{pack}: image-only Compose validated")
+          PY
+          done
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry for manual publication
+        if: github.event_name == 'workflow_dispatch'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build each service image sequentially; push only on manual dispatch
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PACK_LIST: ${{ steps.packs.outputs.packs }}
+          IMAGE_TAG: sha-${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for pack in $PACK_LIST; do
+            echo "===== PACK: $pack ====="
+            services=$(PACK_NAME="$pack" python - <<'PY'
+          import os
+          from scripts.build_distributions import PACKS
+          pack = PACKS[os.environ["PACK_NAME"]]
+          result = list(pack["services"])
+          if pack.get("model_init"):
+              result.append("model_init")
+          result.append("gateway")
+          print(" ".join(result))
+          PY
+          )
+
+            for service in $services; do
+              if [[ "$service" == "gateway" ]]; then
+                context="dist/$pack/gateway"
+                component="gateway"
+              elif [[ "$service" == "model_init" ]]; then
+                context="dist/$pack/model-init"
+                component="model-init"
+              else
+                context="dist/$pack/services/$service"
+                component="${service//_/-}"
+              fi
+
+              image="ghcr.io/yarsalam/ai-packs/$pack-$component"
+              echo "===== BUILD $pack / $service ====="
+
+              if [[ "$EVENT_NAME" == "pull_request" ]]; then
+                check_image="ai-packs-check:$pack-$component"
+                docker buildx build \
+                  --platform linux/amd64 \
+                  --file "$context/Dockerfile" \
+                  --label "org.opencontainers.image.source=https://github.com/yarsalam/ai-packs" \
+                  --tag "$check_image" \
+                  --cache-from "type=gha,scope=$pack-$service" \
+                  --cache-to "type=gha,mode=max,scope=$pack-$service" \
+                  --load \
+                  "$context"
+                docker image rm "$check_image" >/dev/null 2>&1 || true
+                echo "Built for PR validation: $pack / $service"
+              else
+                docker buildx build \
+                  --platform linux/amd64 \
+                  --file "$context/Dockerfile" \
+                  --label "org.opencontainers.image.source=https://github.com/yarsalam/ai-packs" \
+                  --tag "$image:$IMAGE_TAG" \
+                  --tag "$image:latest" \
+                  --cache-from "type=gha,scope=$pack-$service" \
+                  --cache-to "type=gha,mode=max,scope=$pack-$service" \
+                  --push \
+                  "$context"
+                echo "Published $image:$IMAGE_TAG"
+              fi
+            done
+          done
+
+      - name: Print publication tag
+        run: |
+          echo "Pack image tag: sha-${GITHUB_SHA}"
+          echo "These are registry images only; no VPS was modified."
