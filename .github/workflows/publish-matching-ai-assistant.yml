@@ -1,0 +1,143 @@
+name: Publish Matching ai_assistant runtime image
+
+on:
+  workflow_dispatch:
+    inputs:
+      mobapp_ref:
+        description: "Exact branch, tag, or commit in yarsalam/mobApp"
+        required: true
+        default: "fix/ai-pack-commercial-readiness"
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: publish-matching-ai-assistant
+  cancel-in-progress: false
+
+jobs:
+  build-and-publish:
+    name: Build and publish only ai_assistant
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout ai-packs builder
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Checkout mobApp runtime source
+        id: mobapp
+        uses: actions/checkout@v4
+        with:
+          repository: yarsalam/mobApp
+          ref: ${{ inputs.mobapp_ref }}
+          path: upstream/mobApp
+
+      - name: Record exact upstream revision
+        id: upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA="$(git -C upstream/mobApp rev-parse HEAD)"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "MobApp source revision: $SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install distribution validation dependency
+        run: python -m pip install PyYAML==6.0.2
+
+      - name: Build and validate Matching distribution; require pandas
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          from scripts.build_distributions import PACKS, SERVICE, build_one
+          from scripts.validate_distributions import validate_pack
+
+          spec = SERVICE["ai_assistant"]
+          if "pandas==2.2.3" not in spec["requirements"]:
+              raise SystemExit("ai_assistant builder requirements do not pin pandas==2.2.3")
+
+          output = Path("dist").resolve()
+          output.mkdir(parents=True, exist_ok=True)
+          built = build_one(
+              "matching-pack",
+              PACKS["matching-pack"],
+              Path("upstream/mobApp").resolve(),
+              output,
+          )
+          result = validate_pack(output, "matching-pack")
+          requirements = (built / "services/ai_assistant/requirements.txt").read_text(encoding="utf-8")
+          if "pandas==2.2.3" not in requirements.splitlines():
+              raise SystemExit("Generated ai_assistant requirements.txt is missing pandas==2.2.3")
+
+          print({"distribution": str(built), "validation": result})
+          print("ai_assistant pandas dependency: verified")
+          PY
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build only the ai_assistant image
+        id: image
+        shell: bash
+        env:
+          AI_PACKS_SHA: ${{ github.sha }}
+          MOBAPP_SHA: ${{ steps.upstream.outputs.sha }}
+        run: |
+          set -euo pipefail
+          MOBAPP_SHORT="${MOBAPP_SHA:0:12}"
+          IMAGE="ghcr.io/yarsalam/ai-packs/matching-pack-ai-assistant"
+          TAG="sha-${AI_PACKS_SHA}-mobapp-${MOBAPP_SHORT}"
+
+          docker buildx build \
+            --platform linux/amd64 \
+            --file dist/matching-pack/services/ai_assistant/Dockerfile \
+            --label "org.opencontainers.image.source=https://github.com/yarsalam/ai-packs" \
+            --label "org.opencontainers.image.revision=${MOBAPP_SHA}" \
+            --label "org.opencontainers.image.version=${TAG}" \
+            --tag "${IMAGE}:${TAG}" \
+            --load \
+            dist/matching-pack/services/ai_assistant
+
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "full_ref=${IMAGE}:${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify runtime imports inside the built image
+        env:
+          IMAGE_REF: ${{ steps.image.outputs.full_ref }}
+        run: |
+          set -euo pipefail
+          docker run --rm --entrypoint python "$IMAGE_REF" -c \
+            "import pandas; import app; from core.behavior import analyze_behavior; print('ai_assistant imports OK; pandas=' + pandas.__version__)"
+
+      - name: Publish immutable image tag
+        env:
+          IMAGE_REF: ${{ steps.image.outputs.full_ref }}
+        run: docker push "$IMAGE_REF"
+
+      - name: Print deployment reference
+        env:
+          IMAGE_REF: ${{ steps.image.outputs.full_ref }}
+          MOBAPP_SHA: ${{ steps.upstream.outputs.sha }}
+        run: |
+          echo "Published image: $IMAGE_REF"
+          echo "MobApp source: $MOBAPP_SHA"
+          echo "Only ai_assistant was built and published."
+          echo "No VPS resources were changed."
