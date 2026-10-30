@@ -53,6 +53,15 @@ jobs:
       - name: Install distribution validation dependency
         run: python -m pip install PyYAML==6.0.2
 
+      - name: Validate Matching runtime Compose override
+        run: |
+          set -euo pipefail
+          docker compose \
+            --env-file deploy/env/matching-pack.env.example \
+            -f deploy/compose/matching-pack.json \
+            -f deploy/compose/matching-ai-assistant-override.yaml \
+            config --quiet
+
       - name: Build and validate Matching distribution; require pandas
         shell: bash
         run: |
