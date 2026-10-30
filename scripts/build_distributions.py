@@ -131,7 +131,8 @@ SERVICE: dict[str, dict[str, Any]] = {
     },
     "ai_assistant": {
         "source": "ai_assistant", "port": 8022, "entrypoint": "app:app",
-        "requirements": CORE + TORCH_CPU,
+        # core/behavior.py constructs pandas.DataFrame for event analytics.
+        "requirements": CORE + TORCH_CPU + ["pandas==2.2.3"],
         "env": {"REDIS_URL": REDIS_URL, "TRANSFORMERS_OFFLINE": "1", "SENTIMENT_MODEL": "/models/sentiment", "HF_HOME": "/models/huggingface-cache"},
         "volumes": {"matching_personality_models": "/models", "assistant_models": "/app/models"}, "depends": ["redis", "model_init"],
     },
