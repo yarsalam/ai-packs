@@ -1,5 +1,11 @@
 name: yarsalam-safety-pack
 
+networks:
+  default: {}
+  yarsalam_network:
+    external: true
+    name: yarsalam_network
+
 services:
   redis:
     image: redis:7.4-alpine
@@ -15,11 +21,12 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD-SHELL", 'redis-cli --no-auth-warning -a "$$REDIS_PASSWORD" ping | grep -q PONG']
+      test: ["CMD-SHELL", 'redis-cli --no-auth-warning -a "$REDIS_PASSWORD" ping | grep -q PONG']
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 5s
+    networks: [default]
 
   safety_embedded_ai:
     image: ghcr.io/yarsalam/ai-packs/safety-pack-safety-embedded-ai:${IMAGE_TAG:-latest}
@@ -57,6 +64,10 @@ services:
       timeout: 5s
       retries: 3
       start_period: 120s
+    networks:
+      default: {}
+      yarsalam_network:
+        aliases: [ai_moderation]
 
   ai_verification:
     image: ghcr.io/yarsalam/ai-packs/safety-pack-ai-verification:${IMAGE_TAG:-latest}
@@ -73,6 +84,10 @@ services:
       timeout: 5s
       retries: 3
       start_period: 120s
+    networks:
+      default: {}
+      yarsalam_network:
+        aliases: [ai_verification]
 
   ai_image:
     image: ghcr.io/yarsalam/ai-packs/safety-pack-ai-image:${IMAGE_TAG:-latest}
@@ -93,6 +108,10 @@ services:
       timeout: 5s
       retries: 3
       start_period: 120s
+    networks:
+      default: {}
+      yarsalam_network:
+        aliases: [ai_image]
 
   gateway:
     image: ghcr.io/yarsalam/ai-packs/safety-pack-gateway:${IMAGE_TAG:-latest}
@@ -123,6 +142,10 @@ services:
       timeout: 5s
       retries: 3
       start_period: 60s
+    networks:
+      default: {}
+      yarsalam_network:
+        aliases: [safety-pack-gateway]
 
 volumes:
   redis_data:
