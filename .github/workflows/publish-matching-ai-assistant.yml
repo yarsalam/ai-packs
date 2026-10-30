@@ -6,7 +6,7 @@ on:
       mobapp_ref:
         description: "Exact branch, tag, or commit in yarsalam/mobApp"
         required: true
-        default: "fix/ai-pack-commercial-readiness"
+        default: "93bcb0d9ddf78ed31580d4aa2e3758b6397c1f0b"
         type: string
 
 permissions:
