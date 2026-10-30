@@ -65,7 +65,7 @@ Image معیوب قبلی:
 کارکرد:
 - فقط دستی با workflow_dispatch اجرا می‌شود.
 - مخزن ai-packs و ref دقیق mobApp را checkout می‌کند.
-- توزیع Matching را در محیط GitHub Actions می‌سازد و validate می‌کند. `build_distributions.py` فایل‌ها/پوشه‌های test، docs، cache، env، secret و Git metadata را از هر service context کنار می‌گذارد و validator این موارد را رد می‌کند.
+- توزیع Matching را در محیط GitHub Actions می‌سازد و validate می‌کند. `build_distributions.py` فایل‌ها/پوشه‌های test، docs، cache، env، secret و Git metadata را از تمام Python service و Gateway contextها کنار می‌گذارد و validator این موارد را رد می‌کند.
 - وجود `pandas==2.2.3` را هم در mapping builder و هم requirements تولیدشده بررسی می‌کند.
 - فقط Image سرویس `ai_assistant` را Build می‌کند.
 - داخل Image، `import pandas`, `import app` و import تابع `analyze_behavior` را بررسی می‌کند.
