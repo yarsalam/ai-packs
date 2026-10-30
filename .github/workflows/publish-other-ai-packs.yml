@@ -1,0 +1,37 @@
+name: Validate and publish remaining AI Pack images
+
+on:
+  workflow_dispatch:
+    inputs:
+      pack_name:
+        description: "Pack to publish to GHCR"
+        required: true
+        default: "seo-pack"
+        type: choice
+        options:
+          - seo-pack
+          - revenue-pack
+          - matching-pack
+          - all
+      mobapp_ref:
+        description: "Exact yarsalam/mobApp commit, branch, or tag"
+        required: true
+        default: "93bcb0d9ddf78ed31580d4aa2e3758b6397c1f0b"
+        type: string
+
+# Registration-only workflow on main.
+# To build and publish images, select feat/safety-ghcr-deployment
+# in the Actions branch selector after this file reaches the default branch.
+permissions:
+  contents: read
+
+jobs:
+  registration_notice:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain the release branch
+        run: |
+          echo "This is the default-branch workflow registration stub."
+          echo "For the validated SEO, Revenue and Matching publisher, select branch:"
+          echo "feat/safety-ghcr-deployment"
+          echo "No images are built or published by this stub."
