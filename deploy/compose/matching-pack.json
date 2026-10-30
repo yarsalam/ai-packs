@@ -148,7 +148,8 @@
         "REDIS_URL": "redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in the private env file}@redis:6379/0",
         "TRANSFORMERS_OFFLINE": "1",
         "SENTIMENT_MODEL": "/models/sentiment",
-        "HF_HOME": "/models/huggingface-cache"
+        "HF_HOME": "/models/huggingface-cache",
+        "EMBEDDING_SERVICE_URL": "http://matching_embedded_ai:8100"
       },
       "volumes": [
         "matching_personality_models:/models:ro",
