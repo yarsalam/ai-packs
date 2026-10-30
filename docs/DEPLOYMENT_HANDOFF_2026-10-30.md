@@ -57,14 +57,14 @@ Image معیوب قبلی:
 کارکرد:
 - فقط دستی با workflow_dispatch اجرا می‌شود.
 - مخزن ai-packs و ref دقیق mobApp را checkout می‌کند.
-- توزیع Matching را در محیط GitHub Actions می‌سازد و validate می‌کند.
+- توزیع Matching را در محیط GitHub Actions می‌سازد و validate می‌کند. `build_distributions.py` فایل‌ها/پوشه‌های test، docs، cache، env، secret و Git metadata را از هر service context کنار می‌گذارد و validator این موارد را رد می‌کند.
 - وجود `pandas==2.2.3` را هم در mapping builder و هم requirements تولیدشده بررسی می‌کند.
 - فقط Image سرویس `ai_assistant` را Build می‌کند.
 - داخل Image، `import pandas`, `import app` و import تابع `analyze_behavior` را بررسی می‌کند.
 - فقط همان Image را با tag immutable شامل SHA مخزن ai-packs و SHA مخزن mobApp در GHCR منتشر می‌کند.
 - هیچ سرویس یا فایلی روی VPS را تغییر نمی‌دهد.
 
-ورودی `mobapp_ref` پیش‌فرض `fix/ai-pack-commercial-readiness` است. هنگام اجرای دستی باید SHA کامل checkout شده از خروجی Workflow ثبت شود؛ برای قابلیت بازتولید، بهتر است ورودی Workflow با commit SHA ثابت شود، نه branch متغیر.
+ورودی `mobapp_ref` اکنون روی commit ثابت `93bcb0d9ddf78ed31580d4aa2e3758b6397c1f0b` pin شده است؛ همان base commit که در مقایسهٔ شاخهٔ `fix/ai-pack-commercial-readiness` با main تأیید شد. Workflow SHA دقیق checkoutشده را نیز در خروجی چاپ می‌کند.
 
 ### Compose برای جایگزینی محدود image
 
@@ -95,7 +95,7 @@ docker compose --env-file "$ENV_FILE" -p yarsalam-matching-pack \
 - PR #1: `Harden AI Pack licensing and add commercialization audit` — باز و Draft؛ پایهٔ commercialization/readiness.
 - PR #2: `Add GHCR image deployment workflow for Safety Pack` — باز و Draft؛ شاخهٔ feature شامل workflowها و Composeهای image-only برای همهٔ Packهاست.
 - PR #3: ثبت workflow_dispatch در main — بسته شده/ادغام شده، اما workflowهای main فقط registration stub هستند؛ برای Build/Publish واقعی باید شاخهٔ feature انتخاب شود.
-- اصلاح محدود ai_assistant روی شاخهٔ اختصاصی این سند انجام شده و PR آن باید به `feat/safety-ghcr-deployment` هدف‌گذاری شود؛ تا زمان بررسی، merge یا publish دستی انجام نشود.
+- اصلاح محدود ai_assistant روی شاخهٔ اختصاصی این سند انجام شده و PR آن باید به `feat/safety-ghcr-deployment` هدف‌گذاری شود. CI موجود در شاخهٔ feature نیز Build/Import-check فقط ai_assistant را انجام می‌دهد. چون publisher در main هنوز به‌صورت registration stub ثبت نشده، یک PR جداگانه برای ثبت dispatch در main لازم است. تا زمان merge و بررسی، publish دستی انجام نشود.
 
 ### mobApp
 - PR #4: runtime-only Backend image و GH Actions؛ باز.
@@ -116,7 +116,7 @@ docker compose --env-file "$ENV_FILE" -p yarsalam-matching-pack \
 
 ## کارهای باز به ترتیب
 
-1. بررسی CI مربوط به PR جدید ai_assistant؛ اصلاح خطاهای احتمالی Build/import تا سبز شدن.
+1. PR محدود ai_assistant را به `feat/safety-ghcr-deployment` باز کن و CI Build/Import-check آن را سبز کن. فایل publisher فقط دستی و فقط برای ai_assistant publish می‌کند.
 2. PR اصلاح ai_assistant را review کن؛ بعد از تأیید، Workflow دستی را با mobApp commit SHA ثابت اجرا کن.
 3. صحت GHCR package visibility/authentication را از VPS بررسی کن؛ در صورت نیاز به ارتباط خارجی از VPN استفاده شود. تا پیش از انتشار، روی VPS چیزی تغییر نده.
 4. پس از انتشار موفق و تأیید کاربر، فقط image مربوط به ai_assistant را با override و `--no-deps` جایگزین کن.
