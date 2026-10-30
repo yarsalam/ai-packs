@@ -13,6 +13,18 @@ from typing import Any
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+
+# Service Build Contexts contain runtime code only. Never bake repository metadata,
+# tests, docs, notebooks, local environments, caches, logs, or secrets into images.
+RUNTIME_IGNORES = shutil.ignore_patterns(
+    "__pycache__", "*.pyc", "*.pyo", "*.pyd",
+    ".git", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".cache",
+    ".venv", "venv", "build", "dist", "coverage", ".coverage",
+    "tests", "test", "docs",
+    "*.md", "*.rst", "*.ipynb", "*.log",
+    ".DS_Store", "*.swp", "*.tmp", "*.bak",
+    ".env", ".env.*", "*.pem", "*.key",
+)
 PYTHON_BASE = "python:3.11-slim"
 DOLLAR = "$"
 
@@ -427,7 +439,7 @@ def build_one(pack_name: str, pack: dict[str, Any], upstream: Path, output: Path
         if not source.is_dir():
             raise FileNotFoundError(f"Missing upstream service source: {source}")
         target = dist / "services" / service_name
-        shutil.copytree(source, target)
+        shutil.copytree(source, target, ignore=RUNTIME_IGNORES)
         requirements = list(dict.fromkeys(spec["requirements"]))
         (target / "requirements.txt").write_text("\n".join(requirements) + "\n", encoding="utf-8")
         (target / "Dockerfile").write_text(dockerfile(spec), encoding="utf-8")
