@@ -20,8 +20,8 @@ RUNTIME_IGNORES = shutil.ignore_patterns(
     "__pycache__", "*.pyc", "*.pyo", "*.pyd",
     ".git", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".cache",
     ".venv", "venv", "build", "dist", "coverage", ".coverage",
-    "tests", "test", "docs",
-    "*.md", "*.rst", "*.ipynb", "*.log",
+    "tests", "test", "test_*.py", "*_test.py", "docs",
+    "*.md", "*.rst", "*.ipynb", "*.log", ".gitignore",
     ".DS_Store", "*.swp", "*.tmp", "*.bak",
     ".env", ".env.*", "*.pem", "*.key",
 )
