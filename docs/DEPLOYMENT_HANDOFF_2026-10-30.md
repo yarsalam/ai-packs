@@ -137,30 +137,23 @@ docker compose --env-file "$ENV_FILE" -p yarsalam-matching-pack \
 - برای هیچ‌یک از این سه PR هنوز Image نهایی GHCR منتشر یا روی VPS Deploy نشده است.
 - روی VPS فعلاً فقط باید runtime artifacts، Compose حداقلی و env خصوصی باقی بمانند؛ سرویس‌ها و داده‌های موجود قبل از هر replacement با docker inspect بررسی شوند.
 
-## وضعیت PRهای مرتبط
+## وضعیت فعلی Pull Requestها
 
-### ai-packs
-- PR #1: `Harden AI Pack licensing and add commercialization audit` — باز و Draft؛ پایهٔ commercialization/readiness.
-- PR #2: `Add GHCR image deployment workflow for Safety Pack` — باز و Draft؛ شاخهٔ feature شامل workflowها و Composeهای image-only برای همهٔ Packهاست.
-- PR #3: ثبت workflow_dispatch در main — بسته شده/ادغام شده، اما workflowهای main فقط registration stub هستند؛ برای Build/Publish واقعی باید شاخهٔ feature انتخاب شود.
-- اصلاح محدود ai_assistant روی شاخهٔ اختصاصی این سند انجام شده و PR آن باید به `feat/safety-ghcr-deployment` هدف‌گذاری شود. CI موجود در شاخهٔ feature نیز Build/Import-check فقط ai_assistant را انجام می‌دهد. چون publisher در main هنوز به‌صورت registration stub ثبت نشده، یک PR جداگانه برای ثبت dispatch در main لازم است. تا زمان merge و بررسی، publish دستی انجام نشود.
+### مخزن ai-packs
+- PR #4 https://github.com/yarsalam/ai-packs/pull/4: اصلاح `ai_assistant`، آمادهٔ review، باز و هنوز merge نشده؛ base برابر `feat/safety-ghcr-deployment`. CI run #83 (`41119988887`) برای Build فقط Image همین سرویس و Import-test موفق شده است. run #59 (`41119988888`) نیز توزیع‌های چهار Pack و Gatewayها را با موفقیت ساخته است.
+- PR #5 در `main` ادغام شده: `52dcab1f9a876bba5e2dd060917a79296251ffea`. این فقط registration stub است و خودش Image نمی‌سازد یا منتشر نمی‌کند.
+- Image جدید `ai_assistant` هنوز به GHCR Push نشده است.
 
-### mobApp
-- PR #4: runtime-only Backend image و GH Actions؛ باز.
-- PR #5: سخت‌سازی Dockerfile/backend و Recaptcha startup؛ بسته شده.
-- PR #6: سخت‌سازی Python serviceها و تست readiness؛ باز/Draft.
-- PR #7: SEO public URL audit؛ باز.
-- برای Matching source، شاخهٔ `fix/ai-pack-commercial-readiness` در زمان بررسی 24 commit جلوتر از main و بدون عقب‌ماندگی بود. از این شاخه برای Build استفاده شده، اما هنگام اجرای Workflow باید SHA دقیق واقعی ثبت شود.
-- Compose تولیدی اصلی mobApp هنوز از Compose توسعه‌ای ارث می‌برد و سرویس‌های متعدد `build:` دارد؛ باید در PR مستقل به runtime-only Compose حداقلی تبدیل شود، بدون حذف دیتابیس/Redis/Qdrant یا volumeهای موجود.
+### مخزن admin-panel
+- PR #30 ادغام شده: `734ef06b72bdd37899570defe339b4406efc40dc`; اصلاح submit فرم‌ها در کد انجام شده، ولی Production هنوز Deploy نشده.
+- PR #31 https://github.com/yarsalam/admin-panel/pull/31: runtime-only/standalone Image و Compose فقط Image، باز و نیازمند review/merge. CI run #4 (`41120657283`) Build، اجرای کانتینر آزمایشی، HTTP 200 از `/login` و حذف Git metadata/docs از Image را تأیید کرده است. پس از run #4 یک commit کوچک `31989503311b4fab6867464d6ab432da76d87039` اضافه شد که `RiskPanel` را صریحاً Client Component می‌کند؛ CI باید روی این آخرین commit دوباره تأیید شود.
+- PR #32 در `main` ادغام شده: `38d59f2c77630768a3b13849e8fadea39a11790b`. این فقط registration stub است.
+- Image پنل ادمین هنوز به GHCR Push یا روی VPS Deploy نشده است.
 
-### admin-panel
-- PR #30 `fix(auth): restore form submission in production admin auth` ادغام شده است.
-- Base branch: `feat/production-deployment-memory`
-- Merge commit: `734ef06b72bdd37899570defe339b4406efc40dc`
-- فقط سه فرم login/register/set-password صریحاً `type="submit"` گرفتند.
-- PR #29 روی base متفاوت بود و نباید برای انتشار production انتخاب شود.
-- Dockerfile production پنل ادمین هنوز با `COPY . .` سورس Monorepo را داخل Build می‌برد و Next standalone فعال نشده است. نیاز به pipeline و Image runtime-only مستقل دارد.
-- TypeScript/lint/build محلی قبلی که خطای favicon داشتند، روی branch اشتباه PR #29 اجرا شده بودند؛ آن نتایج را به‌عنوان شکست PR #30 گزارش نکن. نسخهٔ Mergeشده باید جداگانه validate شود.
+### مخزن mobApp
+- PR #8 https://github.com/yarsalam/mobApp/pull/8: Compose runtime-only با فقط سرویس backend، باز و نیازمند review.
+- CI run #4 (`41120765566`): اعتبارسنجی Compose پس از اصلاح env-file موفق شد؛ Build Image موفق بود، اما Trivy به‌دلیل آسیب‌پذیری‌های HIGH/CRITICAL در OS و Node dependencies fail شد. Image به همین علت Push نشد.
+- این مورد پیگیری فرعی است و نباید تمرکز دو مسئلهٔ اصلی (ورود پنل و ai_assistant) را جابه‌جا کند. scan را خاموش نکن و آسیب‌پذیری‌ها را نادیده نگیر.
 
 ## کارهای باز به ترتیب
 
