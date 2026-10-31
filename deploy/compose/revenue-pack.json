@@ -1,0 +1,229 @@
+{
+  "name": "yarsalam-revenue-pack",
+  "services": {
+    "redis": {
+      "image": "redis:7.4-alpine",
+      "restart": "unless-stopped",
+      "command": [
+        "sh",
+        "-ec",
+        "test \"$${#REDIS_PASSWORD}\" -ge 32 || { echo \"REDIS_PASSWORD must be at least 32 characters\" >&2; exit 1; }; exec redis-server --appendonly yes --requirepass \"$${REDIS_PASSWORD}\""
+      ],
+      "environment": {
+        "REDIS_PASSWORD": "${REDIS_PASSWORD:?Set REDIS_PASSWORD in the private env file}"
+      },
+      "volumes": [
+        "redis_data:/data"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD-SHELL",
+          "redis-cli --no-auth-warning -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"
+        ],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 5,
+        "start_period": "5s"
+      },
+      "networks": [
+        "default"
+      ]
+    },
+    "ai_monetization": {
+      "image": "ghcr.io/yarsalam/ai-packs/revenue-pack-ai-monetization:${IMAGE_TAG:-latest}",
+      "restart": "unless-stopped",
+      "init": true,
+      "environment": {
+        "REDIS_URL": "redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in the private env file}@redis:6379/0",
+        "MODEL_PATH": "/app/models",
+        "MODEL_VERSION": "v1"
+      },
+      "volumes": [
+        "monetization_models:/app/models"
+      ],
+      "depends_on": {
+        "redis": {
+          "condition": "service_healthy"
+        }
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-fsS",
+          "http://127.0.0.1:8015/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "120s"
+      },
+      "networks": {
+        "default": {},
+        "yarsalam_network": {
+          "aliases": [
+            "ai_monetization"
+          ]
+        }
+      }
+    },
+    "ai_revenue": {
+      "image": "ghcr.io/yarsalam/ai-packs/revenue-pack-ai-revenue:${IMAGE_TAG:-latest}",
+      "restart": "unless-stopped",
+      "init": true,
+      "environment": {
+        "MODEL_DIR": "/app/models"
+      },
+      "volumes": [
+        "revenue_models:/app/models"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-fsS",
+          "http://127.0.0.1:8000/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "120s"
+      },
+      "networks": {
+        "default": {},
+        "yarsalam_network": {
+          "aliases": [
+            "ai_revenue"
+          ]
+        }
+      }
+    },
+    "ai_uplift": {
+      "image": "ghcr.io/yarsalam/ai-packs/revenue-pack-ai-uplift:${IMAGE_TAG:-latest}",
+      "restart": "unless-stopped",
+      "init": true,
+      "environment": {
+        "UPLIFT_MODEL_PATH": "/app/models/uplift_model.pkl"
+      },
+      "volumes": [
+        "uplift_models:/app/models"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-fsS",
+          "http://127.0.0.1:8031/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "120s"
+      },
+      "networks": {
+        "default": {},
+        "yarsalam_network": {
+          "aliases": [
+            "ai_uplift"
+          ]
+        }
+      }
+    },
+    "ai_feedback": {
+      "image": "ghcr.io/yarsalam/ai-packs/revenue-pack-ai-feedback:${IMAGE_TAG:-latest}",
+      "restart": "unless-stopped",
+      "init": true,
+      "environment": {
+        "MODEL_PATH": "/app/models/conversion_model.pkl"
+      },
+      "volumes": [
+        "feedback_models:/app/models"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-fsS",
+          "http://127.0.0.1:8004/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "120s"
+      },
+      "networks": {
+        "default": {},
+        "yarsalam_network": {
+          "aliases": [
+            "ai_feedback"
+          ]
+        }
+      }
+    },
+    "gateway": {
+      "image": "ghcr.io/yarsalam/ai-packs/revenue-pack-gateway:${IMAGE_TAG:-latest}",
+      "restart": "unless-stopped",
+      "init": true,
+      "ports": [
+        "127.0.0.1:9002:8000"
+      ],
+      "environment": {
+        "REDIS_URL": "redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in the private env file}@redis:6379/0",
+        "ADMIN_TOKEN": "${REVENUE_PACK_ADMIN_TOKEN:?Set REVENUE_PACK_ADMIN_TOKEN in the private env file}",
+        "RATE_LIMIT_PER_HOUR": "2000",
+        "AI_MONETIZATION_URL": "http://ai_monetization:8015",
+        "AI_REVENUE_URL": "http://ai_revenue:8000",
+        "AI_UPLIFT_URL": "http://ai_uplift:8031",
+        "AI_FEEDBACK_URL": "http://ai_feedback:8004"
+      },
+      "depends_on": {
+        "ai_monetization": {
+          "condition": "service_healthy"
+        },
+        "ai_revenue": {
+          "condition": "service_healthy"
+        },
+        "ai_uplift": {
+          "condition": "service_healthy"
+        },
+        "ai_feedback": {
+          "condition": "service_healthy"
+        }
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-fsS",
+          "http://127.0.0.1:8000/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "60s"
+      },
+      "networks": {
+        "default": {},
+        "yarsalam_network": {
+          "aliases": [
+            "revenue-pack-gateway"
+          ]
+        }
+      }
+    }
+  },
+  "volumes": {
+    "redis_data": {},
+    "monetization_models": {},
+    "revenue_models": {},
+    "uplift_models": {},
+    "feedback_models": {}
+  },
+  "networks": {
+    "default": {},
+    "yarsalam_network": {
+      "external": true,
+      "name": "yarsalam_network"
+    }
+  }
+}

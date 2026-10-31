@@ -1,0 +1,154 @@
+name: yarsalam-safety-pack
+
+networks:
+  default: {}
+  yarsalam_network:
+    external: true
+    name: yarsalam_network
+
+services:
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command:
+      - sh
+      - -ec
+      - |
+        test "$${#REDIS_PASSWORD}" -ge 32 || { echo "REDIS_PASSWORD must be at least 32 characters" >&2; exit 1; }
+        exec redis-server --appendonly yes --requirepass "$${REDIS_PASSWORD}"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in the private env file}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", 'redis-cli --no-auth-warning -a "$$REDIS_PASSWORD" ping | grep -q PONG']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks: [default]
+
+  safety_embedded_ai:
+    image: ghcr.io/yarsalam/ai-packs/safety-pack-safety-embedded-ai:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    init: true
+    environment:
+      REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in the private env file}@redis:6379/0
+      MODEL_NAME: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+      MODEL_REVISION: ${EMBEDDING_MODEL_REVISION:-e8f8c211226b894fcb81acc59f3b34ba3efd5f42}
+      HF_HOME: /models/huggingface
+    volumes:
+      - safety_embedding_models:/models
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8100/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+
+  ai_moderation:
+    image: ghcr.io/yarsalam/ai-packs/safety-pack-ai-moderation:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    init: true
+    environment:
+      EMBEDDING_SERVICE_URL: http://safety_embedded_ai:8100
+    depends_on:
+      safety_embedded_ai:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8018/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+    networks:
+      default: {}
+      yarsalam_network:
+        aliases: [ai_moderation]
+
+  ai_verification:
+    image: ghcr.io/yarsalam/ai-packs/safety-pack-ai-verification:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    init: true
+    environment:
+      VERIFICATION_THRESHOLD: "0.4"
+      HOME: /models
+    volumes:
+      - safety_verification_models:/models
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8017/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+    networks:
+      default: {}
+      yarsalam_network:
+        aliases: [ai_verification]
+
+  ai_image:
+    image: ghcr.io/yarsalam/ai-packs/safety-pack-ai-image:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    init: true
+    environment:
+      REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in the private env file}@redis:6379/0
+      HOME: /models
+      MAX_IMAGE_BYTES: "10485760"
+    volumes:
+      - safety_image_models:/models
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8100/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+    networks:
+      default: {}
+      yarsalam_network:
+        aliases: [ai_image]
+
+  gateway:
+    image: ghcr.io/yarsalam/ai-packs/safety-pack-gateway:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    init: true
+    ports:
+      - "127.0.0.1:9001:8000"
+    environment:
+      REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in the private env file}@redis:6379/0
+      ADMIN_TOKEN: ${SAFETY_PACK_ADMIN_TOKEN:?Set SAFETY_PACK_ADMIN_TOKEN in the private env file}
+      RATE_LIMIT_PER_HOUR: "1000"
+      MAX_UPLOAD_BYTES: "10485760"
+      AI_MODERATION_URL: http://ai_moderation:8018
+      AI_VERIFICATION_URL: http://ai_verification:8017
+      AI_IMAGE_URL: http://ai_image:8100
+    depends_on:
+      safety_embedded_ai:
+        condition: service_healthy
+      ai_moderation:
+        condition: service_healthy
+      ai_verification:
+        condition: service_healthy
+      ai_image:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    networks:
+      default: {}
+      yarsalam_network:
+        aliases: [safety-pack-gateway]
+
+volumes:
+  redis_data:
+  safety_embedding_models:
+  safety_verification_models:
+  safety_image_models:
