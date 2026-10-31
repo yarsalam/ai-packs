@@ -13,6 +13,7 @@
 - **این اصلاح هنوز روی VPS منتشر نشده است.** پس مسئلهٔ کاربر در Production تا زمان انتشار Image جدید و تعویض محدود سرویس `admin-web` حل‌شده تلقی نمی‌شود.
 - PR #31: https://github.com/yarsalam/admin-panel/pull/31 — Image نهایی Next.js به شکل standalone/runtime-only، Compose فقط Image و Pipeline انتشار. CI run #4، شناسهٔ `41120657283`، موفق شده: Build Image، اجرای کانتینر آزمایشی و پاسخ HTTP 200 از `/login`، و بررسی نبودن `.git`، `.github` و docs در Image.
 - خطای TypeScript صفحهٔ Safety در Build اول پیدا و با خارج‌کردن `RiskPanel` از فایل route و معتبرکردن props صفحه اصلاح شد. CI موفق مربوط به run #4 است؛ نتایج خطادار قبلی را نتیجهٔ نهایی تلقی نکن.
+- پس از run #4، commit `31989503311b4fab6867464d6ab432da76d87039` با یک تغییر کوچک، `RiskPanel` را صریحاً Client Component کرد؛ اجرای CI روی آخرین head هنوز باید تأیید شود.
 - PR #31 هنوز باید review/merge شود. Image هنوز به GHCR Push نشده و روی VPS Deploy نشده است. پس از تأیید کاربر، فقط `admin-web` با Image tag غیرقابل‌تغییر تعویض شود؛ Backend، DB، Redis، Nginx/proxy و برنامهٔ اصلی دست‌نخورده بمانند.
 - PR #29 مبنای انتشار نیست؛ مبنای درست، شاخهٔ Production و PR #30 ادغام‌شده است.
 
