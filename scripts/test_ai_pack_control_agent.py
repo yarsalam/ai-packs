@@ -57,6 +57,27 @@ class AiPackControlAgentTests(unittest.TestCase):
         self.assertFalse(result["ready"])
         self.assertIn("non-immutable", result["reason"])
 
+
+    def test_configured_pack_without_local_image_is_stopped_not_uninstalled(self) -> None:
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            compose_dir = root / "deploy" / "compose"
+            env_dir = root / "env"
+            compose_dir.mkdir(parents=True)
+            env_dir.mkdir()
+            (compose_dir / "seo-pack.json").write_text("{}")
+            (env_dir / "seo-pack.env").write_text("SEO_PACK_ADMIN_TOKEN=" + "x" * 64)
+            with patch.object(agent, "ROOT", root), \\
+                 patch.object(agent, "ENV_DIR", env_dir), \\
+                 patch.object(agent, "preflight", return_value={"ready": False, "reason": "immutable image missing"}), \\
+                 patch.object(agent, "containers", return_value=[]), \\
+                 patch.object(agent, "run", return_value=type("Result", (), {"returncode": 0, "stdout": ""})()):
+                result = agent.status("seo-pack")
+        self.assertEqual(result["state"], "stopped")
+        self.assertFalse(result["ready_to_start"])
+        self.assertEqual(result["preflight_reason"], "immutable image missing")
+
     def test_preflight_missing_immutable_image_never_pulls(self) -> None:
         image = "ghcr.io/yarsalam/ai-packs/seo-pack-gateway:sha-" + "a" * 40
         with patch.object(agent, "base", return_value=["docker", "compose"]), \
