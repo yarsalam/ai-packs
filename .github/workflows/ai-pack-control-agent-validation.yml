@@ -1,0 +1,37 @@
+name: AI Pack control agent validation
+
+on:
+  pull_request:
+    paths:
+      - "scripts/ai_pack_control_agent.py"
+      - "scripts/install_ai_pack_control_agent.sh"
+      - "scripts/smoke_test_packs.py"
+      - "scripts/test_ai_pack_control_agent.py"
+      - ".github/workflows/ai-pack-control-agent-validation.yml"
+  push:
+    branches:
+      - feat/admin-ai-pack-control-and-progressive-test
+    paths:
+      - "scripts/ai_pack_control_agent.py"
+      - "scripts/install_ai_pack_control_agent.sh"
+      - "scripts/smoke_test_packs.py"
+      - "scripts/test_ai_pack_control_agent.py"
+      - ".github/workflows/ai-pack-control-agent-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile agent and gateway smoke tests
+        run: python -m py_compile scripts/ai_pack_control_agent.py scripts/smoke_test_packs.py
+      - name: Unit-test fixed allowlist and safe Docker operations
+        run: python -m unittest discover -s scripts -p 'test_ai_pack_control_agent.py' -v
+      - name: Validate installer shell syntax
+        run: bash -n scripts/install_ai_pack_control_agent.sh
