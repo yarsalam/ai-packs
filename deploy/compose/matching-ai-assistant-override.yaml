@@ -1,0 +1,3 @@
+services:
+  ai_assistant:
+    image: ghcr.io/yarsalam/ai-packs/matching-pack-ai-assistant:${AI_ASSISTANT_IMAGE:?Set AI_ASSISTANT_IMAGE to the immutable published tag}
