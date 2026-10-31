@@ -149,8 +149,9 @@ def status(pack: str) -> dict[str, Any]:
     c = containers(pack)
     running = sum(x["state"] == "running" for x in c)
     completed = sum(x["state"] == "exited" and x["exit_code"] == 0 for x in c)
+    expected = len(check.get("services", []))
     state = ("stopped" if check.get("ready") else "not_installed") if not c else (
-        "stopped" if not running else "running" if running + completed == len(c) else "partial"
+        "stopped" if not running else "running" if expected > 0 and running + completed >= expected else "partial"
     )
     project = PACKS[pack][0] + "-"
     stats = run(["docker", "stats", "--no-stream", "--format", "{{.Name}}|{{.MemUsage}}"], 30)
@@ -410,7 +411,12 @@ class Handler(BaseHTTPRequestHandler):
 
 def main() -> int:
     if len(TOKEN) < 48: raise SystemExit("AI_PACK_CONTROL_TOKEN must be a random secret of at least 48 characters")
-    if BIND in {"0.0.0.0", "::", "127.0.0.1"}: raise SystemExit("Bind only to the private yarsalam_network gateway IP")
+    gateway = run(["docker", "network", "inspect", "yarsalam_network",
+                   "--format", "{{(index .IPAM.Config 0).Gateway}}"], 20)
+    if gateway.returncode != 0 or gateway.stdout.strip() != BIND:
+        raise SystemExit("AI_PACK_CONTROL_BIND must exactly match the yarsalam_network gateway IP")
+    if BIND in {"0.0.0.0", "::", "127.0.0.1"}:
+        raise SystemExit("Bind only to the private yarsalam_network gateway IP")
     httpd = ThreadingHTTPServer((BIND, PORT), Handler)
     print(f"Yarsalam AI Pack controller listening on private bridge {BIND}:{PORT}", flush=True)
     httpd.serve_forever()
