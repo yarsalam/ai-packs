@@ -23,7 +23,7 @@ services:
       - AI_MODERATION_URL=http://ai_moderation:8018
       - AI_VERIFICATION_URL=http://ai_verification:8017
       - AI_IMAGE_URL=http://ai_image:8100
-      - ADMIN_TOKEN=${SAFETY_PACK_ADMIN_TOKEN:-change-me}
+      - ADMIN_TOKEN=${SAFETY_PACK_ADMIN_TOKEN:?Set SAFETY_PACK_ADMIN_TOKEN to a random secret of at least 32 characters}
       - RATE_LIMIT_PER_HOUR=1000
     depends_on:
       - redis

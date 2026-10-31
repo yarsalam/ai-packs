@@ -27,7 +27,7 @@ services:
       - AI_REVENUE_URL=http://ai_revenue:8000
       - AI_UPLIFT_URL=http://ai_uplift:8031
       - AI_FEEDBACK_URL=http://ai_feedback:8004
-      - ADMIN_TOKEN=${REVENUE_PACK_ADMIN_TOKEN:-change-me}
+      - ADMIN_TOKEN=${REVENUE_PACK_ADMIN_TOKEN:?Set REVENUE_PACK_ADMIN_TOKEN to a random secret of at least 32 characters}
       - RATE_LIMIT_PER_HOUR=2000
     depends_on:
       - redis
