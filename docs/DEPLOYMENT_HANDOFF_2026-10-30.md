@@ -2,6 +2,39 @@
 
 این سند برای ادامهٔ کار در چت جدید است. قبل از هر اقدام، این فایل و لینک‌های ارجاع‌شده را مبنا قرار بده؛ از کاربر نخواه تاریخچه را دوباره توضیح دهد.
 
+## دو مسئلهٔ اصلی و باز پروژه — حتماً در چت بعدی از همین‌جا ادامه بده
+
+این پروژه در حال حاضر دو مسئلهٔ اصلی دارد؛ آن‌ها را با هم قاطی نکن و موضوع سومی را جایگزین اولویت‌ها نکن:
+
+### مسئلهٔ ۱ — دکمهٔ «ورود» پنل مدیریت کار نمی‌کند
+
+- علت فنی پیدا شد: در تغییر `29500931852a0366294397ffdf4e3fcef93e7261` پیش‌فرض `CustomButton` به `type="button"` تغییر کرده بود، در حالی که فرم Login صریحاً `type="submit"` نداشت؛ در نتیجه کلیک فرم را submit نمی‌کرد.
+- اصلاح کد در PR #30 مخزن `yarsalam/admin-panel` ادغام شده است: `734ef06b72bdd37899570defe339b4406efc40dc`. فرم‌های login/register/set-password اکنون صریحاً submit هستند.
+- **این اصلاح هنوز روی VPS منتشر نشده است.** پس مسئلهٔ کاربر در Production تا زمان انتشار Image جدید و تعویض محدود سرویس `admin-web` حل‌شده تلقی نمی‌شود.
+- PR #31: https://github.com/yarsalam/admin-panel/pull/31 — Image نهایی Next.js به شکل standalone/runtime-only، Compose فقط Image و Pipeline انتشار. CI run #4، شناسهٔ `41120657283`، موفق شده: Build Image، اجرای کانتینر آزمایشی و پاسخ HTTP 200 از `/login`، و بررسی نبودن `.git`، `.github` و docs در Image.
+- خطای TypeScript صفحهٔ Safety در Build اول پیدا و با خارج‌کردن `RiskPanel` از فایل route و معتبرکردن props صفحه اصلاح شد. CI موفق مربوط به run #4 است؛ نتایج خطادار قبلی را نتیجهٔ نهایی تلقی نکن.
+- PR #31 هنوز باید review/merge شود. Image هنوز به GHCR Push نشده و روی VPS Deploy نشده است. پس از تأیید کاربر، فقط `admin-web` با Image tag غیرقابل‌تغییر تعویض شود؛ Backend، DB، Redis، Nginx/proxy و برنامهٔ اصلی دست‌نخورده بمانند.
+- PR #29 مبنای انتشار نیست؛ مبنای درست، شاخهٔ Production و PR #30 ادغام‌شده است.
+
+### مسئلهٔ ۲ — سرویس `ai_assistant` در Matching خطا می‌دهد
+
+- Image قبلی با tag `sha-9f114ff40fa4d628c8c0a8fa0f62032b09276d8e` به‌دلیل `ModuleNotFoundError: No module named 'pandas'` از کار می‌افتاد.
+- علت و اصلاح مشخص شده: در requirements Image جدید `pandas==2.2.3` pin شده است.
+- PR #4: https://github.com/yarsalam/ai-packs/pull/4 — اصلاح محدود Image، Build/Import test، Workflow دستی انتشار و Compose override تک‌سرویسی. این PR به شاخهٔ `feat/safety-ghcr-deployment` هدف‌گذاری شده، برای review آماده است و هنوز ادغام نشده.
+- آخرین CI مربوط به اصلاح: run #83، شناسهٔ `41119988887`، موفق؛ فقط Image مربوط به `ai_assistant` ساخته و Importهای `pandas`، `app` و `core.behavior.analyze_behavior` داخل Image آزمایش شده‌اند. چهار تست Gateway licensing contract هم موفق‌اند.
+- Build و validation توزیع‌ها در run #59، شناسهٔ `41119988888`، موفق شده است.
+- **Image جدید هنوز در GHCR منتشر نشده و روی VPS نصب نشده است.** پس خطای Production هنوز تا استقرار واقعی باز است.
+- راه‌حل مورد توافق: انتشار مجدد و جایگزینی **فقط Image مربوط به `ai_assistant`**. نه SEO، نه Safety، نه Revenue و نه چهار سرویس سالم دیگر Matching نباید دوباره Build یا روی VPS تعویض شوند. آن سرویس‌ها را دست‌نخورده حفظ کن.
+- پس از review/merge و اجرای دستی publisher، tag دقیق و immutable خروجی را ثبت کن؛ سپس فقط سرویس `ai_assistant` را با override و `--no-deps` به‌روزرسانی کن.
+
+## سه تصمیم قطعی معماری — در چت بعدی هم تغییر نده
+
+1. سورس، تست‌ها، مستندات و فایل‌های توسعه فقط در GitHub نگهداری می‌شوند.
+2. VPS فقط Imageهای نهایی Runtime، فایل‌های ضروری اجرای Production مانند Compose و تنظیمات، Secrets خصوصی و داده‌های پایدار/volumeهای لازم را نگه می‌دارد.
+3. هیچ Build سورسی روی VPS انجام نمی‌شود؛ Build در GitHub Actions یا محیط خارج از VPS انجام می‌شود و فقط آرتیفکت نهایی (Image) به VPS منتقل یا از Registry دریافت می‌شود.
+
+هر پیشنهاد یا دستور خلاف این سه تصمیم را رد کن. برای تغییر Production، Image immutable استفاده کن و فقط همان سرویس موردنظر را تغییر بده.
+
 ## اصل قطعی استقرار
 
 - سورس، تست، مستندات، Dockerfile، اسکریپت‌های build و فایل‌های توسعه فقط در GitHub نگهداری می‌شوند.
@@ -52,10 +85,10 @@ Image معیوب قبلی:
 
 ### نتیجهٔ CI در 2026-10-30
 
-- PR #4: https://github.com/yarsalam/ai-packs/pull/4 — Draft/open، base=`feat/safety-ghcr-deployment`، head commit=`eb6875f7cab6573c390b7eea402d336e23c8659b`.
-- PR #5: https://github.com/yarsalam/ai-packs/pull/5 — Draft/open، base=`main`؛ فقط ثبت workflow_dispatch روی شاخهٔ پیش‌فرض، بدون Build/Publish.
+- PR #4: https://github.com/yarsalam/ai-packs/pull/4 — Open و Ready for review، base=`feat/safety-ghcr-deployment`، آخرین head ثبت‌شده=`40730df5112ee8140bfd215a7ddb26014f8fa75f`.
+- PR #5: https://github.com/yarsalam/ai-packs/pull/5 — ادغام‌شده در `main` با commit `52dcab1f9a876bba5e2dd060917a79296251ffea`؛ فقط ثبت workflow_dispatch است و خودش Build/Publish نمی‌کند.
 - Workflow run #53، ID `41118292186` — SUCCESS: ساخت چهار توزیع مستقل، Gateway contract checks، Validate ساختار/Compose و Build gateway images. مرحلهٔ افزودن ZIPها به GitHub Release skipped بوده، چون release event اجرا نشده؛ این شکست نیست.
-- Workflow run #77، ID `41118292374` — SUCCESS: چهار Gateway contract test همگی موفق؛ توزیع Matching با فیلتر runtime ساخته و validate شد؛ Compose override معتبر بود؛ فقط Image `ai_assistant` build شد و importهای `pandas`, `app`, `core.behavior.analyze_behavior` در خود Image با موفقیت اجرا شدند.
+- Workflow run #83، ID `41119988887` — SUCCESS: چهار Gateway contract test همگی موفق؛ توزیع Matching با فیلتر runtime ساخته و validate شد؛ Compose override معتبر بود؛ فقط Image `ai_assistant` build شد و importهای `pandas`, `app`, `core.behavior.analyze_behavior` در خود Image با موفقیت اجرا شدند. Run قبلی #77 نیز موفق بود.
 - Image جدید فقط در Runner ساخته و import-tested شده است. در این CI هیچ GHCR push، pull از VPS، restart یا تغییر volume انجام نشد.
 
 ### Workflow اضافه‌شده در این شاخه
@@ -99,8 +132,8 @@ docker compose --env-file "$ENV_FILE" -p yarsalam-matching-pack \
 
 ## PRهای Runtime-only تکمیلی (2026-10-30)
 
-- پنل ادمین: PR #31 https://github.com/yarsalam/admin-panel/pull/31 — Next.js standalone، multi-stage runtime-only image، Docker context filtering و Compose image-only؛ Draft/open، head فعلی `0c5aaebbc789af145e3f2852ed2ed591b907876c` و هنوز CI اجرا نشده. PR #32 https://github.com/yarsalam/admin-panel/pull/32 — ثبت stubهای دستی validation/publish در main؛ Draft/open. فایل env موجود روی سرور `.env` است (نه `.env.production`)، و Compose/راهنمای PR31 با آن هماهنگ شده‌اند.
-- Backend اصلی mobApp: PR #8 https://github.com/yarsalam/mobApp/pull/8 — Compose مستقل با فقط Image سرویس backend، network خارجی موجود و حفظ مسیر public assets با PUBLIC_ASSETS_DIR؛ Draft/open، head فعلی `ce8754ff35bfb7cf02161a3bc62a1d93f4beaa54` و base آن شاخهٔ feat/ci-runtime-backend-image است.
+- پنل ادمین: PR #31 https://github.com/yarsalam/admin-panel/pull/31 — Next.js standalone، multi-stage runtime-only image، Docker context filtering و Compose image-only؛ Open، هنوز نیازمند review/merge؛ CI run #4 با ID `41120657283` موفق است. PR #32 https://github.com/yarsalam/admin-panel/pull/32 — ثبت stubهای دستی validation/publish در `main`، ادغام‌شده با commit `38d59f2c77630768a3b13849e8fadea39a11790b`. فایل env موجود روی سرور `.env` است (نه `.env.production`). Image منتشر یا Deploy نشده؛ مشکل ورود Production همچنان باز است تا تعویض `admin-web`.
+- Backend اصلی mobApp: PR #8 https://github.com/yarsalam/mobApp/pull/8 — Compose مستقل با فقط Image سرویس backend؛ Open. در run #4، اعتبارسنجی Compose پس از اصلاح env-file موفق است؛ Build Image موفق بوده، اما Trivy به‌خاطر آسیب‌پذیری‌های HIGH/CRITICAL در Image متوقف شده و هیچ Image منتشر نشده است. این مورد پیگیری فرعی است و نباید دو مسئلهٔ اصلی بالا را جابه‌جا کند.
 - برای هیچ‌یک از این سه PR هنوز Image نهایی GHCR منتشر یا روی VPS Deploy نشده است.
 - روی VPS فعلاً فقط باید runtime artifacts، Compose حداقلی و env خصوصی باقی بمانند؛ سرویس‌ها و داده‌های موجود قبل از هر replacement با docker inspect بررسی شوند.
 
@@ -131,13 +164,13 @@ docker compose --env-file "$ENV_FILE" -p yarsalam-matching-pack \
 
 ## کارهای باز به ترتیب
 
-1. PR محدود ai_assistant را به `feat/safety-ghcr-deployment` باز کن و CI Build/Import-check آن را سبز کن. فایل publisher فقط دستی و فقط برای ai_assistant publish می‌کند.
-2. PR #4 اصلاح ai_assistant و PR #5 ثبت workflow_dispatch را review کن. بعد از تأیید/merge لازم، در Actions شاخهٔ `fix/matching-ai-assistant-runtime-image` را انتخاب و publisher را با MobApp SHA ثابت اجرا کن. انتظار tag از شکل `sha-<AI_PACKS_SHA>-mobapp-93bcb0d9ddf7` است؛ مقدار کامل را فقط از خروجی Workflow بردار.
-3. صحت GHCR package visibility/authentication را از VPS بررسی کن؛ در صورت نیاز به ارتباط خارجی از VPN استفاده شود. تا پیش از انتشار، روی VPS چیزی تغییر نده.
-4. پس از انتشار موفق و تأیید کاربر، فقط image مربوط به ai_assistant را با override و `--no-deps` جایگزین کن.
-5. سپس برای mobApp و admin-panel، Build خارج از VPS، runtime-only image و Compose image-only را تکمیل کن. هرکدام PR و اعتبارسنجی جدا داشته باشند.
-6. در پایان فایل‌های handoff را با commit SHAها، نتایج CI، image tags/digests و وضعیت دقیق VPS به‌روزرسانی کن.
+1. مسئلهٔ ورود پنل را تا انتها پیگیری کن: PR #31 را review/merge کن، سپس بعد از تأیید کاربر Image ادمین را با publisher دستی و URL واقعی API بساز و منتشر کن؛ فقط `admin-web` را Deploy کن و Login واقعی را روی Production امتحان کن. تا قبل از Deploy، PR #30 را «اصلاح‌شده در کد» بدان، نه «حل‌شده در Production».
+2. PR #4 مربوط به `ai_assistant` را review/merge کن؛ publisher دستی را با MobApp SHA ثابت اجرا کن و tag کامل خروجی را ثبت کن.
+3. فقط پس از تأیید کاربر، Image `ai_assistant` را جایگزین کن؛ به هیچ Image سالم Matching یا SEO/Safety/Revenue دست نزن.
+4. پس از هر انتشار، نتیجهٔ health/log و تست واقعی endpoint را ثبت کن. در چت جدید از کاربر تاریخچه را دوباره نخواه؛ همین سند را بخوان و از اولین اقدام باز ادامه بده.
+5. پیگیری فرعی mobApp backend: آسیب‌پذیری‌های Trivy را رفع کن؛ scan را خاموش یا `--ignore-unfixed` را دور نزن. این کار مجوز Deploy به VPS نیست.
+6. وضعیت نهایی PRها، SHAها، tag/digestهای Image و نتیجهٔ تست Production را در همین سند به‌روز کن.
 
 ## محدودیت عملیات
 
-هیچ‌یک از workflowهای انتشار دستی در این مرحله اجرا نشده‌اند؛ هیچ Image جدیدی در GHCR publish نشده و هیچ سرویس/volume/VPS تغییر داده نشده است. Merge و deployment صرفاً پس از بررسی/تأیید صریح انجام شود.
+در این نقطه Workflowهای اعتبارسنجی Build اجرا شده‌اند، اما Workflowهای انتشار دستی اجرا نشده‌اند؛ هیچ Image جدیدی در GHCR publish نشده و هیچ سرویس/volume/VPS تغییر داده نشده است. PR #5 و PR #32 ادغام شده‌اند؛ PR #4، PR #31 و PR #8 هنوز باز هستند. هرگونه Publish یا Deployment به Production نیازمند تأیید صریح کاربر است.
