@@ -199,5 +199,5 @@ The remaining production work from the two original issues is Admin Web only:
 - Admin Web public route was restored. The existing healthy Admin container was connected to the existing `yarsalam_network` with alias `admin-web`.
 - Proxy-to-web reachability passed; Nginx config test and graceful reload passed; public `https://novertex.ir/login` now returns HTTP 200.
 - No Admin or Proxy container was recreated/restarted; no image was pulled/built; no Matching service, volume or network outside the intended shared-network attachment was changed.
-- Permanent Compose correction is in admin-panel PR #34 (head `5315f5c931cc7762f39be3a7e86b7014ea34a01f`), CI run `41185044552` passed. It remains open awaiting explicit approval/merge.
+- Permanent Compose correction was merged in admin-panel PR #34 at `775ac7533179bf79302db26b4c8ce8b238fa2816` (tested head `3f2768cc703d11b536524026574ffc70bbc48432`). CI run `41188676377` passed. It adds the persistent external `yarsalam_network` and `admin-web` alias to the runtime Compose.
 - The live Matching `ai_assistant` image remains healthy with pandas 2.2.3. No new Matching Image should be built or deployed.
