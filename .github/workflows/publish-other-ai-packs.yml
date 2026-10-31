@@ -28,6 +28,11 @@ on:
         required: true
         default: "93bcb0d9ddf78ed31580d4aa2e3758b6397c1f0b"
         type: string
+      service_name:
+        description: "Build only this service, or all services in the selected pack"
+        required: true
+        default: "all"
+        type: string
 
 permissions:
   contents: read
@@ -73,6 +78,7 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           SELECTED_PACK: ${{ inputs.pack_name || 'all' }}
+          SELECTED_SERVICE: ${{ inputs.service_name || 'all' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -91,9 +97,16 @@ jobs:
 
           output = Path("dist")
           output.mkdir(exist_ok=True)
+          service_filter = os.environ.get("SELECTED_SERVICE", "all")
           for pack in selected:
               if pack not in PACKS or pack == "safety-pack":
                   raise SystemExit(f"Unsupported selected pack: {pack}")
+              pack_services = list(PACKS[pack]["services"])
+              if PACKS[pack].get("model_init"):
+                  pack_services.append("model_init")
+              pack_services.append("gateway")
+              if service_filter != "all" and service_filter not in pack_services:
+                  raise SystemExit(f"Service {service_filter!r} is not part of {pack}: {pack_services}")
               built = build_one(pack, PACKS[pack], Path("upstream/mobApp").resolve(), output.resolve())
               result = validate_pack(output.resolve(), pack)
               print({"built": str(built), "validation": result})
@@ -152,6 +165,7 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           PACK_LIST: ${{ steps.packs.outputs.packs }}
+          SERVICE_FILTER: ${{ inputs.service_name || 'all' }}
           IMAGE_TAG: sha-${{ github.sha }}-mobapp-${{ steps.source.outputs.mobapp_sha }}
         shell: bash
         run: |
@@ -167,6 +181,11 @@ jobs:
           if pack.get("model_init"):
               result.append("model_init")
           result.append("gateway")
+          service_filter = os.environ.get("SERVICE_FILTER", "all")
+          if service_filter != "all":
+              if service_filter not in result:
+                  raise SystemExit(f"Service {service_filter!r} is not part of selected pack")
+              result = [service_filter]
           print(" ".join(result))
           PY
           )
