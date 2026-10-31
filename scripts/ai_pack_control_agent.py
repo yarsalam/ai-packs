@@ -150,7 +150,11 @@ def status(pack: str) -> dict[str, Any]:
     running = sum(x["state"] == "running" for x in c)
     completed = sum(x["state"] == "exited" and x["exit_code"] == 0 for x in c)
     expected = len(check.get("services", []))
-    state = ("stopped" if check.get("ready") else "not_installed") if not c else (
+    configured = (
+        (ROOT / "deploy" / "compose" / PACKS[pack][1]).is_file()
+        and (ENV_DIR / f"{pack}.env").is_file()
+    )
+    state = ("stopped" if configured else "not_installed") if not c else (
         "stopped" if not running else "running" if expected > 0 and running + completed >= expected else "partial"
     )
     project = PACKS[pack][0] + "-"
