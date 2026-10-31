@@ -295,3 +295,12 @@ Implementation is staged in `feat/admin-ai-pack-control-and-progressive-test` (P
 Admin-panel UI/API integration is being implemented separately in `yarsalam/admin-panel` branch `feat/admin-ai-pack-control-center`: superadmin-only controls, 4 Pack cards, per-pack Start/Stop/Test, Progressive Test, Stop All confirmation, live RAM and job polling. A separate backend-only runtime Compose and immutable GHCR publisher are needed because VPS must not build source. The Admin web and backend images must be published and deployed as runtime-only artifacts before the UI becomes visible on Production.
 
 After review/merge and publishing: install the ai-packs host controller and execute the progressive tests once; then deploy only Admin backend and Admin web using their immutable runtime images. Do not change Matching, mobApp databases, Admin DB/Redis, Nginx or any volume except the explicitly allowlisted Pack Compose start/stop actions.
+
+
+## Merge status update — 2026-10-31
+
+- PR #6 `Add restricted Admin AI Pack controls and progressive RAM/function tests` is merged into `feat/safety-ghcr-deployment` at `cd7c2bda98d8ed5101832ce7d166f76863601334`.
+- Final host-controller CI on its PR head `b4ca17dce1e98dcea59ac425a23282cb0cfdf4f3`: runs `41205008319`, `41205008485`, `41205008444` all SUCCESS; the controller-specific suite is run `41204405691` SUCCESS.
+- The merge updated existing PR #2 checks and triggered validation-only builds: Safety and remaining Pack workflows publish only on manual `workflow_dispatch`, not on the current pull_request event. No registry publication was requested by this merge.
+- The controller is still not installed on VPS, no live smoke tests or new RAM measurements have run. These require the operator-run bundle script after the Admin images are published.
+- Exact merged ref for the VPS installer: `cd7c2bda98d8ed5101832ce7d166f76863601334`.
