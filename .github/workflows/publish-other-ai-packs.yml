@@ -236,6 +236,8 @@ jobs:
           done
 
       - name: Print publication tag
+        env:
+          IMAGE_TAG: sha-${{ github.sha }}-mobapp-${{ steps.source.outputs.mobapp_sha }}
         run: |
           echo "Pack image tag: $IMAGE_TAG"
           echo "MobApp source commit: ${{ steps.source.outputs.mobapp_sha }}"
