@@ -277,3 +277,21 @@ User requested an admin-panel control surface to stop AI Packs and test them one
 5. Only after measurements decide whether two or more Packs may remain active concurrently. Do not remove memory safeguards to make every dashboard dot green.
 
 Implementation is not yet merged or installed. The next code change must be a coordinated, reviewed implementation across the host control agent, mobApp admin API, admin-panel UI, and tests/docs; do not add decorative or frontend-only toggles that cannot safely control real Pack state.
+
+
+## Current admin pack-control implementation branch — 2026-10-31
+
+Implementation is staged in `feat/admin-ai-pack-control-and-progressive-test` (PR pending at the time of this entry).
+- Host agent: `scripts/ai_pack_control_agent.py`; installer: `scripts/install_ai_pack_control_agent.sh`.
+- It exposes a fixed allowlist HTTP API only on the exact `yarsalam_network` bridge gateway IP; bearer token minimum 48 chars; operations serialized; audit report JSON saved under `/home/deploy/ai-pack-deploy-logs/control`.
+- Start uses `--no-recreate --pull never --wait`; only existing immutable SHA images are accepted and no Pull/Build is possible. Stop uses Compose `stop` only. No `down`, orphan removal or volume commands exist.
+- Progressive order: Matching, SEO, Revenue, Safety. Already-running Packs are not auto-stopped. A newly-started Pack is stopped only if startup fails or the memory safety reserve/emergency floor is crossed. Safety is skipped when not installed.
+- Existing smoke test suite is reused, including SEO external URL audit + topical similarity, Revenue prediction + model-readiness metadata, Matching embedding + sentiment and Safety Persian moderation. SEO egress failure reports blocked outbound/VPN-dependent path without asserting VPN is the sole cause.
+- Initial policy thresholds: MIN_START=2500 MiB, MIN_RESERVE=1536 MiB, emergency floor=1024 MiB. These are operational guardrails to be calibrated from actual peak RAM results, not evidence of an OOM event.
+- Installer creates host systemd service and private token, updates only `AI_PACK_CONTROL_URL`/`AI_PACK_CONTROL_TOKEN` in the Admin private `.env` after backup, runs a single progressive test, and prints job JSON + final `free`/Docker stats. It does not deploy/restart Admin backend or web.
+- Branch validation CI latest run `41204405691` for head `9a81d3d5559eaa6a0182e02d2b6fcee3a7aed781`: SUCCESS (Python compile, fixed allowlist/safe stop unit tests, installer shell syntax).
+- The agent and install script are committed to GitHub only; no agent/systemd unit has yet been installed on the VPS. No live pack test or new RAM peak measurement has been performed by this assistant.
+
+Admin-panel UI/API integration is being implemented separately in `yarsalam/admin-panel` branch `feat/admin-ai-pack-control-center`: superadmin-only controls, 4 Pack cards, per-pack Start/Stop/Test, Progressive Test, Stop All confirmation, live RAM and job polling. A separate backend-only runtime Compose and immutable GHCR publisher are needed because VPS must not build source. The Admin web and backend images must be published and deployed as runtime-only artifacts before the UI becomes visible on Production.
+
+After review/merge and publishing: install the ai-packs host controller and execute the progressive tests once; then deploy only Admin backend and Admin web using their immutable runtime images. Do not change Matching, mobApp databases, Admin DB/Redis, Nginx or any volume except the explicitly allowlisted Pack Compose start/stop actions.
