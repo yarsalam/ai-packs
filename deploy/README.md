@@ -37,9 +37,28 @@ Before starting any Pack, confirm that yarsalam_network exists on the VPS. Do no
 
 Copy the matching deploy/env/*.env.example to a private VPS path outside the repository (for example /etc/yarsalam/ai-packs/<pack>.env). Generate unique values for REDIS_PASSWORD and that Pack's admin token. Never commit private env files or put license/admin tokens in a frontend.
 
+For Matching, keep `IMAGE_TAG` set to the immutable tag used by the rest of the Pack, and `AI_ASSISTANT_IMAGE` set to the exact immutable tag for the independently published ai_assistant image. Do not change the global `IMAGE_TAG` merely to update ai_assistant.
+
 ## GitHub image publication
 
-The publishing workflow is manual after review/merge. It tags images with both latest and sha-<full-commit>. For repeatable deployment, set IMAGE_TAG to the exact SHA tag in the Pack's private env file. GHCR packages must either be made public for unauthenticated VPS pulls or be pulled using a read-only GitHub Packages credential.
+The general pack publishing workflow is manual after review/merge. It publishes commit-tagged images. For repeatable deployment, use exact immutable tags in the private env file. GHCR packages must either be made public for unauthenticated VPS pulls or be pulled using a read-only GitHub Packages credential.
+
+### Update only Matching ai_assistant
+
+The workflow `.github/workflows/publish-matching-ai-assistant.yml` builds and publishes only `matching-pack-ai-assistant`. It verifies `pandas==2.2.3` in the generated requirements and checks imports inside the built image before publishing. The workflow does not deploy to the VPS.
+
+The runtime-only Compose override `deploy/compose/matching-ai-assistant-override.yaml` changes only the `ai_assistant` image. After the workflow has succeeded and the exact output tag has been reviewed, set `AI_ASSISTANT_IMAGE` in the private Matching env file. Then run from the existing runtime Compose directory (use the actual paths already installed on the VPS):
+
+```bash
+docker compose --env-file "$ENV_FILE" -p yarsalam-matching-pack \
+  -f matching-pack.json -f matching-ai-assistant-override.yaml pull ai_assistant
+
+docker compose --env-file "$ENV_FILE" -p yarsalam-matching-pack \
+  -f matching-pack.json -f matching-ai-assistant-override.yaml \
+  up -d --no-deps ai_assistant
+```
+
+The command is intentionally limited to `ai_assistant`; do not run a project-wide `up`, `down`, or build for this repair. Verify the container health and logs, then test the Matching gateway path. The previous image tag lacked pandas and is known to crash at import.
 
 ## Do not run
 
