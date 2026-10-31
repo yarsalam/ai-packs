@@ -68,3 +68,36 @@ The command is intentionally limited to `ai_assistant`; do not run a project-wid
 - any command that deletes mobApp MySQL, Redis, or Qdrant volumes.
 
 Use each Pack's Compose file with its own env file and project identity. Never run a project-wide down from the mobApp or admin production project to manage an AI Pack.
+
+
+## Admin-panel pack control agent and progressive RAM/function test
+
+`scripts/ai_pack_control_agent.py` is a small host-side runtime control process. It is not mounted into the Admin web/backend containers and no Docker socket is exposed to those containers.
+
+Fixed project allowlist:
+- `matching-pack` → `yarsalam-matching-pack` / `matching-pack.json` / gateway 9003
+- `seo-pack` → `yarsalam-seo-pack` / `seo-pack.json` / gateway 9000
+- `revenue-pack` → `yarsalam-revenue-pack` / `revenue-pack.json` / gateway 9002
+- `safety-pack` → `yarsalam-safety-pack` / `safety-pack.yaml` / gateway 9001
+
+Operations are fixed: GET status/job, start/stop/test one allowlisted Pack, progressive test, and explicit-confirmation Stop All. The process binds only to the exact Docker bridge gateway IP of `yarsalam_network`, requires a 48+ character bearer token, serializes operations, and keeps actor/job reports in a private host directory.
+
+Start behavior:
+- Uses only existing immutable SHA-tagged local GHCR images and `docker compose up -d --no-recreate --pull never --wait`.
+- Never builds or pulls images.
+- Existing healthy containers are not recreated.
+- During progressive tests, the order is Matching → SEO → Revenue → Safety. Not-installed Packs are reported/skipped.
+- Memory is sampled through `/proc/meminfo` during Compose startup and functional tests. Initial guardrails: 2500 MiB before a start, 1536 MiB reserve after start/test, and 1024 MiB emergency floor during a long Compose operation. If a reserve/emergency guard is breached, only the newly-started Pack can be stopped; already-running Packs and mobApp/Admin infrastructure are preserved.
+- Successful Packs are left running to measure cumulative memory. Stop All targets only the four fixed AI Pack Compose projects; it cannot stop mobapp, admin, MySQL, Redis, Qdrant, Nginx or volumes.
+
+Functional tests call the existing `scripts/smoke_test_packs.py`:
+- SEO checks gateway/dependencies, a public URL HTML audit (`https://example.com/`) and topical similarity. The URL audit result is reported as outbound/VPN egress unavailable when it fails; this does not prove VPN is the only possible cause. Enable the intended VPS VPN/outbound route before the SEO test if public URL auditing is expected to work.
+- Revenue calls the promotion prediction endpoint and separately records `model_trained`, `cv_score`, `model_phase`, and `training_samples`. A working endpoint does not imply a trained or commercially validated model.
+- Matching runs embedding and sentiment inference.
+- Safety runs Persian text moderation examples. It is skipped until its images and private env file exist on VPS.
+- Each smoke test creates a temporary test licence and revokes it; never substitute a real user licence/key.
+
+Install on the VPS only after reviewing the PR and verifying the branch CI:
+`bash scripts/install_ai_pack_control_agent.sh` is intentionally not a source build or repo checkout. It installs the two small runtime Python files under `~/.local/lib/yarsalam-ai-pack-control`, creates a private systemd unit and token, updates the existing private Admin `.env` with AI_PACK_CONTROL_URL/TOKEN (with a backup), and starts one progressive test. It does not update/restart the Admin backend/web container; the Admin runtime image/Compose changes are a separate reviewed deployment.
+
+Do not run `down`, `--remove-orphans`, `down -v`, any prune, or project-wide build. Existing `yarsalam_network`, model volumes and DB volumes must be preserved.
