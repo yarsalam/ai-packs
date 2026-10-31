@@ -168,3 +168,27 @@ docker compose --env-file "$ENV_FILE" -p yarsalam-matching-pack \
 ## محدودیت عملیات
 
 در این نقطه Workflowهای اعتبارسنجی Build اجرا شده‌اند، اما Workflowهای انتشار دستی اجرا نشده‌اند؛ هیچ Image جدیدی در GHCR publish نشده و هیچ سرویس/volume/VPS تغییر داده نشده است. PR #5 و PR #32 ادغام شده‌اند؛ PR #4، PR #31 و PR #8 هنوز باز هستند. هرگونه Publish یا Deployment به Production نیازمند تأیید صریح کاربر است.
+
+
+## Production verification follow-up — 2026-10-31
+
+A fresh read-only inspection of the live VPS supersedes the earlier assumption that the old pandas-broken ai_assistant image is still running.
+
+Current live container:
+- Container: `yarsalam-matching-pack-ai_assistant-1`
+- Project/service: `yarsalam-matching-pack/ai_assistant`
+- Image: `ghcr.io/yarsalam/ai-packs/matching-pack-ai-assistant:sha-b76cca762cb850ed8d75303e2613dce8e311dd7e`
+- Image ID: `sha256:f54454ec2cba8c4b8ce9fc8525200c61cd40964095d082daa6000d4c1ece030d`
+- Status: running, Docker health healthy
+- Live checks inside container: `pandas==2.2.3`, `import app`, `from core.behavior import analyze_behavior` all pass.
+- Internal `/health` endpoint returns HTTP 200 with Redis healthy.
+
+**Decision:** Do not publish or redeploy ai_assistant. The live image already has the pandas correction. Do not touch any Matching services or SEO/Safety/Revenue Packs for the two-issue admin release. Keep the prior PR #4 merged history for traceability; it is not a reason to force another image rollout.
+
+The remaining production work from the two original issues is Admin Web only:
+- Existing admin container returns HTTP 200 from `/login`; this is route reachability only, not proof that a real admin login succeeds.
+- Existing Compose dir: `/home/deploy/yarsalam-admin-prod-20261026`; existing Compose files are `docker-compose.yml,docker-compose.production.yml`.
+- Current `NEXT_PUBLIC_API_URL` setting was `http://novertex.ir/api`. Plain HTTP redirects to HTTPS and the HTTPS certificate verifies.
+- The actual login path `POST https://novertex.ir/api/admin/auth/login` was tested using a reserved fake `.invalid` identity: HTTP 401, zero redirects, valid TLS. This confirms the API route reached the backend; no real account was used.
+- PR #33 in admin-panel was merged into `feat/production-deployment-memory` at `86245fa7a1a5e0cc2519da1e066499e5f977cafc`; it removes private `.env` injection from the web container. CI run `41182064502` passed.
+- Admin Image is still not pushed and admin-web is still not replaced. Publish only the Admin image, then inspect the exact PLAN; do not deploy until separately authorized.
