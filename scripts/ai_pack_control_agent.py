@@ -208,7 +208,7 @@ def start_pack(pack: str, job: dict[str, Any]) -> dict[str, Any]:
         return {"ok": False, "reason": "memory start guard", "before": before, "minimum_start_mb": MIN_START_MB}
     job["step"] = f"starting {pack}"
     code, detail = sampled_process(job, base(pack) + [
-        "up", "-d", "--pull", "never", "--wait", "--wait-timeout", str(COMPOSE_TIMEOUT)
+        "up", "-d", "--no-recreate", "--pull", "never", "--wait", "--wait-timeout", str(COMPOSE_TIMEOUT)
     ], COMPOSE_TIMEOUT + 60)
     after = mem()
     if code:
