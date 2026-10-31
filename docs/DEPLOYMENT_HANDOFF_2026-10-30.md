@@ -192,3 +192,12 @@ The remaining production work from the two original issues is Admin Web only:
 - The actual login path `POST https://novertex.ir/api/admin/auth/login` was tested using a reserved fake `.invalid` identity: HTTP 401, zero redirects, valid TLS. This confirms the API route reached the backend; no real account was used.
 - PR #33 in admin-panel was merged into `feat/production-deployment-memory` at `86245fa7a1a5e0cc2519da1e066499e5f977cafc`; it removes private `.env` injection from the web container. CI run `41182064502` passed.
 - Admin Image is still not pushed and admin-web is still not replaced. Publish only the Admin image, then inspect the exact PLAN; do not deploy until separately authorized.
+
+
+## Admin Proxy 502 recovery — 2026-10-31
+
+- Admin Web public route was restored. The existing healthy Admin container was connected to the existing `yarsalam_network` with alias `admin-web`.
+- Proxy-to-web reachability passed; Nginx config test and graceful reload passed; public `https://novertex.ir/login` now returns HTTP 200.
+- No Admin or Proxy container was recreated/restarted; no image was pulled/built; no Matching service, volume or network outside the intended shared-network attachment was changed.
+- Permanent Compose correction is in admin-panel PR #34 (head `5315f5c931cc7762f39be3a7e86b7014ea34a01f`), CI run `41185044552` passed. It remains open awaiting explicit approval/merge.
+- The live Matching `ai_assistant` image remains healthy with pandas 2.2.3. No new Matching Image should be built or deployed.
