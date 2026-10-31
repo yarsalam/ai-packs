@@ -55,6 +55,11 @@ jobs:
           ref: ${{ github.event_name == 'pull_request' && 'fix/seo-public-url-audit-endpoint' || (inputs.mobapp_ref || '93bcb0d9ddf78ed31580d4aa2e3758b6397c1f0b') }}
           path: upstream/mobApp
 
+      - name: Resolve immutable mobApp source revision
+        id: source
+        shell: bash
+        run: echo "mobapp_sha=$(git -C upstream/mobApp rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -147,7 +152,7 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           PACK_LIST: ${{ steps.packs.outputs.packs }}
-          IMAGE_TAG: sha-${{ github.sha }}
+          IMAGE_TAG: sha-${{ github.sha }}-mobapp-${{ steps.source.outputs.mobapp_sha }}
         shell: bash
         run: |
           set -euo pipefail
@@ -198,9 +203,10 @@ jobs:
                 docker buildx build \
                   --platform linux/amd64 \
                   --file "$context/Dockerfile" \
+                  --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+                  --label "com.yarsalam.mobapp.revision=${{ steps.source.outputs.mobapp_sha }}" \
                   --label "org.opencontainers.image.source=https://github.com/yarsalam/ai-packs" \
                   --tag "$image:$IMAGE_TAG" \
-                  --tag "$image:latest" \
                   --cache-from "type=gha,scope=$pack-$service" \
                   --cache-to "type=gha,mode=max,scope=$pack-$service" \
                   --push \
@@ -212,5 +218,7 @@ jobs:
 
       - name: Print publication tag
         run: |
-          echo "Pack image tag: sha-${GITHUB_SHA}"
+          echo "Pack image tag: $IMAGE_TAG"
+          echo "MobApp source commit: ${{ steps.source.outputs.mobapp_sha }}"
+          echo "AI Packs source commit: ${GITHUB_SHA}"
           echo "These are registry images only; no VPS was modified."
