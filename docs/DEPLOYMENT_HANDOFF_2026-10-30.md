@@ -201,3 +201,42 @@ The remaining production work from the two original issues is Admin Web only:
 - No Admin or Proxy container was recreated/restarted; no image was pulled/built; no Matching service, volume or network outside the intended shared-network attachment was changed.
 - Permanent Compose correction was merged in admin-panel PR #34 at `775ac7533179bf79302db26b4c8ce8b238fa2816` (tested head `3f2768cc703d11b536524026574ffc70bbc48432`). CI run `41188676377` passed. It adds the persistent external `yarsalam_network` and `admin-web` alias to the runtime Compose.
 - The live Matching `ai_assistant` image remains healthy with pandas 2.2.3. No new Matching Image should be built or deployed.
+
+
+## VPS Pack orchestration findings — 2026-10-31
+
+Fresh read-only inspection of VPS 185.7.172.248 confirms the following runtime state:
+
+- yarsalam-matching-pack: 7 running containers; ai_assistant, gateway, ml_service, personality, ai_support, and Redis are Healthy. model_init exited 0 as a one-shot initialization job. matching_embedded_ai is Healthy on the Matching project network only by design; it does not need a Backend-network alias because Matching's gateway consumes it internally.
+- yarsalam-revenue-pack: all 6 containers are exited. Images remain present locally.
+- yarsalam-seo-pack: all 7 containers are exited. Images remain present locally.
+- yarsalam-safety-pack: no project/containers currently present on VPS.
+- Main mobapp, admin panel/backend, and Matching containers were running at the time of inspection.
+
+Docker inspect for Revenue and SEO recorded OOMKilled=false; application containers exited 143 and Redis exited 0. Docker journal recorded hasBeenManuallyStopped=true, daemonShuttingDown=false, and error=restart canceled. This is evidence of an intentional/manual stop path, not an OOM kill or ordinary app crash.
+
+The deploy user's Bash history exposed the staged-pack orchestrator configuration:
+- MIN_BEFORE_MB=4000
+- MIN_AFTER_MB=1536
+- order: seo-pack, revenue-pack, matching-pack, safety-pack
+- the smoke-test helper checks gateway health and has explicit cleanup/stop paths.
+- after the sequential test stage, the script has a separate section to leave SEO as the active pack.
+- SEO stop branches include failed Compose startup/health wait, failed gateway probe, and available memory falling below 1536 MB.
+
+Timing evidence from containers:
+- Revenue started at 2026-10-30 14:37:42 UTC and stopped around 14:38:00 UTC (~18 seconds).
+- SEO started at 2026-10-30 15:00:46 UTC and stopped around 15:52:09–15:52:11 UTC (~51 minutes).
+- Event history query returned no container events; journal contains the stop evidence above.
+
+Interpretation:
+- The orchestrator intentionally tests packs sequentially under a conservative memory-headroom policy. Revenue's short runtime is consistent with a temporary smoke-test cycle; its subsequent stop is likely intentional cleanup, but the exact executed branch has not been proven from the visible history excerpt.
+- SEO's stop is explicitly implemented in the orchestrator for failed startup/gateway health or low memory. The exact branch that ran at 15:52 UTC remains unconfirmed because the corresponding deployment log was not found.
+- Do not remove or bypass the memory guards just to keep all Packs concurrently running. The host has 7.8 GiB RAM and Matching's embedding container alone was using roughly 770 MiB in the captured sample; actual inference peaks still need measurement.
+- Do not rebuild/pull images or modify/restart healthy Matching, mobApp, or admin services during this diagnosis.
+- The dashboard's 17-service probe has mismatched default hostnames/ports for some standalone pack services. ENOTFOUND is not evidence that those pack containers are absent; resolve health registry URLs to the actual Pack network aliases and internal ports. Keep embedded services internal where their gateways are the intended consumer.
+
+Next operational decision:
+1. Inspect the existing deployment log/previous orchestrator output if available, rather than generating more ad-hoc diagnostic scripts.
+2. Decide the intended operating model: one active Pack at a time vs. a measured subset concurrently; do not promise all four simultaneously until memory/inference headroom is measured.
+3. Restore/validate one Pack at a time using existing immutable GHCR images and its own Compose/env file; preserve volumes and other projects.
+4. Correct the health dashboard registry separately from service deployment so it reports real endpoint availability rather than fallback DNS failures.
