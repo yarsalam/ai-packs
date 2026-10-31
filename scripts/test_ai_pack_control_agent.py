@@ -68,10 +68,10 @@ class AiPackControlAgentTests(unittest.TestCase):
             env_dir.mkdir()
             (compose_dir / "seo-pack.json").write_text("{}")
             (env_dir / "seo-pack.env").write_text("SEO_PACK_ADMIN_TOKEN=" + "x" * 64)
-            with patch.object(agent, "ROOT", root), \\
-                 patch.object(agent, "ENV_DIR", env_dir), \\
-                 patch.object(agent, "preflight", return_value={"ready": False, "reason": "immutable image missing"}), \\
-                 patch.object(agent, "containers", return_value=[]), \\
+            with patch.object(agent, "ROOT", root), \
+                 patch.object(agent, "ENV_DIR", env_dir), \
+                 patch.object(agent, "preflight", return_value={"ready": False, "reason": "immutable image missing"}), \
+                 patch.object(agent, "containers", return_value=[]), \
                  patch.object(agent, "run", return_value=type("Result", (), {"returncode": 0, "stdout": ""})()):
                 result = agent.status("seo-pack")
         self.assertEqual(result["state"], "stopped")
