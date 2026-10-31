@@ -240,3 +240,40 @@ Next operational decision:
 2. Decide the intended operating model: one active Pack at a time vs. a measured subset concurrently; do not promise all four simultaneously until memory/inference headroom is measured.
 3. Restore/validate one Pack at a time using existing immutable GHCR images and its own Compose/env file; preserve volumes and other projects.
 4. Correct the health dashboard registry separately from service deployment so it reports real endpoint availability rather than fallback DNS failures.
+
+
+## Admin panel AI Pack controls — requested operating model (2026-10-31)
+
+User requested an admin-panel control surface to stop AI Packs and test them one at a time while the product has no active users. This is a design requirement only; no runtime service was changed by this discussion.
+
+### Resource evidence
+- VPS RAM: 7.8 GiB total. At the last captured idle snapshot, MemAvailable was approximately 4.7 GiB; free-only memory was approximately 356 MiB, with the remainder largely reclaimable cache. Do not interpret low `free` alone as RAM exhaustion; use MemAvailable, cgroup memory, and peak measurements.
+- Docker stats at that snapshot showed Matching's services consuming approximately 1.4 GiB combined, with matching_embedded_ai around 770 MiB. Whole-host MemAvailable was still about 4.7 GiB.
+- Historical pack orchestration used MIN_BEFORE_MB=4000 and MIN_AFTER_MB=1536. These were conservative policy thresholds, not proof of OOM.
+- Revenue containers were stopped after ~18s; SEO containers after ~51m. Docker journal says `hasBeenManuallyStopped=true`, `daemonShuttingDown=false`, `OOMKilled=false`. The exact executed stop branch remains unproven. SEO has explicit stop paths on failed startup/gateway test or MemAvailable below 1536 MiB. Do not claim that the host ran out of RAM without a matching memory sample.
+
+### Preferred UI/operations model
+- Add four Pack cards: SEO, Revenue, Matching, Safety. Safety is currently not installed on VPS; show NOT_INSTALLED rather than DOWN.
+- Controls are pack-level, not arbitrary individual-container toggles: Start Test, Stop Pack, and pack-specific Test. Compose dependencies start in their declared order. Individual services are status-only in the first iteration.
+- Add a prominent Stop All AI Packs action. It must target only fixed Compose projects yarsalam-seo-pack, yarsalam-revenue-pack, yarsalam-matching-pack, and yarsalam-safety-pack. It must never affect mobapp, admin, reverse proxy, MySQL, Redis, Qdrant or persistent volumes. Require explicit confirmation and audit the actor/action/result.
+- Start/test is serialized by a host-side lock. Default to one new Pack at a time. A start operation records MemAvailable and cgroup memory before start, during warmup/model load, after health, and during functional gateway smoke tests. Use the existing 4000 MiB start / 1536 MiB reserve values as initial guardrails, configurable only through reviewed server-side policy. Abort or stop only the newly-started Pack if post-start reserve is breached; never auto-stop a previously healthy Pack.
+- Run image-local health checks plus Pack gateway `/health` and small, non-destructive functional smoke tests. A green `/health` alone is not proof of functional quality.
+- UI should distinguish STOPPED, STARTING, HEALTHY, DEGRADED, FAILED, NOT_INSTALLED, and UNKNOWN; include last action, timestamp, start/end RAM and test results.
+- Make the current dashboard registry use actual Pack aliases/internal ports; do not show ENOTFOUND as an application failure when the backend is using a wrong default hostname/port. Keep embedded dependencies private to their Pack unless there is a specific backend API requirement.
+
+### Security/implementation constraints
+- Do not mount `/var/run/docker.sock` into admin web/backend containers. Docker socket access is effectively host-root and is not acceptable for a UI toggle.
+- Implement a narrow host-side control agent/helper with a fixed allowlist of pack names, fixed Compose files/env paths, and only `start`, `stop`, `status`, and `test` operations. It must not accept arbitrary commands, paths, service names, or Docker arguments.
+- The agent must serialize operations, use only each Pack's immutable image tags and current private env files, and run `docker compose stop` or controlled `up -d --pull never --wait`; never use `down -v`, `--remove-orphans`, volume prune, or system prune.
+- Admin API requires a dedicated permission such as `manage_ai_packs`, strong authentication, CSRF-safe mutation handling, request validation, audit log, rate limit, and an explicit confirmation for Stop All.
+- The host agent interface should be limited to a private Unix socket or similarly restricted local channel. Do not expose an unrestricted Docker API or privileged command runner to the web tier.
+- Preserve current Architecture: GitHub stores source/tests/docs; VPS stores only runtime images, minimal Compose/config, private secrets, host control runtime and persistent data/model volumes.
+
+### Suggested no-user validation sequence
+1. Keep mobApp backend, admin stack, databases, proxy and their volumes running.
+2. Use Stop All AI Packs only after verifying exact project allowlist; then verify Matching/SEO/Revenue are stopped and shared infrastructure remains healthy.
+3. Start one Pack at a time using its existing local immutable images (`--pull never`), run gateway and functional smoke checks, record RAM peak/available reserve, then stop that Pack before moving to the next unless measured headroom and an explicit policy allow concurrent Packs.
+4. Test Matching, SEO, Revenue; Safety remains NOT_INSTALLED until separately deployed and validated.
+5. Only after measurements decide whether two or more Packs may remain active concurrently. Do not remove memory safeguards to make every dashboard dot green.
+
+Implementation is not yet merged or installed. The next code change must be a coordinated, reviewed implementation across the host control agent, mobApp admin API, admin-panel UI, and tests/docs; do not add decorative or frontend-only toggles that cannot safely control real Pack state.
