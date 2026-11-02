@@ -20,7 +20,7 @@ from fastapi import FastAPI, HTTPException, Request, Depends, UploadFile, File, 
 from fastapi.responses import JSONResponse
 import redis.asyncio as aioredis
 
-from policy import DEFAULT_POLICY, decide_moderation, normalize_policy
+from policy import DEFAULT_POLICY, aggregate_metrics, decide_moderation, normalize_policy
 
 # ── Config ──────────────────────────────────────────────────────────────────
 SERVICES = {
@@ -36,6 +36,7 @@ RATE_LIMIT_PREFIX    = "safety_ratelimit:"
 RATE_LIMIT_PER_HOUR  = int(os.getenv("RATE_LIMIT_PER_HOUR", "1000"))
 MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
 POLICY_PREFIX = "safety_policy:"
+METRICS_PREFIX = "safety_metrics:"
 
 # Billable usage credits are provisional defaults; adjust after measuring inference cost.
 PLAN_LIMITS = {
@@ -117,7 +118,7 @@ async def _usage_weight(path: str) -> int:
         return 1
     if path == "/verify/face" or path in {"/image/upload", "/image/analyze"}:
         return 10
-    if path.endswith("/batch"):
+    if path == "/moderate/batch/decision" or path.endswith("/batch"):
         return 5
     if (
         path.startswith("/moderate/")
@@ -354,6 +355,15 @@ async def image_status(filename: str, request: Request, _: dict = Depends(get_li
 
 # ── Tenant policy and explainable decisions ───────────────────────────────────
 
+async def _record_decision_metric(license_key: str, decision: dict) -> None:
+    now = datetime.now(timezone.utc)
+    key = f"{METRICS_PREFIX}{_hash(license_key)}:{now:%Y-%m}"
+    field = f"{decision.get('category', 'unknown')}:{decision.get('action', 'review')}"
+    count = await redis_client.hincrby(key, field, 1)
+    if count == 1:
+        await redis_client.expire(key, 180 * 24 * 60 * 60)
+
+
 async def _load_tenant_policy(license_key: str) -> dict:
     raw = await redis_client.get(f"{POLICY_PREFIX}{_hash(license_key)}")
     if not raw:
@@ -388,6 +398,93 @@ async def put_tenant_policy(request: Request, _: dict = Depends(get_license)):
         json.dumps(policy, ensure_ascii=False, separators=(",", ":")),
     )
     return {"saved": True, "policy": policy}
+
+
+@app.post("/moderate/batch/decision", tags=["Moderation"])
+async def moderate_batch_decision(request: Request, _: dict = Depends(get_license)):
+    """Apply each tenant-specific policy to a bounded batch without storing input text."""
+    try:
+        payload = await request.json()
+    except Exception as exc:
+        raise HTTPException(400, "A JSON request body is required") from exc
+    if not isinstance(payload, dict) or not isinstance(payload.get("texts"), list):
+        raise HTTPException(422, "texts must be a JSON array")
+    texts = payload["texts"]
+    if not 1 <= len(texts) <= 100:
+        raise HTTPException(422, "batch size must be between 1 and 100")
+    if any(not isinstance(item, str) for item in texts):
+        raise HTTPException(422, "every batch item must be a string")
+    if any(len(item) > 2000 for item in texts):
+        raise HTTPException(413, "each text must be at most 2000 characters")
+    context = payload.get("context", "message")
+    if not isinstance(context, str) or context not in {"message", "bio", "comment", "profile"}:
+        raise HTTPException(422, "context must be message, bio, comment, or profile")
+
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                f"{SERVICES['moderation']}/moderate/batch",
+                json={"texts": texts, "context": context},
+            )
+            response.raise_for_status()
+            upstream = response.json()
+    except httpx.TimeoutException as exc:
+        raise HTTPException(504, "Moderation batch timed out") from exc
+    except httpx.HTTPError as exc:
+        raise HTTPException(502, "Moderation service unavailable") from exc
+    except ValueError as exc:
+        raise HTTPException(502, "Moderation service returned invalid JSON") from exc
+
+    upstream_results = upstream.get("results") if isinstance(upstream, dict) else None
+    if not isinstance(upstream_results, list) or len(upstream_results) != len(texts):
+        raise HTTPException(502, "Moderation service returned an invalid batch response")
+
+    key = request.headers.get("X-License-Key")
+    policy = await _load_tenant_policy(key)
+    results = []
+    for index, (text_value, model_result) in enumerate(zip(texts, upstream_results)):
+        decision = decide_moderation(text_value, model_result, policy)
+        await _record_decision_metric(key, decision)
+        results.append({"index": index, **decision})
+
+    counts = {
+        "allow": sum(row["action"] == "allow" for row in results),
+        "review": sum(row["action"] == "review" for row in results),
+        "block": sum(row["action"] == "block" for row in results),
+    }
+    return {
+        "total": len(results),
+        "actions": counts,
+        "results": results,
+        "context": context,
+        "policy_version": policy.get("version", 1),
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@app.get("/analytics/summary", tags=["Analytics"])
+async def tenant_analytics_summary(request: Request, _: dict = Depends(get_license)):
+    """Return aggregate counters only; no message text, user ID, or IP is stored."""
+    period = request.query_params.get("period", datetime.now(timezone.utc).strftime("%Y-%m"))
+    try:
+        parsed_period = datetime.strptime(period, "%Y-%m")
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(422, "period must use YYYY-MM format") from exc
+    now = datetime.now(timezone.utc)
+    current = (now.year, now.month)
+    selected = (parsed_period.year, parsed_period.month)
+    oldest = (now.year - 1, now.month)
+    if selected > current or selected < oldest:
+        raise HTTPException(422, "period must be within the current and previous 11 months")
+    key = request.headers.get("X-License-Key")
+    redis_key = f"{METRICS_PREFIX}{_hash(key)}:{period}"
+    raw = await redis_client.hgetall(redis_key)
+    return {
+        "period": period,
+        **aggregate_metrics(raw),
+        "retention_days": 180,
+        "storage": "aggregate category/action counters only",
+    }
 
 
 @app.post("/moderate/decision", tags=["Moderation"])
@@ -430,6 +527,7 @@ async def moderate_decision(request: Request, _: dict = Depends(get_license)):
     key = request.headers.get("X-License-Key")
     policy = await _load_tenant_policy(key)
     decision = decide_moderation(text_value, upstream, policy)
+    await _record_decision_metric(key, decision)
     return {
         **decision,
         "context": context,
