@@ -20,6 +20,8 @@ from fastapi import FastAPI, HTTPException, Request, Depends, UploadFile, File, 
 from fastapi.responses import JSONResponse
 import redis.asyncio as aioredis
 
+from policy import DEFAULT_POLICY, decide_moderation, normalize_policy
+
 # ── Config ──────────────────────────────────────────────────────────────────
 SERVICES = {
     "moderation":   os.getenv("AI_MODERATION_URL",   "http://ai_moderation:8018"),
@@ -33,6 +35,7 @@ LICENSE_PREFIX       = "safety_license:"
 RATE_LIMIT_PREFIX    = "safety_ratelimit:"
 RATE_LIMIT_PER_HOUR  = int(os.getenv("RATE_LIMIT_PER_HOUR", "1000"))
 MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
+POLICY_PREFIX = "safety_policy:"
 
 # Billable usage credits are provisional defaults; adjust after measuring inference cost.
 PLAN_LIMITS = {
@@ -347,6 +350,91 @@ async def image_status(filename: str, request: Request, _: dict = Depends(get_li
     """وضعیت پردازش پس‌زمینه یه تصویر"""
     return await _proxy_json("image", f"/image/status/{filename}", request)
 
+
+
+# ── Tenant policy and explainable decisions ───────────────────────────────────
+
+async def _load_tenant_policy(license_key: str) -> dict:
+    raw = await redis_client.get(f"{POLICY_PREFIX}{_hash(license_key)}")
+    if not raw:
+        return normalize_policy({})
+    try:
+        import json as _json
+        return normalize_policy(_json.loads(raw))
+    except (ValueError, TypeError):
+        # A corrupted tenant policy must never silently change a moderation
+        # outcome to allow. Use the safe default and leave an operator-visible log.
+        import logging
+        logging.getLogger(__name__).exception("Invalid stored Safety Pack policy")
+        return normalize_policy({})
+
+
+@app.get("/policy", tags=["Policy"])
+async def get_tenant_policy(request: Request, _: dict = Depends(get_license)):
+    key = request.headers.get("X-License-Key")
+    return await _load_tenant_policy(key)
+
+
+@app.put("/policy", tags=["Policy"])
+async def put_tenant_policy(request: Request, _: dict = Depends(get_license)):
+    key = request.headers.get("X-License-Key")
+    payload = await request.json()
+    try:
+        policy = normalize_policy(payload)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(422, str(exc)) from exc
+    await redis_client.set(
+        f"{POLICY_PREFIX}{_hash(key)}",
+        json.dumps(policy, ensure_ascii=False, separators=(",", ":")),
+    )
+    return {"saved": True, "policy": policy}
+
+
+@app.post("/moderate/decision", tags=["Moderation"])
+async def moderate_decision(request: Request, _: dict = Depends(get_license)):
+    """Return an explicit allow/review/block action using this tenant's policy.
+
+    Submitted text is forwarded to the inference service but is not persisted by
+    the Gateway. Semantic dependency failures are always routed to human review.
+    """
+    try:
+        payload = await request.json()
+    except Exception as exc:
+        raise HTTPException(400, "A JSON request body is required") from exc
+    if not isinstance(payload, dict) or not isinstance(payload.get("text"), str):
+        raise HTTPException(422, "text must be a string")
+    text_value = payload["text"]
+    if len(text_value) > 2000:
+        raise HTTPException(413, "text must be at most 2000 characters")
+    context = payload.get("context", "message")
+    if not isinstance(context, str) or context not in {"message", "bio", "comment", "profile"}:
+        raise HTTPException(422, "context must be message, bio, comment, or profile")
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                f"{SERVICES['moderation']}/moderate",
+                json={"text": text_value, "context": context},
+            )
+            response.raise_for_status()
+            upstream = response.json()
+    except httpx.TimeoutException as exc:
+        raise HTTPException(504, "Moderation service timed out") from exc
+    except httpx.HTTPError as exc:
+        raise HTTPException(502, "Moderation service unavailable") from exc
+    except ValueError as exc:
+        raise HTTPException(502, "Moderation service returned invalid JSON") from exc
+
+    if not isinstance(upstream, dict):
+        raise HTTPException(502, "Moderation service returned an invalid response")
+    key = request.headers.get("X-License-Key")
+    policy = await _load_tenant_policy(key)
+    decision = decide_moderation(text_value, upstream, policy)
+    return {
+        **decision,
+        "context": context,
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+    }
 
 # ── ADMIN ─────────────────────────────────────────────────────────────────────
 
