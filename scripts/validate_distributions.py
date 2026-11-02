@@ -22,6 +22,9 @@ def validate_pack(dist_root: Path, pack_name: str) -> dict:
         if not (pack / required).is_file():
             fail(f"{pack_name}: missing {required}")
 
+    if pack_name == "safety-pack" and not (pack / "gateway" / "policy.py").is_file():
+        fail("safety-pack: missing gateway/policy.py")
+
     compose_path = pack / "compose.yaml"
     compose = yaml.safe_load(compose_path.read_text(encoding="utf-8"))
     services = compose.get("services", {})
