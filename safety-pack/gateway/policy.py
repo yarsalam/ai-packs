@@ -70,10 +70,12 @@ def normalize_policy(payload: Any) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError("policy must be a JSON object")
 
-    unknown_keys = set(payload) - {"default_action", "category_actions", "blocked_terms", "review_terms"}
+    unknown_keys = set(payload) - {"version", "default_action", "category_actions", "blocked_terms", "review_terms"}
     if unknown_keys:
         raise ValueError(f"unsupported policy fields: {', '.join(sorted(unknown_keys))}")
 
+    if payload.get("version", 1) != 1:
+        raise ValueError("unsupported policy version")
     default_action = payload.get("default_action", DEFAULT_POLICY["default_action"])
     if default_action not in ALLOWED_ACTIONS:
         raise ValueError("default_action must be allow, review, or block")
