@@ -1,0 +1,274 @@
+{
+  "name": "yarsalam-seo-pack",
+  "services": {
+    "redis": {
+      "image": "redis:7.4-alpine",
+      "restart": "unless-stopped",
+      "command": [
+        "sh",
+        "-ec",
+        "test \"$${#REDIS_PASSWORD}\" -ge 32 || { echo \"REDIS_PASSWORD must be at least 32 characters\" >&2; exit 1; }; exec redis-server --appendonly yes --requirepass \"$${REDIS_PASSWORD}\""
+      ],
+      "environment": {
+        "REDIS_PASSWORD": "${REDIS_PASSWORD:?Set REDIS_PASSWORD in the private env file}"
+      },
+      "volumes": [
+        "redis_data:/data"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD-SHELL",
+          "redis-cli --no-auth-warning -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"
+        ],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 5,
+        "start_period": "5s"
+      },
+      "networks": [
+        "default"
+      ]
+    },
+    "ai_seo": {
+      "image": "ghcr.io/yarsalam/ai-packs/seo-pack-ai-seo:${IMAGE_TAG:-latest}",
+      "restart": "unless-stopped",
+      "init": true,
+      "environment": {
+        "REDIS_HOST": "redis",
+        "REDIS_PORT": "6379",
+        "REDIS_PASSWORD": "${REDIS_PASSWORD:?Set REDIS_PASSWORD in the private env file}",
+        "MODEL_PATH": "/app/models"
+      },
+      "volumes": [
+        "seo_models:/app/models"
+      ],
+      "depends_on": {
+        "redis": {
+          "condition": "service_healthy"
+        }
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-fsS",
+          "http://127.0.0.1:8021/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "120s"
+      },
+      "networks": {
+        "default": {},
+        "yarsalam_network": {
+          "aliases": [
+            "ai_seo"
+          ]
+        }
+      }
+    },
+    "aeo_tracker": {
+      "image": "ghcr.io/yarsalam/ai-packs/seo-pack-aeo-tracker:${IMAGE_TAG:-latest}",
+      "restart": "unless-stopped",
+      "init": true,
+      "environment": {
+        "REDIS_URL": "redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in the private env file}@redis:6379/0",
+        "REDIS_HOST": "redis",
+        "REDIS_PORT": "6379",
+        "REDIS_PASSWORD": "${REDIS_PASSWORD:?Set REDIS_PASSWORD in the private env file}",
+        "OPENAI_API_KEY": "${OPENAI_API_KEY:-}"
+      },
+      "depends_on": {
+        "redis": {
+          "condition": "service_healthy"
+        }
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-fsS",
+          "http://127.0.0.1:8030/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "120s"
+      },
+      "networks": {
+        "default": {},
+        "yarsalam_network": {
+          "aliases": [
+            "aeo_tracker"
+          ]
+        }
+      }
+    },
+    "ai_backlink_quality": {
+      "image": "ghcr.io/yarsalam/ai-packs/seo-pack-ai-backlink-quality:${IMAGE_TAG:-latest}",
+      "restart": "unless-stopped",
+      "init": true,
+      "environment": {
+        "EMBEDDING_SERVICE_URL": "http://seo_embedded_ai:8100"
+      },
+      "depends_on": {
+        "seo_embedded_ai": {
+          "condition": "service_healthy"
+        }
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-fsS",
+          "http://127.0.0.1:8032/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "120s"
+      },
+      "networks": {
+        "default": {},
+        "yarsalam_network": {
+          "aliases": [
+            "ai_backlink_quality"
+          ]
+        }
+      }
+    },
+    "ai_seo_recommender": {
+      "image": "ghcr.io/yarsalam/ai-packs/seo-pack-ai-seo-recommender:${IMAGE_TAG:-latest}",
+      "restart": "unless-stopped",
+      "init": true,
+      "environment": {
+        "CF_MODEL_PATH": "/app/models/cf_model.pkl"
+      },
+      "volumes": [
+        "seo_recommender_models:/app/models"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-fsS",
+          "http://127.0.0.1:8033/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "120s"
+      },
+      "networks": {
+        "default": {},
+        "yarsalam_network": {
+          "aliases": [
+            "ai_seo_recommender"
+          ]
+        }
+      }
+    },
+    "seo_embedded_ai": {
+      "image": "ghcr.io/yarsalam/ai-packs/seo-pack-seo-embedded-ai:${IMAGE_TAG:-latest}",
+      "restart": "unless-stopped",
+      "init": true,
+      "environment": {
+        "REDIS_URL": "redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in the private env file}@redis:6379/0",
+        "MODEL_NAME": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        "MODEL_REVISION": "${EMBEDDING_MODEL_REVISION:-e8f8c211226b894fcb81acc59f3b34ba3efd5f42}",
+        "HF_HOME": "/models/huggingface"
+      },
+      "volumes": [
+        "seo_embedding_models:/models"
+      ],
+      "depends_on": {
+        "redis": {
+          "condition": "service_healthy"
+        }
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-fsS",
+          "http://127.0.0.1:8100/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "120s"
+      },
+      "networks": {
+        "default": {}
+      }
+    },
+    "gateway": {
+      "image": "ghcr.io/yarsalam/ai-packs/seo-pack-gateway:${IMAGE_TAG:-latest}",
+      "restart": "unless-stopped",
+      "init": true,
+      "ports": [
+        "127.0.0.1:9000:8000"
+      ],
+      "environment": {
+        "REDIS_URL": "redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in the private env file}@redis:6379/0",
+        "ADMIN_TOKEN": "${SEO_PACK_ADMIN_TOKEN:?Set SEO_PACK_ADMIN_TOKEN in the private env file}",
+        "RATE_LIMIT_PER_HOUR": "500",
+        "AI_SEO_URL": "http://ai_seo:8021",
+        "AEO_TRACKER_URL": "http://aeo_tracker:8030",
+        "AI_BACKLINK_URL": "http://ai_backlink_quality:8032",
+        "AI_RECOMMENDER_URL": "http://ai_seo_recommender:8033"
+      },
+      "depends_on": {
+        "ai_seo": {
+          "condition": "service_healthy"
+        },
+        "aeo_tracker": {
+          "condition": "service_healthy"
+        },
+        "ai_backlink_quality": {
+          "condition": "service_healthy"
+        },
+        "ai_seo_recommender": {
+          "condition": "service_healthy"
+        },
+        "seo_embedded_ai": {
+          "condition": "service_healthy"
+        }
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "-fsS",
+          "http://127.0.0.1:8000/health"
+        ],
+        "interval": "30s",
+        "timeout": "5s",
+        "retries": 3,
+        "start_period": "60s"
+      },
+      "networks": {
+        "default": {},
+        "yarsalam_network": {
+          "aliases": [
+            "seo-pack-gateway"
+          ]
+        }
+      }
+    }
+  },
+  "volumes": {
+    "redis_data": {},
+    "seo_models": {},
+    "seo_recommender_models": {},
+    "seo_embedding_models": {}
+  },
+  "networks": {
+    "default": {},
+    "yarsalam_network": {
+      "external": true,
+      "name": "yarsalam_network"
+    }
+  }
+}
