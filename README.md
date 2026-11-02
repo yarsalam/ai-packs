@@ -25,8 +25,15 @@
 
 - [معماری نسخهٔ تجاری و مسیر ارتقا به اپ یارسلام](./docs/PRODUCT_ARCHITECTURE_AND_UPGRADE.md)
 - [قرارداد اولیهٔ Safety API](./docs/SAFETY_API_V1.md)
+- [پروتکل benchmark فارسی Safety و ابزار ارزیابی](./docs/PERSIAN_SAFETY_BENCHMARK.md)
 
 اصل معماری این است: کد اصلی inference در `mobApp` باقی می‌ماند؛ AI Packs توزیع مستقل و Gateway/افزونهٔ مشتری را می‌سازد. هیچ نسخهٔ مشتری نباید به Redis، volume یا سرویس عملیاتی یارسلام متصل شود. قابلیت‌های تجاری پس از benchmark و تست، با PR جدا و backward-compatible به اپ داخلی منتقل می‌شوند.
+
+## Safety Pack — قابلیت‌های نسخهٔ تجاری در حال ارزیابی
+
+در شاخهٔ مستقل محصول، Gateway تجاری مسیرهای `GET/PUT /policy`، `POST /moderate/decision`، `POST /moderate/batch/decision` و `GET /analytics/summary` را اضافه می‌کند. سیاست‌ها به License مشتری متصل‌اند و آمار فقط شمارندهٔ تجمیعی دسته/تصمیم را نگه می‌دارد. این قابلیت‌ها هنوز در production یارسلام نصب نشده‌اند و انتقال به اپ داخلی فقط با PR جدا پس از benchmark انجام می‌شود.
+
+ابزار `scripts/evaluate_moderation.py` گزارش aggregate از action accuracy، macro-F1، precision/recall، نرخ false-positive/negative و latency p50/p95 تولید می‌کند؛ فایل داده باید مجاز و private بماند.
 
 ## چهار پک
 
