@@ -31,5 +31,5 @@ def test_per_category_metrics_are_aggregated_without_input_text():
     ]
     report = module.build_report(rows, [12.0, 13.0])
     assert report["per_category"]["external_contact"]["f1"] == 1.0
-    assert "text" not in str(report)
+    assert "سلام" not in str(report)
     assert report["privacy"].startswith("raw input text is intentionally omitted")
