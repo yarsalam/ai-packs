@@ -53,10 +53,28 @@ def validate_pack(dist_root: Path, pack_name: str) -> dict:
                 fail(f"{pack_name}/{service_name}: undeclared named volume {source}")
 
     # All Python source files included in a distribution must remain local.
-    for relative in ("services",):
+    for relative in ("services", "gateway"):
         folder = pack / relative
         if not folder.is_dir():
             fail(f"{pack_name}: missing {relative}")
+        forbidden_dirs = {
+            "__pycache__", ".git", ".pytest_cache", ".mypy_cache", ".ruff_cache",
+            ".cache", ".venv", "venv", "tests", "test", "docs", "build", "dist",
+            "coverage",
+        }
+        forbidden_suffixes = {".pyc", ".pyo", ".pyd", ".log", ".md", ".rst", ".ipynb", ".pem", ".key", ".bak", ".swp", ".tmp"}
+        for item in folder.rglob("*"):
+            if item.is_dir() and item.name in forbidden_dirs:
+                fail(f"{pack_name}: non-runtime directory leaked into service context: {item.relative_to(pack)}")
+            if item.is_file() and (
+                item.suffix.lower() in forbidden_suffixes
+                or item.name == ".env"
+                or item.name.startswith(".env.")
+                or item.name == ".gitignore"
+                or item.name.startswith("test_")
+                or item.name.endswith("_test.py")
+            ):
+                fail(f"{pack_name}: non-runtime file leaked into service context: {item.relative_to(pack)}")
         for source in folder.rglob("*.py"):
             text = source.read_text(encoding="utf-8", errors="replace")
             if "../../python-ai/services" in text:
