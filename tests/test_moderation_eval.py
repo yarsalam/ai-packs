@@ -33,3 +33,22 @@ def test_per_category_metrics_are_aggregated_without_input_text():
     assert report["per_category"]["external_contact"]["f1"] == 1.0
     assert "سلام" not in str(report)
     assert report["privacy"].startswith("raw input text is intentionally omitted")
+
+
+def test_base_url_rejects_localhost_lookalikes_and_remote_http():
+    import pytest
+    for value in ("http://localhost.evil.test", "http://127.0.0.2", "http://example.com"):
+        with pytest.raises(ValueError):
+            module.validate_base_url(value)
+
+
+def test_base_url_allows_https_and_exact_loopback_hosts():
+    assert module.validate_base_url("https://safety.example.test").scheme == "https"
+    assert module.validate_base_url("http://localhost:9001").hostname == "localhost"
+    assert module.validate_base_url("http://127.0.0.1:9001").hostname == "127.0.0.1"
+
+
+def test_base_url_rejects_embedded_credentials():
+    import pytest
+    with pytest.raises(ValueError):
+        module.validate_base_url("https://user:password@safety.example.test")
