@@ -32,7 +32,7 @@ services:
       - PERSONALITY_URL=http://personality:8100
       - AI_ASSISTANT_URL=http://ai_assistant:8022
       - AI_SUPPORT_URL=http://ai_support:8016
-      - ADMIN_TOKEN=${MATCHING_PACK_ADMIN_TOKEN:-change-me}
+      - ADMIN_TOKEN=${MATCHING_PACK_ADMIN_TOKEN:?Set MATCHING_PACK_ADMIN_TOKEN to a random secret of at least 32 characters}
       - RATE_LIMIT_PER_HOUR=3000
     depends_on:
       - redis

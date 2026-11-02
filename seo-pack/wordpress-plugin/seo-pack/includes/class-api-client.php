@@ -114,6 +114,10 @@ class ApiClient {
         ]);
     }
 
+    public function license_status(): array {
+        return $this->request('GET', '/license/validate');
+    }
+
     // ── Health Check ──────────────────────────────────────────────────────
     public function health_check(): array {
         $args = [

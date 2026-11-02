@@ -1,0 +1,33 @@
+name: Gateway contract tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  licensing-contract:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - gateway: seo-pack/gateway
+          - gateway: safety-pack/gateway
+          - gateway: revenue-pack/gateway
+          - gateway: matching-pack/gateway
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: ${{ matrix.gateway }}/requirements.txt
+      - name: Install gateway dependencies and test runner
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r "${{ matrix.gateway }}/requirements.txt" pytest==8.4.2
+      - name: Run licensing contract tests
+        env:
+          GATEWAY_MODULE_PATH: ${{ matrix.gateway }}/main.py
+        run: python -m pytest -q tests/test_gateway_contract.py
