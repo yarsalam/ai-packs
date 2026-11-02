@@ -100,6 +100,34 @@ def normalize_policy(payload: Any) -> dict[str, Any]:
     }
 
 
+
+def aggregate_metrics(raw: dict[str, Any]) -> dict[str, Any]:
+    """Convert Redis category:action counters into a privacy-safe summary."""
+    actions = {"allow": 0, "review": 0, "block": 0}
+    categories: dict[str, dict[str, int]] = {}
+    for key, value in raw.items():
+        try:
+            category, action = str(key).rsplit(":", 1)
+            count = max(0, int(value))
+        except (ValueError, TypeError):
+            continue
+        if action not in ALLOWED_ACTIONS or not category:
+            continue
+        actions[action] += count
+        categories.setdefault(category, {"allow": 0, "review": 0, "block": 0})
+        categories[category][action] += count
+    return {
+        "total": sum(actions.values()),
+        "actions": actions,
+        "categories": {
+            category: {
+                **counts,
+                "total": sum(counts.values()),
+            }
+            for category, counts in sorted(categories.items())
+        },
+    }
+
 def decide_moderation(text: str, upstream: dict[str, Any], policy: dict[str, Any]) -> dict[str, Any]:
     """Apply tenant policy to a model/rule signal; uncertain failures go to review."""
     normalized_text = normalize_persian(text)
