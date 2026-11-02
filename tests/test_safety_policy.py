@@ -14,6 +14,7 @@ SPEC.loader.exec_module(policy_module)
 normalize_persian = policy_module.normalize_persian
 normalize_policy = policy_module.normalize_policy
 decide_moderation = policy_module.decide_moderation
+aggregate_metrics = policy_module.aggregate_metrics
 
 
 def test_normalizes_persian_arabic_letters_digits_and_invisible_chars():
@@ -93,3 +94,17 @@ def test_serialized_policy_can_be_validated_again():
     # The API persists this complete object, including version.
     restored = normalize_policy(policy)
     assert restored == policy
+
+
+def test_aggregate_metrics_include_only_category_action_counts():
+    summary = aggregate_metrics({
+        "external_contact:review": "12",
+        "violence:block": "3",
+        "clean:allow": "40",
+        "unknown:unexpected": "999",
+        "malformed": "2",
+    })
+    assert summary["total"] == 55
+    assert summary["actions"] == {"allow": 40, "review": 12, "block": 3}
+    assert summary["categories"]["external_contact"]["total"] == 12
+    assert "malformed" not in summary["categories"]
