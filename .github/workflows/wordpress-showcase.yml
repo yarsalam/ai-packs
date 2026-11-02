@@ -32,7 +32,7 @@ jobs:
           test -s wordpress-showcase/yarsalam-ai-products/assets/showcase.js
           grep -q 'Plugin Name: YarSalam AI Products Preview' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
           grep -q 'add_shortcode' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
-          grep -q 'static' wordpress-showcase/yarsalam-ai-products/README.md
+          grep -q 'ثابت' wordpress-showcase/yarsalam-ai-products/README.md
           if grep -RniE 'X-License-Key|X-Admin-Token|license_key=' wordpress-showcase/yarsalam-ai-products; then
             echo "Showcase must not contain customer or admin credentials."
             exit 1
