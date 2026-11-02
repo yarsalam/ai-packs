@@ -18,9 +18,26 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
+from urllib.parse import urlsplit
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 ACTIONS = ("allow", "review", "block")
+
+
+def validate_base_url(value: str):
+    parsed = urlsplit(value)
+    if parsed.username or parsed.password or not parsed.hostname:
+        raise ValueError("base URL must contain a hostname and no embedded credentials")
+    if parsed.scheme == "https":
+        return parsed
+    if parsed.scheme == "http" and parsed.hostname.lower() in {"localhost", "127.0.0.1", "::1"}:
+        return parsed
+    raise ValueError("Use HTTPS, or plain HTTP only for localhost/loopback")
+
+
+class NoRedirectHandler(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise HTTPError(req.full_url, code, "redirects are disabled for authenticated evaluation", headers, fp)
 
 
 def percentile(values: list[float], pct: float) -> float | None:
@@ -144,7 +161,8 @@ def call_endpoint(base_url: str, license_key: str, text: str) -> tuple[dict[str,
     )
     started = time.perf_counter()
     try:
-        with urlopen(request, timeout=35) as response:
+        opener = build_opener(NoRedirectHandler)
+        with opener.open(request, timeout=35) as response:
             body = json.loads(response.read(1024 * 1024).decode("utf-8"))
     except HTTPError as exc:
         raise RuntimeError(f"API returned HTTP {exc.code}") from None
@@ -166,8 +184,10 @@ def main() -> int:
     license_key = os.getenv("SAFETY_PACK_LICENSE_KEY", "")
     if not license_key:
         parser.error("Set SAFETY_PACK_LICENSE_KEY in the environment; do not pass it on the command line.")
-    if not (args.base_url.startswith("https://") or args.base_url.startswith("http://127.0.0.1") or args.base_url.startswith("http://localhost")):
-        parser.error("Use HTTPS, or localhost for a local test. Plain HTTP to a remote host is refused.")
+    try:
+        validate_base_url(args.base_url)
+    except ValueError as exc:
+        parser.error(str(exc))
 
     try:
         dataset = load_dataset(args.dataset)
