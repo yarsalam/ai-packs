@@ -150,12 +150,65 @@ final class YarSalam_AI_Products_Preview {
         return $snapshot;
     }
 
+    private static function private_control_snapshot(): array {
+        $base_url = defined('YAP_AI_PACK_CONTROL_URL') ? trim((string) YAP_AI_PACK_CONTROL_URL) : '';
+        $token = defined('YAP_AI_PACK_CONTROL_TOKEN') ? (string) YAP_AI_PACK_CONTROL_TOKEN : '';
+        if ($base_url === '' || strlen($token) < 48) {
+            return ['connected' => false, 'error' => 'عامل خصوصی پیکربندی نشده است.'];
+        }
+
+        $parts = wp_parse_url($base_url);
+        if (!is_array($parts) || empty($parts['host']) || !empty($parts['user']) || !empty($parts['pass']) ||
+            !empty($parts['query']) || !empty($parts['fragment']) || (isset($parts['path']) && $parts['path'] !== '' && $parts['path'] !== '/')) {
+            return ['connected' => false, 'error' => 'آدرس عامل خصوصی معتبر نیست.'];
+        }
+
+        $scheme = isset($parts['scheme']) ? strtolower((string) $parts['scheme']) : '';
+        $host = (string) $parts['host'];
+        $octets = filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ? array_map('intval', explode('.', $host)) : [];
+        $private_ip = count($octets) === 4 && (
+            $octets[0] === 10 ||
+            ($octets[0] === 172 && $octets[1] >= 16 && $octets[1] <= 31) ||
+            ($octets[0] === 192 && $octets[1] === 168)
+        );
+        if (!$private_ip || !in_array($scheme, ['http', 'https'], true)) {
+            return ['connected' => false, 'error' => 'عامل فقط از طریق IP خصوصی RFC1918 و HTTP(S) قابل اتصال است.'];
+        }
+
+        $port = isset($parts['port']) ? (int) $parts['port'] : ($scheme === 'https' ? 443 : 80);
+        if ($port < 1 || $port > 65535) {
+            return ['connected' => false, 'error' => 'پورت عامل خصوصی معتبر نیست.'];
+        }
+
+        $url = $scheme . '://' . $host . ':' . $port . '/v1/status';
+        $response = wp_remote_get($url, [
+            'timeout' => 5,
+            'redirection' => 0,
+            'headers' => [
+                'Accept' => 'application/json',
+                'Authorization' => 'Bearer ' . $token,
+            ],
+        ]);
+        if (is_wp_error($response)) {
+            return ['connected' => false, 'error' => 'عامل خصوصی پاسخ نداد: ' . $response->get_error_message()];
+        }
+        if ((int) wp_remote_retrieve_response_code($response) !== 200) {
+            return ['connected' => false, 'error' => 'عامل خصوصی پاسخ موفق نداد.'];
+        }
+        $body = json_decode((string) wp_remote_retrieve_body($response), true);
+        if (!is_array($body) || !isset($body['memory'], $body['packs']) || !is_array($body['packs'])) {
+            return ['connected' => false, 'error' => 'ساختار پاسخ عامل خصوصی معتبر نیست.'];
+        }
+        return ['connected' => true, 'data' => $body];
+    }
+
     public static function console_page(): void {
         if (!current_user_can('manage_options')) {
             return;
         }
 
         $snapshot = self::github_ci_snapshot();
+        $private_status = self::private_control_snapshot();
         $products = [
             ['name' => 'Persian Trust & Safety', 'status' => 'پیش‌نمایش تعاملی؛ پایلوت پس از Benchmark'],
             ['name' => 'SEO & AI Visibility', 'status' => 'پیش‌نمایش فنی؛ آزمون پوشش و امنیت باقی است'],
@@ -196,8 +249,19 @@ final class YarSalam_AI_Products_Preview {
                 </section>
                 <section class="yap-console-card">
                     <h2>مصرف منابع سرور</h2>
-                    <p class="yap-console-warn">اتصال به عامل پایش خصوصی هنوز پیکربندی نشده است.</p>
-                    <div class="yap-console-muted">برای امنیت، API عامل روی شبکه خصوصی باقی می‌ماند و از این صفحه به‌صورت عمومی در دسترس نیست.</div>
+                    <?php if (!empty($private_status['connected'])) :
+                        $host_memory = $private_status['data']['memory'];
+                        $available_mb = isset($host_memory['available_mb']) ? (int) $host_memory['available_mb'] : 0;
+                        $total_mb = isset($host_memory['total_mb']) ? (int) $host_memory['total_mb'] : 0;
+                    ?>
+                        <p class="yap-console-ok">عامل خصوصی متصل است.</p>
+                        <div class="yap-console-muted">RAM آزاد: <?php echo esc_html(number_format_i18n($available_mb)); ?> از <?php echo esc_html(number_format_i18n($total_mb)); ?> MB</div>
+                        <div class="yap-console-muted">Swap آزاد: <?php echo esc_html(number_format_i18n((int) ($host_memory['swap_free_mb'] ?? 0))); ?> MB</div>
+                    <?php else : ?>
+                        <p class="yap-console-warn">متصل نیست.</p>
+                        <div class="yap-console-muted"><?php echo esc_html($private_status['error'] ?? 'عامل خصوصی در دسترس نیست.'); ?></div>
+                    <?php endif; ?>
+                    <div class="yap-console-muted">اتصال فقط از سمت سرور WordPress به IP خصوصی انجام می‌شود؛ توکن در مرورگر ارسال یا نمایش داده نمی‌شود.</div>
                 </section>
             </div>
 
@@ -212,6 +276,35 @@ final class YarSalam_AI_Products_Preview {
                     </tbody>
                 </table>
             </div>
+
+            <?php if (!empty($private_status['connected'])) : ?>
+                <h2 style="margin-top:26px">وضعیت سرویس‌های نصب‌شده</h2>
+                <div class="yap-console-table">
+                    <table class="widefat striped">
+                        <thead><tr><th>پک</th><th>وضعیت</th><th>Containerهای در حال اجرا</th><th>Gateway</th><th>مصرف حافظهٔ Container</th></tr></thead>
+                        <tbody>
+                        <?php foreach (['safety-pack' => 'Safety', 'seo-pack' => 'SEO', 'revenue-pack' => 'Revenue', 'matching-pack' => 'Matching'] as $pack_id => $pack_label) :
+                            $pack_data = $private_status['data']['packs'][$pack_id] ?? [];
+                            $memory_rows = isset($pack_data['memory']) && is_array($pack_data['memory']) ? $pack_data['memory'] : [];
+                            $memory_labels = [];
+                            foreach ($memory_rows as $memory_row) {
+                                if (!empty($memory_row['container']) && isset($memory_row['usage'])) {
+                                    $memory_labels[] = (string) $memory_row['container'] . ': ' . (string) $memory_row['usage'];
+                                }
+                            }
+                        ?>
+                            <tr>
+                                <td><strong><?php echo esc_html($pack_label); ?></strong></td>
+                                <td><?php echo esc_html((string) ($pack_data['state'] ?? 'unknown')); ?></td>
+                                <td><?php echo esc_html(number_format_i18n((int) ($pack_data['running_containers'] ?? 0))); ?></td>
+                                <td><?php echo esc_html((string) ($pack_data['gateway']['status'] ?? 'unknown')); ?></td>
+                                <td><?php echo esc_html($memory_labels ? implode(' · ', $memory_labels) : '—'); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
 
             <h2 style="margin-top:26px">آخرین اجراهای GitHub Actions</h2>
             <?php if (!empty($snapshot['error'])) : ?>
