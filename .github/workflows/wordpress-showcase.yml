@@ -23,7 +23,8 @@ jobs:
           tools: none
 
       - name: PHP syntax check
-        run: php -l wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+        run: |
+          php -l wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
           node --check wordpress-showcase/yarsalam-ai-products/assets/showcase.js
 
       - name: Validate showcase assets and plugin metadata
@@ -43,7 +44,7 @@ jobs:
             echo "Preview JavaScript must not make network requests."
             exit 1
           fi
-          grep -q 'ثابت' wordpress-showcase/yarsalam-ai-products/README.md
+          grep -q 'ساختگی' wordpress-showcase/yarsalam-ai-products/README.md
           if grep -RniE 'X-License-Key|X-Admin-Token|license_key=' wordpress-showcase/yarsalam-ai-products; then
             echo "Showcase must not contain customer or admin credentials."
             exit 1
