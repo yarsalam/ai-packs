@@ -1,0 +1,66 @@
+# TEMPLATE ONLY — replace every placeholder in a private copy outside the repo.
+# The validator must reject this file until rights/privacy/annotation review is approved.
+dataset:
+  id: REPLACE_WITH_OPAQUE_DATASET_ID
+  version: 1.0.0
+  owner: REPLACE_WITH_DATA_CONTROLLER_OR_OWNER
+  source:
+    description: REPLACE_WITH_SOURCE_AND_SAMPLING_DESCRIPTION
+    collection_method: opt_in_partner_export_or_opt_in_panel_or_explicitly_licensed_corpus
+    rights_holder: REPLACE_WITH_RIGHTS_HOLDER
+    permission_reference: PRIVATE_CONTRACT_OR_CONSENT_REGISTER_REFERENCE
+  rights:
+    status: pending
+    commercial_use: pending
+    legal_basis: REPLACE_WITH_DOCUMENTED_LAWFUL_BASIS
+    evidence_reference: PRIVATE_LEGAL_REVIEW_REFERENCE
+    reviewed_by: REPLACE_WITH_REVIEWER_ID
+    reviewed_at: "YYYY-MM-DD"
+  privacy:
+    status: pending
+    deidentification: pending
+    pii_review: pending
+    retention_days: 90
+    access_control: REPLACE_WITH_PRIVATE_ROLE_AND_STORAGE_CONTROL
+    deletion_procedure: REPLACE_WITH_VERIFIABLE_DELETION_PROCESS
+  annotation:
+    guideline_version: "1.0"
+    minimum_annotators: 2
+    double_annotation_fraction: 0.2
+    adjudication: pending
+    adjudicator_id: REPLACE_WITH_OPAQUE_ADJUDICATOR_ID
+  split_policy:
+    method: source_group
+    tuning_excludes_sealed_test: true
+    sealed_test_access: restricted
+  minimum_total_samples: 1000
+  minimum_sealed_test_samples: 100
+  minimum_category_support: 25
+  minimum_language_variety_support: 10
+  required_categories:
+    - clean
+    - commercial_spam
+    - external_contact
+    - harassment_abuse
+    - threat
+    - hate_speech
+    - ambiguous
+  required_language_varieties:
+    - formal
+    - colloquial
+    - finglish
+    - typo
+    - code_switching
+  splits:
+    train:
+      path: /secure/private/safety/train.jsonl
+      sealed: false
+    tune:
+      path: /secure/private/safety/tune.jsonl
+      sealed: false
+    validation:
+      path: /secure/private/safety/validation.jsonl
+      sealed: false
+    sealed_test:
+      path: /secure/private/safety/sealed_test.jsonl
+      sealed: true

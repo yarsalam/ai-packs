@@ -116,6 +116,10 @@ class ApiClient {
         return $this->request('GET', '/feedback/metrics');
     }
 
+    public function license_status(): array {
+        return $this->request('GET', '/license/validate');
+    }
+
     // ── HEALTH ────────────────────────────────────────────────────────────────
     public function health_check(): array {
         $r = wp_remote_get($this->base_url . '/health', [

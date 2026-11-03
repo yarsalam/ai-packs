@@ -1,0 +1,8 @@
+# Private benchmark corpora, manifests, and aggregate reports must stay outside Git.
+private-data/
+data/private/
+reports/private/
+*.private.jsonl
+*.sealed.jsonl
+*.sealed-test.jsonl
+safety-benchmark-manifest.private.yaml

@@ -138,6 +138,10 @@ class ApiClient {
         return $this->request_multipart('/image/analyze', ['file' => $file_path]);
     }
 
+    public function license_status(): array {
+        return $this->request_json('GET', '/license/validate');
+    }
+
     // ── HEALTH ────────────────────────────────────────────────────────────
     public function health_check(): array {
         $r = wp_remote_get($this->base_url . '/health', [

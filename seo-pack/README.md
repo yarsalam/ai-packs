@@ -1,3 +1,5 @@
+> **یادداشت بسته‌بندی:** این راهنما و فایل Compose کنار آن برای توسعهٔ داخلی است و به checkout سرویس‌های اصلی mobApp وابستگی دارد. برای مشتری، ZIP مستقل ساخته‌شده با `scripts/build_distributions.py` و workflow توزیع را ارائه کنید؛ این پوشه را مستقیماً به‌عنوان نصب مستقل نفروشید.
+
 # SEO Pack — راهنمای Deploy
 
 ## ساختار فایل‌ها
@@ -77,6 +79,7 @@ cd wordpress-plugin && zip -r seo-pack.zip seo-pack/
 | Endpoint | سرویس پشتی | عملکرد |
 |----------|------------|--------|
 | `POST /seo/predict/traffic` | ai_seo :8021 | پیش‌بینی ترافیک |
+| `POST /seo/audit/url` | ai_seo :8021 | چک‌لیست فنی HTML برای URL عمومی (غیر از امتیاز رتبه‌بندی گوگل) |
 | `POST /seo/feedback/campaign` | ai_seo :8021 | فیدبک کمپین |
 | `POST /aeo/check-mentions` | aeo_tracker :8030 | چک AEO |
 | `GET  /aeo/history/{brand}` | aeo_tracker :8030 | تاریخچه AEO |
@@ -92,10 +95,7 @@ cd wordpress-plugin && zip -r seo-pack.zip seo-pack/
 ```
 X-License-Key: sk-xxxx...
 ```
-یا:
-```
-?license_key=sk-xxxx...
-```
+کلید را فقط در header بفرستید؛ قرار دادن آن در URL پشتیبانی نمی‌شود.
 
 ## Rate Limit
 
