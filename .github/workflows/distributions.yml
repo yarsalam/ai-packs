@@ -14,13 +14,17 @@ on:
       mobapp_ref:
         description: "Git ref in yarsalam/mobApp used as the service source"
         required: true
-        default: "fix/ai-pack-commercial-readiness"
+        default: "49718c978cda59237b2c6a206bdbe301accda157"
         type: string
   release:
     types: [published]
 
 permissions:
   contents: write
+
+concurrency:
+  group: ai-pack-distributions-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build-distributions:
@@ -33,7 +37,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: yarsalam/mobApp
-          ref: ${{ github.event_name == 'release' && 'main' || (inputs.mobapp_ref || 'fix/ai-pack-commercial-readiness') }}
+          ref: ${{ inputs.mobapp_ref || '49718c978cda59237b2c6a206bdbe301accda157' }}
           path: upstream/mobApp
 
       - name: Install packaging tools

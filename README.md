@@ -10,6 +10,34 @@
 - [راهنمای آزمون زندهٔ چهار پک](./docs/LIVE_SMOKE_TESTING.md)
 - [نتایج Smoke Test محلی چهار پک — ۲۹ اکتبر ۲۰۲۶](./docs/LIVE_SMOKE_RESULTS_2026-10-29.md)
 
+
+## کاتالوگ محصولات WordPress
+
+برای صفحهٔ معرفی محصولات، افزونهٔ مستقل زیر ساخته شده است:
+
+- [YarSalam AI Products Preview](./wordpress-showcase/yarsalam-ai-products)
+- پس از نصب و فعال‌سازی، صفحهٔ `/ai-products/` ایجاد می‌شود؛ اگر slug از قبل وجود داشته باشد، صفحهٔ موجود دست‌کاری نمی‌شود.
+- کاتالوگ چهار محصول و داشبورد تعاملی Trust & Safety را نمایش می‌دهد: KPI، نمودار روند، دسته‌های پرچم‌گذاری، صف بررسی انسانی و سازندهٔ سیاست. همهٔ اعداد و پیام‌های Preview ساختگی و با برچسب Demo هستند؛ هیچ API زنده‌ای فراخوانی نمی‌شود.
+- لینک تماس/فرم پایلوت از تنظیمات WordPress تعیین می‌شود.
+- منوی مدیریتی «AI Packs» وضعیت محصولات، GitHub Actions، آخرین Release رسمی (یا نبود آن) و در صورت پیکربندی امن، telemetry فقط‌خواندنی RAM/Containerها را نشان می‌دهد. توکن عامل خصوصی فقط روی سرور WordPress می‌ماند؛ این افزونه هیچ دستور start/stop اجرا نمی‌کند.
+- CI افزونه را با PHP/Node lint، تست آفلاین بودن Preview و ZIP نصب WordPress validate می‌کند.
+
+## ارتقای تجاری بدون شکستن اپ یارسلام
+
+- [معماری نسخهٔ تجاری و مسیر ارتقا به اپ یارسلام](./docs/PRODUCT_ARCHITECTURE_AND_UPGRADE.md)
+- [قرارداد اولیهٔ Safety API](./docs/SAFETY_API_V1.md)
+- [پروتکل benchmark فارسی Safety و ابزار ارزیابی](./docs/PERSIAN_SAFETY_BENCHMARK.md)
+- [تحقیق UX محصولات پیشرو و نیازمندی‌های داشبورد Safety](./docs/COMPETITOR_UX_RESEARCH.md)
+- [ترتیب اجرای تجاری‌سازی از GitHub تا پایلوت و مشتری](./docs/COMMERCIAL_EXECUTION_SEQUENCE.md)
+
+اصل معماری این است: کد اصلی inference در `mobApp` باقی می‌ماند؛ AI Packs توزیع مستقل و Gateway/افزونهٔ مشتری را می‌سازد. هیچ نسخهٔ مشتری نباید به Redis، volume یا سرویس عملیاتی یارسلام متصل شود. قابلیت‌های تجاری پس از benchmark و تست، با PR جدا و backward-compatible به اپ داخلی منتقل می‌شوند.
+
+## Safety Pack — قابلیت‌های نسخهٔ تجاری در حال ارزیابی
+
+در شاخهٔ مستقل محصول، Gateway تجاری مسیرهای `GET/PUT /policy`، `POST /moderate/decision`، `POST /moderate/batch/decision` و `GET /analytics/summary` را اضافه می‌کند. سیاست‌ها به License مشتری متصل‌اند و آمار فقط شمارندهٔ تجمیعی دسته/تصمیم را نگه می‌دارد. این قابلیت‌ها هنوز در production یارسلام نصب نشده‌اند و انتقال به اپ داخلی فقط با PR جدا پس از benchmark انجام می‌شود.
+
+ابزار `scripts/evaluate_moderation.py` گزارش aggregate از action accuracy، macro-F1، precision/recall، نرخ false-positive/negative و latency p50/p95 تولید می‌کند؛ فایل داده باید مجاز و private بماند.
+
 ## چهار پک
 
 | پک | چه کاری انجام می‌دهد | سرویس‌های اصلی |
@@ -61,4 +89,4 @@
 - میکروسرویس‌های اصلی و تست رگرسیون آمادگی بسته‌ها: [mobApp PR](https://github.com/yarsalam/mobApp/pull/6).
 - اصلاحات gateway، قرارداد license، quota و ابزار بسته‌بندی: [ai-packs PR](https://github.com/yarsalam/ai-packs/pull/1).
 
-تا زمانی که هر دو PR بازبینی و ادغام نشده‌اند، CI سبز نباشد و آزمون end-to-end مدل‌ها اجرا نشده باشد، این تغییرات را روی production deploy نکنید.
+این مخزن فعلاً در وضعیت technical preview است. PRهای زیرساخت image/کنترل به main ادغام شده‌اند؛ PR محصول #7 تا عبور همهٔ CIهای آخرین commit و تست build کامل imageها Draft می‌ماند. سبز شدن CI یا وجود ZIP/Artifact به معنی Release رسمی یا مجوز استقرار production نیست. هیچ تغییری در VPS، سرویس‌های زنده، Redis، دیتابیس یا volumeهای یارسلام با این کار انجام نمی‌شود.

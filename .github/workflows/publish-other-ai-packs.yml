@@ -26,7 +26,7 @@ on:
       mobapp_ref:
         description: "Exact yarsalam/mobApp commit, branch, or tag"
         required: true
-        default: "93bcb0d9ddf78ed31580d4aa2e3758b6397c1f0b"
+        default: "49718c978cda59237b2c6a206bdbe301accda157"
         type: string
       service_name:
         description: "Build only this service, or all services in the selected pack"
@@ -39,8 +39,8 @@ permissions:
   packages: write
 
 concurrency:
-  group: publish-other-ai-packs
-  cancel-in-progress: false
+  group: publish-other-ai-packs-${{ github.event.pull_request.number || inputs.pack_name || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build-and-validate:
@@ -57,7 +57,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: yarsalam/mobApp
-          ref: ${{ github.event_name == 'pull_request' && 'fix/seo-public-url-audit-endpoint' || (inputs.mobapp_ref || '93bcb0d9ddf78ed31580d4aa2e3758b6397c1f0b') }}
+          ref: ${{ github.event_name == 'pull_request' && '49718c978cda59237b2c6a206bdbe301accda157' || (inputs.mobapp_ref || '49718c978cda59237b2c6a206bdbe301accda157') }}
           path: upstream/mobApp
 
       - name: Resolve immutable mobApp source revision

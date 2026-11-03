@@ -20,6 +20,8 @@ from fastapi import FastAPI, HTTPException, Request, Depends, UploadFile, File, 
 from fastapi.responses import JSONResponse
 import redis.asyncio as aioredis
 
+from policy import DEFAULT_POLICY, aggregate_metrics, decide_moderation, normalize_policy
+
 # ── Config ──────────────────────────────────────────────────────────────────
 SERVICES = {
     "moderation":   os.getenv("AI_MODERATION_URL",   "http://ai_moderation:8018"),
@@ -33,6 +35,8 @@ LICENSE_PREFIX       = "safety_license:"
 RATE_LIMIT_PREFIX    = "safety_ratelimit:"
 RATE_LIMIT_PER_HOUR  = int(os.getenv("RATE_LIMIT_PER_HOUR", "1000"))
 MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
+POLICY_PREFIX = "safety_policy:"
+METRICS_PREFIX = "safety_metrics:"
 
 # Billable usage credits are provisional defaults; adjust after measuring inference cost.
 PLAN_LIMITS = {
@@ -114,7 +118,7 @@ async def _usage_weight(path: str) -> int:
         return 1
     if path == "/verify/face" or path in {"/image/upload", "/image/analyze"}:
         return 10
-    if path.endswith("/batch"):
+    if path == "/moderate/batch/decision" or path.endswith("/batch"):
         return 5
     if (
         path.startswith("/moderate/")
@@ -347,6 +351,188 @@ async def image_status(filename: str, request: Request, _: dict = Depends(get_li
     """وضعیت پردازش پس‌زمینه یه تصویر"""
     return await _proxy_json("image", f"/image/status/{filename}", request)
 
+
+
+# ── Tenant policy and explainable decisions ───────────────────────────────────
+
+async def _record_decision_metric(license_key: str, decision: dict) -> None:
+    now = datetime.now(timezone.utc)
+    key = f"{METRICS_PREFIX}{_hash(license_key)}:{now:%Y-%m}"
+    field = f"{decision.get('category', 'unknown')}:{decision.get('action', 'review')}"
+    count = await redis_client.hincrby(key, field, 1)
+    if count == 1:
+        await redis_client.expire(key, 180 * 24 * 60 * 60)
+
+
+async def _load_tenant_policy(license_key: str) -> dict:
+    raw = await redis_client.get(f"{POLICY_PREFIX}{_hash(license_key)}")
+    if not raw:
+        return normalize_policy({})
+    try:
+        import json as _json
+        return normalize_policy(_json.loads(raw))
+    except (ValueError, TypeError):
+        # A corrupted tenant policy must never silently change a moderation
+        # outcome to allow. Use the safe default and leave an operator-visible log.
+        import logging
+        logging.getLogger(__name__).exception("Invalid stored Safety Pack policy")
+        return normalize_policy({})
+
+
+@app.get("/policy", tags=["Policy"])
+async def get_tenant_policy(request: Request, _: dict = Depends(get_license)):
+    key = request.headers.get("X-License-Key")
+    return await _load_tenant_policy(key)
+
+
+@app.put("/policy", tags=["Policy"])
+async def put_tenant_policy(request: Request, _: dict = Depends(get_license)):
+    key = request.headers.get("X-License-Key")
+    payload = await request.json()
+    try:
+        policy = normalize_policy(payload)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(422, str(exc)) from exc
+    await redis_client.set(
+        f"{POLICY_PREFIX}{_hash(key)}",
+        json.dumps(policy, ensure_ascii=False, separators=(",", ":")),
+    )
+    return {"saved": True, "policy": policy}
+
+
+@app.post("/moderate/batch/decision", tags=["Moderation"])
+async def moderate_batch_decision(request: Request, _: dict = Depends(get_license)):
+    """Apply each tenant-specific policy to a bounded batch without storing input text."""
+    try:
+        payload = await request.json()
+    except Exception as exc:
+        raise HTTPException(400, "A JSON request body is required") from exc
+    if not isinstance(payload, dict) or not isinstance(payload.get("texts"), list):
+        raise HTTPException(422, "texts must be a JSON array")
+    texts = payload["texts"]
+    if not 1 <= len(texts) <= 100:
+        raise HTTPException(422, "batch size must be between 1 and 100")
+    if any(not isinstance(item, str) for item in texts):
+        raise HTTPException(422, "every batch item must be a string")
+    if any(len(item) > 2000 for item in texts):
+        raise HTTPException(413, "each text must be at most 2000 characters")
+    context = payload.get("context", "message")
+    if not isinstance(context, str) or context not in {"message", "bio", "comment", "profile"}:
+        raise HTTPException(422, "context must be message, bio, comment, or profile")
+
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                f"{SERVICES['moderation']}/moderate/batch",
+                json={"texts": texts, "context": context},
+            )
+            response.raise_for_status()
+            upstream = response.json()
+    except httpx.TimeoutException as exc:
+        raise HTTPException(504, "Moderation batch timed out") from exc
+    except httpx.HTTPError as exc:
+        raise HTTPException(502, "Moderation service unavailable") from exc
+    except ValueError as exc:
+        raise HTTPException(502, "Moderation service returned invalid JSON") from exc
+
+    upstream_results = upstream.get("results") if isinstance(upstream, dict) else None
+    if not isinstance(upstream_results, list) or len(upstream_results) != len(texts):
+        raise HTTPException(502, "Moderation service returned an invalid batch response")
+
+    key = request.headers.get("X-License-Key")
+    policy = await _load_tenant_policy(key)
+    results = []
+    for index, (text_value, model_result) in enumerate(zip(texts, upstream_results)):
+        decision = decide_moderation(text_value, model_result, policy)
+        await _record_decision_metric(key, decision)
+        results.append({"index": index, **decision})
+
+    counts = {
+        "allow": sum(row["action"] == "allow" for row in results),
+        "review": sum(row["action"] == "review" for row in results),
+        "block": sum(row["action"] == "block" for row in results),
+    }
+    return {
+        "total": len(results),
+        "actions": counts,
+        "results": results,
+        "context": context,
+        "policy_version": policy.get("version", 1),
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@app.get("/analytics/summary", tags=["Analytics"])
+async def tenant_analytics_summary(request: Request, _: dict = Depends(get_license)):
+    """Return aggregate counters only; no message text, user ID, or IP is stored."""
+    period = request.query_params.get("period", datetime.now(timezone.utc).strftime("%Y-%m"))
+    try:
+        parsed_period = datetime.strptime(period, "%Y-%m")
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(422, "period must use YYYY-MM format") from exc
+    now = datetime.now(timezone.utc)
+    current = (now.year, now.month)
+    selected = (parsed_period.year, parsed_period.month)
+    oldest = (now.year - 1, now.month)
+    if selected > current or selected < oldest:
+        raise HTTPException(422, "period must be within the current and previous 11 months")
+    key = request.headers.get("X-License-Key")
+    redis_key = f"{METRICS_PREFIX}{_hash(key)}:{period}"
+    raw = await redis_client.hgetall(redis_key)
+    return {
+        "period": period,
+        **aggregate_metrics(raw),
+        "retention_days": 180,
+        "storage": "aggregate category/action counters only",
+    }
+
+
+@app.post("/moderate/decision", tags=["Moderation"])
+async def moderate_decision(request: Request, _: dict = Depends(get_license)):
+    """Return an explicit allow/review/block action using this tenant's policy.
+
+    Submitted text is forwarded to the inference service but is not persisted by
+    the Gateway. Semantic dependency failures are always routed to human review.
+    """
+    try:
+        payload = await request.json()
+    except Exception as exc:
+        raise HTTPException(400, "A JSON request body is required") from exc
+    if not isinstance(payload, dict) or not isinstance(payload.get("text"), str):
+        raise HTTPException(422, "text must be a string")
+    text_value = payload["text"]
+    if len(text_value) > 2000:
+        raise HTTPException(413, "text must be at most 2000 characters")
+    context = payload.get("context", "message")
+    if not isinstance(context, str) or context not in {"message", "bio", "comment", "profile"}:
+        raise HTTPException(422, "context must be message, bio, comment, or profile")
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                f"{SERVICES['moderation']}/moderate",
+                json={"text": text_value, "context": context},
+            )
+            response.raise_for_status()
+            upstream = response.json()
+    except httpx.TimeoutException as exc:
+        raise HTTPException(504, "Moderation service timed out") from exc
+    except httpx.HTTPError as exc:
+        raise HTTPException(502, "Moderation service unavailable") from exc
+    except ValueError as exc:
+        raise HTTPException(502, "Moderation service returned invalid JSON") from exc
+
+    if not isinstance(upstream, dict):
+        raise HTTPException(502, "Moderation service returned an invalid response")
+    key = request.headers.get("X-License-Key")
+    policy = await _load_tenant_policy(key)
+    decision = decide_moderation(text_value, upstream, policy)
+    await _record_decision_metric(key, decision)
+    return {
+        **decision,
+        "context": context,
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+    }
 
 # ── ADMIN ─────────────────────────────────────────────────────────────────────
 
