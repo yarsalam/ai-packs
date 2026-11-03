@@ -21,6 +21,21 @@
 - PRهای #10، #11 و #12 با merge commit واقعی ادغام شدند؛ هیچ force update انجام نشد.
 - metadata شاخهٔ `main` در GitHub مقدار `protected=false` و `protection.enabled=false` را گزارش می‌کند و API مربوط به repository rulesets فهرست خالی برگرداند؛ بنابراین در زمان بررسی، الزام review مستقل/approval فعال نبود. endpoint جزئیات protection برای این اتصال 403 داد. هیچ self-approval یا review جعلی ثبت نشد.
 
+### سخت‌سازی شاخه‌های قدیمی و مسیرهای دستی انتشار — 2026-11-03
+
+ممیزی همهٔ شاخه‌ها نشان داد چند شاخهٔ تاریخی هنوز نسخهٔ قدیمی workflowهای `workflow_dispatch` را داشتند که `packages: write`، ورود به GHCR و `docker push/--push` یا trigger انتشار GitHub Release را نگه داشته بود؛ خاموش‌کردن publish فقط روی `main` برای بستن این مسیر کافی نبود.
+
+برای بستن مسیرهای قدیمی، بدون force update و با commitهای واقعی دووالدی/merge، workflowهای امن `main` به این شاخه‌ها منتقل شدند:
+- `feat/safety-ghcr-deployment`: `43d1a5ec08441865b4b2196e23fc4511da141946`
+- `feat/ai-products-wordpress-preview`: `3f80c17c660ff5b32301a2fc4224500d4f5aa66d`
+- `feat/safety-dashboard-product-preview`: `654df3d92a72dedfd417d85fc4db251671789240`
+- `feat/admin-ai-pack-control-and-progressive-test`: `82b61c56bdb8ddc6147c8e7fbbf91b8ffeb81ca1` و سپس `c800ef746a38b5050d6a13b96efa37ac6ba395c0`
+- `fix/matching-ai-assistant-runtime-image`: `b77d611530472266412ccb9bbfd97a5528f1de80` و سپس `50b41fc9c2597059f59889c2290eb4d2bfc645d7`
+- `fix/pack-live-smoke-followups-2026-10-29`: `9e87dd79aa1df15d078255d1bf9d63e71c7433f9`
+- `fix/commercial-readiness-baseline`: `310cff3d002caa5b3e17040fdd79c52525a76c93`
+
+پس از به‌روزرسانی، workflowهای شاخه‌های بالا دوباره بررسی شدند: هیچ `packages: write`، `docker/login-action`، `docker push/--push` یا trigger/asset upload برای GitHub Release باقی نمانده است. فقط artifact موقت CI با retention محدود مجاز است. شاخه‌های ثبت‌کنندهٔ قدیمی نیز به شاخه‌های امن‌شده اشاره می‌کنند. هیچ GHCR publish، GitHub Release یا VPS deployment اجرا نشد.
+
 ## ۲. ترتیب تجاری‌سازی
 
 ### مرحلهٔ ۱ — CI و اتوماسیون GitHub: تکمیل
