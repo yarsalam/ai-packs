@@ -6,7 +6,7 @@
 
 ## مرحله ۱ — حذف کار روزمرهٔ دستی از GitHub
 
-**وضعیت: تکمیل شد؛ PR #10 با merge commit `6320021` ادغام و هر ۸ check آخرین SHA سبز شد.**
+**وضعیت: تکمیل شد؛ PR #10 (غیرفعال‌سازی publish عمومی) و PR #12 (جلوگیری از overwrite گزارش خصوصی) با merge commit واقعی ادغام شدند؛ CI هر دو PR برابر ۸/۸ و CI آخرین main برابر ۵/۵ سبز است.**
 
 - بررسی PR، CI، branch drift و وابستگی workflowها.
 - اصلاح شکست‌ها و افزودن تست regression.
@@ -33,12 +33,13 @@
 
 ## مرحله ۳ — تبدیل Preview به پایلوت اندازه‌پذیر
 
-**وضعیت: راهنمای annotation، مسیر جمع‌آوری امن، manifest و validator در PR #11 آمادهٔ بررسی CI هستند؛ corpus مجاز و اجرای واقعی باقی است.**
+**وضعیت: ابزارها و مسیر حاکمیت داده در PR #11 ادغام شده‌اند؛ validator در PR #12 نیز در برابر overwrite فایل موجود harden شده است. corpus مجاز/دارای رضایت هنوز وجود ندارد؛ بنابراین benchmark و پایلوت واقعی متوقف و issue #8 همچنان BLOCKED است.**
 
 خروجی‌های آماده‌سازی:
 - `docs/PERSIAN_SAFETY_ANNOTATION_GUIDE_FA.md` — taxonomy، actionها و adjudication.
 - `docs/PERSIAN_SAFETY_DATA_COLLECTION_FA.md` — بررسی NASEZA/PHate/ParsHate و مسیر opt-in/قراردادی.
 - `docs/templates/safety-benchmark-manifest.example.yaml` و `scripts/validate_safety_benchmark.py` — گیت حقوقی/حریم خصوصی، split، PII heuristic و aggregate-only validation.
+- PR #12: مسیر خروجی گزارش aggregate اگر از قبل وجود داشته باشد رد می‌شود تا فایل خصوصی/گزارش قبلی overwrite نشود؛ ۳۱ تست Safety در check مربوطه موفق شد.
 
 گیت‌های لازم:
 1. مجموعهٔ دادهٔ فارسی با مجوز استفاده و حذف شناسه‌های مستقیم؛ متن خصوصی کاربران نباید به مخزن عمومی ارسال شود. هیچ candidate فعلی برای استفادهٔ تجاری تأیید نشده است.
