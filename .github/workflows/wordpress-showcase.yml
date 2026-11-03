@@ -40,6 +40,8 @@ jobs:
           grep -q 'add_shortcode' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
           grep -q 'function console_page' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
           grep -q 'actions/runs?per_page=20' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          grep -q 'releases?per_page=1' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          grep -q 'github_release_snapshot' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
           grep -q 'data-yap-panel="overview"' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
           grep -q 'data-yap-panel="queue"' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
           grep -q 'data-yap-panel="policies"' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
