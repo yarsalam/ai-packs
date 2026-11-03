@@ -24,6 +24,7 @@ jobs:
 
       - name: PHP syntax check
         run: php -l wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          node --check wordpress-showcase/yarsalam-ai-products/assets/showcase.js
 
       - name: Validate showcase assets and plugin metadata
         run: |
@@ -32,6 +33,8 @@ jobs:
           test -s wordpress-showcase/yarsalam-ai-products/assets/showcase.js
           grep -q 'Plugin Name: YarSalam AI Products Preview' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
           grep -q 'add_shortcode' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          grep -q 'function console_page' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          grep -q 'actions/runs?per_page=20' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
           grep -q 'data-yap-panel="overview"' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
           grep -q 'data-yap-panel="queue"' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
           grep -q 'data-yap-panel="policies"' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
