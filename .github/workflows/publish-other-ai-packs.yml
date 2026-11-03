@@ -1,4 +1,4 @@
-name: Validate and publish remaining AI Pack images
+name: Validate remaining AI Pack images (no publish)
 
 on:
   pull_request:
@@ -26,20 +26,24 @@ on:
       mobapp_ref:
         description: "Exact yarsalam/mobApp commit, branch, or tag"
         required: true
-        default: "93bcb0d9ddf78ed31580d4aa2e3758b6397c1f0b"
+        default: "49718c978cda59237b2c6a206bdbe301accda157"
+        type: string
+      service_name:
+        description: "Build only this service, or all services in the selected pack"
+        required: true
+        default: "all"
         type: string
 
 permissions:
   contents: read
-  packages: write
 
 concurrency:
-  group: publish-other-ai-packs
-  cancel-in-progress: false
+  group: publish-other-ai-packs-${{ github.event.pull_request.number || inputs.pack_name || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build-and-validate:
-    name: Build and validate SEO, Revenue, and Matching images
+    name: Build and validate SEO, Revenue, and Matching images (no registry publish)
     runs-on: ubuntu-latest
     timeout-minutes: 240
     steps:
@@ -52,8 +56,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: yarsalam/mobApp
-          ref: ${{ github.event_name == 'pull_request' && 'fix/seo-public-url-audit-endpoint' || (inputs.mobapp_ref || '93bcb0d9ddf78ed31580d4aa2e3758b6397c1f0b') }}
+          ref: ${{ github.event_name == 'pull_request' && '49718c978cda59237b2c6a206bdbe301accda157' || (inputs.mobapp_ref || '49718c978cda59237b2c6a206bdbe301accda157') }}
           path: upstream/mobApp
+
+      - name: Resolve immutable mobApp source revision
+        id: source
+        shell: bash
+        run: echo "mobapp_sha=$(git -C upstream/mobApp rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -68,6 +77,7 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           SELECTED_PACK: ${{ inputs.pack_name || 'all' }}
+          SELECTED_SERVICE: ${{ inputs.service_name || 'all' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -86,9 +96,16 @@ jobs:
 
           output = Path("dist")
           output.mkdir(exist_ok=True)
+          service_filter = os.environ.get("SELECTED_SERVICE", "all")
           for pack in selected:
               if pack not in PACKS or pack == "safety-pack":
                   raise SystemExit(f"Unsupported selected pack: {pack}")
+              pack_services = list(PACKS[pack]["services"])
+              if PACKS[pack].get("model_init"):
+                  pack_services.append("model_init")
+              pack_services.append("gateway")
+              if service_filter != "all" and service_filter not in pack_services:
+                  raise SystemExit(f"Service {service_filter!r} is not part of {pack}: {pack_services}")
               built = build_one(pack, PACKS[pack], Path("upstream/mobApp").resolve(), output.resolve())
               result = validate_pack(output.resolve(), pack)
               print({"built": str(built), "validation": result})
@@ -135,19 +152,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GitHub Container Registry for manual publication
-        if: github.event_name == 'workflow_dispatch'
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build each service image sequentially; push only on manual dispatch
+      - name: Build each service image for validation only
         env:
           EVENT_NAME: ${{ github.event_name }}
           PACK_LIST: ${{ steps.packs.outputs.packs }}
-          IMAGE_TAG: sha-${{ github.sha }}
+          SERVICE_FILTER: ${{ inputs.service_name || 'all' }}
+          IMAGE_TAG: sha-${{ github.sha }}-mobapp-${{ steps.source.outputs.mobapp_sha }}
         shell: bash
         run: |
           set -euo pipefail
@@ -162,6 +172,11 @@ jobs:
           if pack.get("model_init"):
               result.append("model_init")
           result.append("gateway")
+          service_filter = os.environ.get("SERVICE_FILTER", "all")
+          if service_filter != "all":
+              if service_filter not in result:
+                  raise SystemExit(f"Service {service_filter!r} is not part of selected pack")
+              result = [service_filter]
           print(" ".join(result))
           PY
           )
@@ -198,19 +213,22 @@ jobs:
                 docker buildx build \
                   --platform linux/amd64 \
                   --file "$context/Dockerfile" \
+                  --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+                  --label "com.yarsalam.mobapp.revision=${{ steps.source.outputs.mobapp_sha }}" \
                   --label "org.opencontainers.image.source=https://github.com/yarsalam/ai-packs" \
-                  --tag "$image:$IMAGE_TAG" \
-                  --tag "$image:latest" \
+                  --tag "ai-packs-check:$pack-$component" \
                   --cache-from "type=gha,scope=$pack-$service" \
                   --cache-to "type=gha,mode=max,scope=$pack-$service" \
-                  --push \
+                  --load \
                   "$context"
-                echo "Published $image:$IMAGE_TAG"
+                echo "Built for validation only: $pack / $service (no registry push)"
               fi
             done
           done
 
-      - name: Print publication tag
+      - name: Print validation result
+        env:
+          IMAGE_TAG: sha-${{ github.sha }}-mobapp-${{ steps.source.outputs.mobapp_sha }}
         run: |
-          echo "Pack image tag: sha-${GITHUB_SHA}"
-          echo "These are registry images only; no VPS was modified."
+          echo "SEO, Revenue, and Matching images were built locally for validation only."
+          echo "No GHCR login, push, public release, or VPS deployment was performed."
