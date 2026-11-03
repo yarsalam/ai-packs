@@ -151,6 +151,10 @@ final class YarSalam_AI_Products_Preview {
     }
 
     private static function private_control_snapshot(): array {
+        $cached = get_transient('yap_ai_pack_private_status');
+        if (is_array($cached)) {
+            return $cached;
+        }
         $base_url = defined('YAP_AI_PACK_CONTROL_URL') ? trim((string) YAP_AI_PACK_CONTROL_URL) : '';
         $token = defined('YAP_AI_PACK_CONTROL_TOKEN') ? (string) YAP_AI_PACK_CONTROL_TOKEN : '';
         if ($base_url === '' || strlen($token) < 48) {
@@ -199,7 +203,9 @@ final class YarSalam_AI_Products_Preview {
         if (!is_array($body) || !isset($body['memory'], $body['packs']) || !is_array($body['packs'])) {
             return ['connected' => false, 'error' => 'ساختار پاسخ عامل خصوصی معتبر نیست.'];
         }
-        return ['connected' => true, 'data' => $body];
+        $snapshot = ['connected' => true, 'data' => $body, 'fetched_at' => time()];
+        set_transient('yap_ai_pack_private_status', $snapshot, 30);
+        return $snapshot;
     }
 
     public static function console_page(): void {
