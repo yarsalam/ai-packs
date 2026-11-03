@@ -64,7 +64,8 @@ WordPress Preview و داشبورد Safety در PR #7 ادغام شده‌اند
 
 بررسی metadata مخازن عمومی:
 - NASEZA مجوز CC0-1.0 دارد، اما داده از گفتگوهای Telegram گردآوری شده و مبنای privacy/consent و حقوق اشخاص ثالث برای این محصول روشن نیست؛ فقط candidate برای بررسی حقوقی است.
-- PHate و ParsHate در metadata فعلی GitHub مجوز صریح dataset ندارند.
+- PHate در GitHub metadata مجوز ندارد؛ ParsHate نیز `license=null` دارد و README فعلی آن را صریحاً «for research only» معرفی می‌کند؛ برای commercial benchmark پذیرفته نیست.
+- ParsCN یک candidate جدید ۱٬۱۰۰ جفتی با ادعای CC BY 4.0 در README است، اما metadata مخزن/Zenodo مجوز dataset را ثبت نکرده و ۴۵۰ نمونه از PHATE و بقیه از منابع upstream/LLM مشتق شده‌اند؛ chain-of-rights، privacy/consent و مجوز منابع پایه روشن نیست. فقط برای بررسی حقوقی باقی می‌ماند.
 - هیچ‌کدام به‌تنهایی taxonomy و توزیع موردنیاز محصول dating/social فارسی را کامل پوشش نمی‌دهند.
 
 پس هیچ‌کدام وارد benchmark یا sealed test نشده‌اند. راه امن باقی‌مانده: مجوز کتبی و provenance/privacy روشن از صاحب حق، یا دادهٔ opt-in از شریک/پنل داوطلبان با رضایت قابل‌پس‌گرفتن و retention/deletion مشخص. دادهٔ production یارسلام نباید استفاده یا export شود.
