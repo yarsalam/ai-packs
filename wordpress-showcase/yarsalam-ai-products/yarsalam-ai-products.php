@@ -150,6 +150,54 @@ final class YarSalam_AI_Products_Preview {
         return $snapshot;
     }
 
+    private static function github_release_snapshot(): array {
+        $cached = get_transient('yap_ai_packs_release_snapshot');
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $response = wp_remote_get(
+            'https://api.github.com/repos/yarsalam/ai-packs/releases?per_page=1',
+            [
+                'timeout' => 8,
+                'redirection' => 0,
+                'headers' => [
+                    'Accept' => 'application/vnd.github+json',
+                    'X-GitHub-Api-Version' => '2022-11-28',
+                    'User-Agent' => 'YarSalam-AI-Packs-Console',
+                ],
+            ]
+        );
+
+        if (is_wp_error($response)) {
+            return ['available' => false, 'error' => 'دریافت نسخهٔ GitHub ممکن نشد.'];
+        }
+        if ((int) wp_remote_retrieve_response_code($response) !== 200) {
+            return ['available' => false, 'error' => 'GitHub Releases با خطا پاسخ داد.'];
+        }
+
+        $releases = json_decode((string) wp_remote_retrieve_body($response), true);
+        if (!is_array($releases)) {
+            return ['available' => false, 'error' => 'پاسخ Releases قابل خواندن نیست.'];
+        }
+        if (empty($releases)) {
+            $snapshot = ['available' => false, 'error' => '', 'fetched_at' => time()];
+            set_transient('yap_ai_packs_release_snapshot', $snapshot, 5 * MINUTE_IN_SECONDS);
+            return $snapshot;
+        }
+
+        $latest = $releases[0];
+        $snapshot = [
+            'available' => !empty($latest['tag_name']),
+            'tag' => isset($latest['tag_name']) ? sanitize_text_field((string) $latest['tag_name']) : '',
+            'name' => isset($latest['name']) ? sanitize_text_field((string) $latest['name']) : '',
+            'published_at' => isset($latest['published_at']) ? sanitize_text_field((string) $latest['published_at']) : '',
+            'fetched_at' => time(),
+        ];
+        set_transient('yap_ai_packs_release_snapshot', $snapshot, 5 * MINUTE_IN_SECONDS);
+        return $snapshot;
+    }
+
     private static function private_control_snapshot(): array {
         $cached = get_transient('yap_ai_pack_private_status');
         if (is_array($cached)) {
@@ -214,6 +262,7 @@ final class YarSalam_AI_Products_Preview {
         }
 
         $snapshot = self::github_ci_snapshot();
+        $release_snapshot = self::github_release_snapshot();
         $private_status = self::private_control_snapshot();
         $products = [
             ['name' => 'Persian Trust & Safety', 'status' => 'پیش‌نمایش تعاملی؛ پایلوت پس از Benchmark'],
@@ -311,6 +360,21 @@ final class YarSalam_AI_Products_Preview {
                     </table>
                 </div>
             <?php endif; ?>
+
+            <h2 style="margin-top:26px">نسخهٔ منتشرشده</h2>
+            <div class="yap-console-card">
+                <?php if (!empty($release_snapshot['available'])) : ?>
+                    <p class="yap-console-ok">آخرین نسخهٔ رسمی: <code><?php echo esc_html((string) $release_snapshot['tag']); ?></code></p>
+                    <?php if (!empty($release_snapshot['name'])) : ?><div class="yap-console-muted"><?php echo esc_html((string) $release_snapshot['name']); ?></div><?php endif; ?>
+                    <?php if (!empty($release_snapshot['published_at'])) : ?><div class="yap-console-muted">تاریخ انتشار: <?php echo esc_html(mysql2date(get_option('date_format'), (string) $release_snapshot['published_at'])); ?></div><?php endif; ?>
+                <?php elseif (!empty($release_snapshot['error'])) : ?>
+                    <p class="yap-console-warn"><?php echo esc_html((string) $release_snapshot['error']); ?></p>
+                <?php else : ?>
+                    <p class="yap-console-warn">هنوز هیچ GitHub Release رسمی منتشر نشده است.</p>
+                    <div class="yap-console-muted">Artifactهای CI موقت‌اند؛ تا انتشار Release و عبور از گیت‌های کیفیت/امنیت، نسخهٔ رسمی فروش محسوب نمی‌شوند.</div>
+                <?php endif; ?>
+                <p style="margin-top:10px"><a href="https://github.com/yarsalam/ai-packs/releases" target="_blank" rel="noopener noreferrer">مشاهدهٔ نسخه‌ها در GitHub</a></p>
+            </div>
 
             <h2 style="margin-top:26px">آخرین اجراهای GitHub Actions</h2>
             <?php if (!empty($snapshot['error'])) : ?>
