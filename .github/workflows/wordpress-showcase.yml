@@ -32,6 +32,14 @@ jobs:
           test -s wordpress-showcase/yarsalam-ai-products/assets/showcase.js
           grep -q 'Plugin Name: YarSalam AI Products Preview' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
           grep -q 'add_shortcode' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          grep -q 'data-yap-panel="overview"' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          grep -q 'data-yap-panel="queue"' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          grep -q 'data-yap-panel="policies"' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          grep -q 'data-yap-decision' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          if grep -nE 'fetch\\(|XMLHttpRequest|sendBeacon' wordpress-showcase/yarsalam-ai-products/assets/showcase.js; then
+            echo "Preview JavaScript must not make network requests."
+            exit 1
+          fi
           grep -q 'ثابت' wordpress-showcase/yarsalam-ai-products/README.md
           if grep -RniE 'X-License-Key|X-Admin-Token|license_key=' wordpress-showcase/yarsalam-ai-products; then
             echo "Showcase must not contain customer or admin credentials."
