@@ -72,6 +72,50 @@ jobs:
           print({"built": str(built), "validation": result})
           PY
 
+      - name: Verify built moderation engine fails closed when embedding is unavailable
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install httpx==0.27.2
+          python - <<'PY'
+          import asyncio
+          import importlib.util
+          from pathlib import Path
+
+          import httpx
+
+          source = Path("dist/safety-pack/services/ai_moderation/moderation_engine.py")
+          spec = importlib.util.spec_from_file_location("safety_moderation_engine", source)
+          if spec is None or spec.loader is None:
+              raise SystemExit("Could not load generated moderation engine")
+          module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+
+          class FailingEmbeddingClient:
+              def __init__(self, *args, **kwargs):
+                  pass
+              async def __aenter__(self):
+                  return self
+              async def __aexit__(self, exc_type, exc, tb):
+                  return False
+              async def post(self, *args, **kwargs):
+                  raise httpx.ConnectError("simulated embedding outage")
+
+          module.httpx.AsyncClient = FailingEmbeddingClient
+          engine = module.ModerationEngine()
+          single = asyncio.run(engine.moderate_text("یک متن فارسی بدون کلمهٔ ممنوع"))
+          batch = asyncio.run(engine.moderate_batch([
+              "یک متن فارسی معمولی",
+              "یک متن فارسی معمولی دیگر",
+          ]))
+          assert single["allowed"] is False, single
+          assert single["reason"] == "semantic_check_unavailable", single
+          assert single["review_required"] is True, single
+          assert all(item["allowed"] is False for item in batch), batch
+          assert all(item["review_required"] is True for item in batch), batch
+          print("Safety semantic outage single/batch fail-closed runtime test passed.")
+          PY
+
       - name: Validate committed runtime Compose file
         shell: bash
         run: |
