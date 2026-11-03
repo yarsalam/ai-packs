@@ -216,27 +216,114 @@ final class YarSalam_AI_Products_Preview {
                 </div>
             </section>
 
-            <section class="yap-demo" id="yap-demo">
-                <div class="yap-demo__copy">
-                    <span class="yap-kicker">ILLUSTRATIVE PREVIEW</span>
-                    <h2>نمونهٔ گردش کار Safety</h2>
-                    <p>در محصول نهایی، هر کسب‌وکار می‌تواند تعیین کند که چه محتوایی مجاز باشد، چه چیزی به بررسی انسانی برود و چه چیزی مسدود شود.</p>
-                    <div class="yap-demo__notice">این بخش فقط نمونهٔ نمایشی و ثابت است؛ به مدل زنده وصل نیست و هیچ متنی را ارسال یا ذخیره نمی‌کند.</div>
-                </div>
-                <div class="yap-demo__panel">
-                    <div class="yap-demo__panelhead"><span>نمونه پیام کاربر</span><span class="yap-live-dot">STATIC DEMO</span></div>
-                    <div class="yap-demo__message" id="yap-demo-message">بیا ادامه صحبت رو بیرون از اپ در واتساپ انجام بدیم.</div>
-                    <div class="yap-demo__buttons">
-                        <button type="button" class="yap-sample is-active" data-sample="contact">تماس خارج از پلتفرم</button>
-                        <button type="button" class="yap-sample" data-sample="clean">پیام عادی</button>
-                        <button type="button" class="yap-sample" data-sample="custom">قاعده اختصاصی</button>
+            <section class="yap-workspace" id="yap-demo" aria-labelledby="yap-workspace-title">
+                <div class="yap-workspace__intro">
+                    <div>
+                        <span class="yap-kicker">TRUST &amp; SAFETY WORKSPACE</span>
+                        <h2 id="yap-workspace-title">محیط مدیریت و نظارت بر محتوا</h2>
+                        <p>پیش‌نمایش تجربهٔ مدیر محصول و اپراتور امنیت؛ با داده‌های کاملاً ساختگی و بدون اتصال به مدل زنده.</p>
                     </div>
-                    <div class="yap-demo__result" aria-live="polite">
-                        <span class="yap-result-label">تصمیم نمونه</span>
-                        <strong id="yap-demo-action">نیازمند بررسی انسانی</strong>
-                        <p id="yap-demo-reason">دلیل نمونه: تلاش برای انتقال گفتگو به خارج از پلتفرم.</p>
+                    <span class="yap-preview-stamp"><i></i> پیش‌نمایش تعاملی</span>
+                </div>
+
+                <div class="yap-workspace__shell">
+                    <aside class="yap-workspace__sidebar" aria-label="ناوبری پیش‌نمایش">
+                        <div class="yap-workspace__brand"><span class="yap-brand-mark">Y</span><span><b>YarSalam</b><small>TRUST CENTER</small></span></div>
+                        <div class="yap-workspace__tenant"><span class="yap-tenant-avatar">D</span><span><b>Demo Workspace</b><small>محیط نمایشی</small></span><span class="yap-tenant-chevron">⌄</span></div>
+                        <span class="yap-workspace__nav-label">مدیریت محتوا</span>
+                        <button type="button" class="yap-dash-tab is-active" data-yap-tab="overview" aria-pressed="true"><span>▦</span> نمای کلی</button>
+                        <button type="button" class="yap-dash-tab" data-yap-tab="queue" aria-pressed="false"><span>☷</span> صف بررسی <em>۱۲</em></button>
+                        <button type="button" class="yap-dash-tab" data-yap-tab="policies" aria-pressed="false"><span>⚙</span> سیاست‌ها و قوانین</button>
+                        <div class="yap-sidebar-spacer"></div>
+                        <div class="yap-workspace__sidebar-note"><span class="yap-sidebar-shield">✓</span><b>محافظت هوشمند</b><small>سیاست‌های اختصاصی هر کسب‌وکار</small></div>
+                        <div class="yap-workspace__profile"><span class="yap-profile-avatar">م</span><span><b>مدیر نمونه</b><small>مدیر امنیت</small></span><span class="yap-profile-more">•••</span></div>
+                    </aside>
+
+                    <div class="yap-workspace__main">
+                        <header class="yap-workspace__topbar">
+                            <div class="yap-breadcrumb"><span>محیط کاری</span><b>/</b><strong data-yap-current-title>نمای کلی</strong></div>
+                            <div class="yap-topbar-actions"><span class="yap-demo-chip">DEMO DATA</span><button type="button" class="yap-icon-button" aria-label="اعلان‌های نمونه">♧<i></i></button><span class="yap-topbar-avatar">م</span></div>
+                        </header>
+
+                        <div class="yap-workspace__content">
+                            <div class="yap-workspace__notice"><span>ⓘ</span><span>محیط نمایشی است؛ اعداد، پیام‌ها و رویدادها ساختگی‌اند و هیچ تصمیمی روی کاربران واقعی اعمال نمی‌شود.</span></div>
+
+                            <section class="yap-dash-panel is-active" data-yap-panel="overview">
+                                <div class="yap-panel-heading"><div><span class="yap-date-label">گزارش نمونه · ۷ روز اخیر</span><h3>سلام، مدیر عزیز 👋</h3><p>نمایی از وضعیت امنیت و مدیریت محتوای پلتفرم شما</p></div><button type="button" class="yap-date-filter">۷ روز اخیر <span>⌄</span></button></div>
+
+                                <div class="yap-kpi-grid">
+                                    <article class="yap-kpi"><div><span>کل موارد بررسی‌شده</span><b class="yap-kpi-icon">▤</b></div><strong>۲٬۴۸۶</strong><small><i class="yap-trend-up">↗ ۱۲٪</i> نسبت به دوره قبل</small><div class="yap-kpi-spark yap-spark-a"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></article>
+                                    <article class="yap-kpi"><div><span>تأیید خودکار</span><b class="yap-kpi-icon yap-kpi-green">✓</b></div><strong>۲٬۱۷۴</strong><small><i class="yap-trend-up">↗ ۸٪</i> نسبت به دوره قبل</small><div class="yap-kpi-spark yap-spark-b"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></article>
+                                    <article class="yap-kpi"><div><span>نیازمند بررسی</span><b class="yap-kpi-icon yap-kpi-amber">◷</b></div><strong>۲۱۸</strong><small><i class="yap-trend-down">↘ ۳٪</i> نسبت به دوره قبل</small><div class="yap-kpi-spark yap-spark-c"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></article>
+                                    <article class="yap-kpi"><div><span>مسدودشده</span><b class="yap-kpi-icon yap-kpi-red">⊘</b></div><strong>۹۴</strong><small><i class="yap-trend-neutral">بدون تغییر</i> نسبت به دوره قبل</small><div class="yap-kpi-spark yap-spark-d"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></article>
+                                </div>
+
+                                <div class="yap-analytics-grid">
+                                    <article class="yap-widget yap-activity-widget">
+                                        <div class="yap-widget-heading"><div><h4>روند فعالیت moderation</h4><p>توزیع تصمیم‌ها در بازهٔ انتخاب‌شده</p></div><span class="yap-widget-menu">•••</span></div>
+                                        <div class="yap-chart-legend"><span><i class="yap-legend-total"></i> کل بررسی</span><span><i class="yap-legend-approved"></i> تأیید</span><span><i class="yap-legend-review"></i> بررسی انسانی</span></div>
+                                        <div class="yap-bar-chart" role="img" aria-label="نمودار نمونه فعالیت هفت روز اخیر">
+                                            <div class="yap-chart-grid"><span>۳۰۰</span><span>۲۰۰</span><span>۱۰۰</span><span>۰</span></div>
+                                            <div class="yap-chart-columns">
+                                                <div class="yap-chart-day"><div class="yap-bar-pair"><i style="--bar:68%"></i><i style="--bar2:52%"></i><i style="--bar3:12%"></i></div><small>ش</small></div>
+                                                <div class="yap-chart-day"><div class="yap-bar-pair"><i style="--bar:78%"></i><i style="--bar2:63%"></i><i style="--bar3:15%"></i></div><small>ی</small></div>
+                                                <div class="yap-chart-day"><div class="yap-bar-pair"><i style="--bar:55%"></i><i style="--bar2:43%"></i><i style="--bar3:10%"></i></div><small>د</small></div>
+                                                <div class="yap-chart-day"><div class="yap-bar-pair"><i style="--bar:88%"></i><i style="--bar2:71%"></i><i style="--bar3:17%"></i></div><small>س</small></div>
+                                                <div class="yap-chart-day"><div class="yap-bar-pair"><i style="--bar:73%"></i><i style="--bar2:57%"></i><i style="--bar3:14%"></i></div><small>چ</small></div>
+                                                <div class="yap-chart-day"><div class="yap-bar-pair"><i style="--bar:96%"></i><i style="--bar2:76%"></i><i style="--bar3:19%"></i></div><small>پ</small></div>
+                                                <div class="yap-chart-day"><div class="yap-bar-pair"><i style="--bar:62%"></i><i style="--bar2:49%"></i><i style="--bar3:11%"></i></div><small>ج</small></div>
+                                            </div>
+                                        </div>
+                                    </article>
+
+                                    <article class="yap-widget yap-category-widget">
+                                        <div class="yap-widget-heading"><div><h4>دسته‌بندی موارد پرچم‌گذاری‌شده</h4><p>نمونهٔ تفکیک بر اساس نوع هشدار</p></div><span class="yap-widget-menu">•••</span></div>
+                                        <div class="yap-category-list">
+                                            <div><span><i class="yap-cat-dot yap-dot-spam"></i>اسپم و تبلیغات</span><b>۴۲٪</b><i class="yap-category-track"><i style="--fill:42%"></i></i></div>
+                                            <div><span><i class="yap-cat-dot yap-dot-contact"></i>تماس خارج از پلتفرم</span><b>۲۸٪</b><i class="yap-category-track"><i style="--fill:28%"></i></i></div>
+                                            <div><span><i class="yap-cat-dot yap-dot-abuse"></i>آزار و توهین</span><b>۱۸٪</b><i class="yap-category-track"><i style="--fill:18%"></i></i></div>
+                                            <div><span><i class="yap-cat-dot yap-dot-other"></i>سایر موارد</span><b>۱۲٪</b><i class="yap-category-track"><i style="--fill:12%"></i></i></div>
+                                        </div>
+                                        <div class="yap-category-foot"><span>مجموع موارد پرچم‌گذاری‌شده</span><strong>۳۱۲ مورد</strong></div>
+                                    </article>
+                                </div>
+
+                                <article class="yap-widget yap-recent-widget">
+                                    <div class="yap-widget-heading"><div><h4>موارد اخیر نیازمند توجه</h4><p>آخرین موارد نمونه در صف بررسی</p></div><button type="button" class="yap-text-action" data-yap-go="queue">مشاهده همه موارد ←</button></div>
+                                    <div class="yap-queue-head"><span>محتوا / شناسه</span><span>دسته‌بندی</span><span>سطح ریسک</span><span>وضعیت</span><span>اقدام</span></div>
+                                    <div class="yap-queue-row" data-yap-row="contact"><div class="yap-queue-content"><span class="yap-content-avatar">م</span><span><b>«بیا در واتساپ ادامه بدیم…»</b><small>پیام · #MSG-2048</small></span></div><span class="yap-category-tag">تماس خارجی</span><span class="yap-risk yap-risk-medium">متوسط</span><span class="yap-state yap-state-review">در انتظار بررسی</span><button type="button" class="yap-row-action" data-yap-go="queue">بررسی</button></div>
+                                    <div class="yap-queue-row" data-yap-row="spam"><div class="yap-queue-content"><span class="yap-content-avatar yap-avatar-orange">ا</span><span><b>«پیشنهاد ویژه و تبلیغ خدمات…»</b><small>بیوگرافی · #BIO-1032</small></span></div><span class="yap-category-tag">اسپم تبلیغاتی</span><span class="yap-risk yap-risk-high">بالا</span><span class="yap-state yap-state-blocked">مسدودشده</span><button type="button" class="yap-row-action" data-yap-go="queue">جزئیات</button></div>
+                                    <div class="yap-queue-row" data-yap-row="clean"><div class="yap-queue-content"><span class="yap-content-avatar yap-avatar-purple">ن</span><span><b>«سلام، از آشنایی با شما خوشحالم…»</b><small>پیام · #MSG-2041</small></span></div><span class="yap-category-tag">محتوای عادی</span><span class="yap-risk yap-risk-low">پایین</span><span class="yap-state yap-state-approved">تأییدشده</span><button type="button" class="yap-row-action" data-yap-go="queue">جزئیات</button></div>
+                                </article>
+                            </section>
+
+                            <section class="yap-dash-panel" data-yap-panel="queue" hidden>
+                                <div class="yap-panel-heading"><div><span class="yap-date-label">مدیریت اپراتوری</span><h3>صف بررسی انسانی</h3><p>موارد مشکوک را بررسی و تصمیم نهایی را ثبت کنید.</p></div><span class="yap-queue-counter">۱۲ مورد در انتظار</span></div>
+                                <div class="yap-queue-filters"><button type="button" class="is-selected">همه موارد <b>۱۲</b></button><button type="button">اولویت بالا <b>۳</b></button><button type="button">گزارش‌شده <b>۴</b></button><button type="button">بازبینی‌شده <b>۵</b></button></div>
+                                <div class="yap-review-list">
+                                    <article class="yap-review-card" data-review-card="contact"><div class="yap-review-card__top"><span class="yap-risk yap-risk-medium">ریسک متوسط</span><small>#MSG-2048 · ۸ دقیقه پیش</small></div><h4>انتقال گفتگو به خارج از پلتفرم</h4><p class="yap-review-quote">«بیا در واتساپ ادامه بدیم و شماره‌تو برام بفرست.»</p><div class="yap-review-reasons"><span>دسته: تماس خارجی</span><span>سیگنال نمونه: شماره / پیام‌رسان خارجی</span><span>منبع: پیام خصوصی</span></div><div class="yap-review-actions"><button type="button" data-yap-decision="allow">تأیید محتوا</button><button type="button" data-yap-decision="review">ارجاع به بررسی</button><button type="button" data-yap-decision="block">مسدود کردن</button></div><div class="yap-review-feedback" aria-live="polite"></div></article>
+                                    <article class="yap-review-card" data-review-card="spam"><div class="yap-review-card__top"><span class="yap-risk yap-risk-high">ریسک بالا</span><small>#BIO-1032 · ۲۱ دقیقه پیش</small></div><h4>الگوی تبلیغات و ارسال انبوه</h4><p class="yap-review-quote">«خدمات ویژه، پیشنهاد محدود و راه ارتباطی خارج از برنامه…»</p><div class="yap-review-reasons"><span>دسته: اسپم تبلیغاتی</span><span>سیگنال نمونه: الگوی تبلیغاتی</span><span>منبع: بیوگرافی</span></div><div class="yap-review-actions"><button type="button" data-yap-decision="allow">تأیید محتوا</button><button type="button" data-yap-decision="review">ارجاع به بررسی</button><button type="button" data-yap-decision="block">مسدود کردن</button></div><div class="yap-review-feedback" aria-live="polite"></div></article>
+                                    <article class="yap-review-card" data-review-card="abuse"><div class="yap-review-card__top"><span class="yap-risk yap-risk-medium">ریسک متوسط</span><small>#MSG-2015 · ۳۵ دقیقه پیش</small></div><h4>زبان توهین‌آمیز احتمالی</h4><p class="yap-review-quote">«یک پیام با عبارت نامناسب که نیازمند بررسی بافت گفتگو است.»</p><div class="yap-review-reasons"><span>دسته: آزار و توهین</span><span>سیگنال نمونه: واژگان مشکوک</span><span>منبع: گفت‌وگو</span></div><div class="yap-review-actions"><button type="button" data-yap-decision="allow">تأیید محتوا</button><button type="button" data-yap-decision="review">ارجاع به بررسی</button><button type="button" data-yap-decision="block">مسدود کردن</button></div><div class="yap-review-feedback" aria-live="polite"></div></article>
+                                </div>
+                                <p class="yap-panel-disclaimer">تمام موارد این صف ساختگی‌اند. اقدام‌ها فقط وضعیت نمونه را در همین صفحه تغییر می‌دهند.</p>
+                            </section>
+
+                            <section class="yap-dash-panel" data-yap-panel="policies" hidden>
+                                <div class="yap-panel-heading"><div><span class="yap-date-label">کنترل کسب‌وکار</span><h3>سیاست‌ها و قوانین</h3><p>برای هر دسته، واکنش مناسب کسب‌وکار را تنظیم کنید.</p></div><span class="yap-policy-version">Policy v1 · نمونه</span></div>
+                                <div class="yap-policy-intro"><span class="yap-policy-intro-icon">⚙</span><div><b>سیاست اختصاصی Demo Workspace</b><p>این تنظیمات صرفاً در مرورگر و برای نمایش تعامل پنل تغییر می‌کنند؛ به Gateway ذخیره نمی‌شوند.</p></div></div>
+                                <div class="yap-policy-list">
+                                    <article class="yap-policy-card"><div><span class="yap-policy-icon yap-dot-contact">↗</span><span><b>انتقال گفتگو به خارج از پلتفرم</b><small>تشخیص شماره، لینک و پیام‌رسان خارجی</small></span></div><label>اقدام پیش‌فرض</label><select data-yap-policy><option value="review" selected>ارجاع به بررسی انسانی</option><option value="block">مسدودسازی خودکار</option><option value="allow">اجازه عبور</option></select></article>
+                                    <article class="yap-policy-card"><div><span class="yap-policy-icon yap-dot-spam">✳</span><span><b>اسپم و تبلیغات ناخواسته</b><small>الگوهای تکراری، لینک و پیام تبلیغاتی</small></span></div><label>اقدام پیش‌فرض</label><select data-yap-policy><option value="review">ارجاع به بررسی انسانی</option><option value="block" selected>مسدودسازی خودکار</option><option value="allow">اجازه عبور</option></select></article>
+                                    <article class="yap-policy-card"><div><span class="yap-policy-icon yap-dot-abuse">!</span><span><b>آزار و تهدید</b><small>نیازمند بررسی بافت و شدت پیام</small></span></div><label>اقدام پیش‌فرض</label><select data-yap-policy><option value="review" selected>ارجاع به بررسی انسانی</option><option value="block">مسدودسازی خودکار</option><option value="allow">اجازه عبور</option></select></article>
+                                </div>
+                                <div class="yap-threshold-card"><div><div><b>آستانهٔ نمونه برای ارجاع</b><small>صرفاً نمایش تنظیم آستانه؛ امتیاز واقعی مدل نیست.</small></div><strong><output data-yap-threshold-value>۰٫۶۰</output></strong></div><input type="range" min="10" max="90" step="5" value="60" data-yap-threshold aria-label="آستانهٔ نمونهٔ ارجاع"><div class="yap-threshold-scale"><span>حساسیت بیشتر</span><span>ارجاع کمتر</span></div></div>
+                                <div class="yap-policy-footer"><span>پیش‌نمایش محلی · بدون ذخیره‌سازی</span><button type="button" class="yap-button yap-button--primary" data-yap-policy-save>نمایش ثبت تنظیمات</button></div>
+                                <p class="yap-policy-feedback" aria-live="polite"></p>
+                            </section>
+                        </div>
                     </div>
                 </div>
+                <div class="yap-workspace__disclaimer"><span>ⓘ</span> این داشبورد نمونهٔ رابط محصول است. آمار، صف، پیام‌ها و تصمیم‌ها ساختگی هستند؛ هیچ API زنده، حساب مشتری یا اطلاعات کاربری به آن متصل نیست.</div>
             </section>
 
             <section class="yap-section yap-how">
