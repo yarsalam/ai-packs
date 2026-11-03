@@ -14,7 +14,7 @@ on:
       mobapp_ref:
         description: "Git ref in yarsalam/mobApp used as the service source"
         required: true
-        default: "fix/ai-pack-commercial-readiness"
+        default: "49718c978cda59237b2c6a206bdbe301accda157"
         type: string
   release:
     types: [published]
