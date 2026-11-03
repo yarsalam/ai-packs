@@ -17,9 +17,9 @@
 | [#12](https://github.com/yarsalam/ai-packs/pull/12) | جلوگیری از overwrite گزارش/فایل خصوصی موجود | merged | `66239f69b05909a176f071001f967ead46936d93` | ۸/۸ checks موفق؛ ۳۱ تست Safety |
 
 - CI پس از merge شدن PR #12 روی main: run `41663587208`، هر ۵ check موفق.
-- هنگام ثبت این سند هیچ PR بازی در مخزن وجود نداشت.
+- این سند از طریق PR مستنداتی #13 ارائه شده است؛ snapshot اولیه پس از ادغام PRهای قبلی و پیش از بازشدن PR #13 تهیه شد.
 - PRهای #10، #11 و #12 با merge commit واقعی ادغام شدند؛ هیچ force update انجام نشد.
-- هیچ self-approval یا review جعلی ثبت نشد. endpoint خواندن branch protection برای اتصال GitHub با 403 پاسخ داد؛ API مربوط به repository rulesets فهرست خالی برگرداند. بنابراین جزئیات protection از این اتصال قابل تأیید مستقل نیست، هرچند GitHub mergeهای ثبت‌شده را پذیرفته است.
+- metadata شاخهٔ `main` در GitHub مقدار `protected=false` و `protection.enabled=false` را گزارش می‌کند و API مربوط به repository rulesets فهرست خالی برگرداند؛ بنابراین در زمان بررسی، الزام review مستقل/approval فعال نبود. endpoint جزئیات protection برای این اتصال 403 داد. هیچ self-approval یا review جعلی ثبت نشد.
 
 ## ۲. ترتیب تجاری‌سازی
 
