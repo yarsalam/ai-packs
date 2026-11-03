@@ -6,7 +6,7 @@
 
 ## مرحله ۱ — حذف کار روزمرهٔ دستی از GitHub
 
-**وضعیت: PR #10 برای بستن مسیرهای انتشار زودهنگام در حال CI؛ پس از merge این مرحله تکمیل می‌شود.**
+**وضعیت: تکمیل شد؛ PR #10 با merge commit `6320021` ادغام و هر ۸ check آخرین SHA سبز شد.**
 
 - بررسی PR، CI، branch drift و وابستگی workflowها.
 - اصلاح شکست‌ها و افزودن تست regression.
@@ -33,7 +33,7 @@
 
 ## مرحله ۳ — تبدیل Preview به پایلوت اندازه‌پذیر
 
-**وضعیت: راهنمای annotation، مسیر جمع‌آوری امن، manifest و validator در PR وابسته به #10 آماده شده‌اند؛ corpus مجاز و اجرای واقعی باقی است.**
+**وضعیت: راهنمای annotation، مسیر جمع‌آوری امن، manifest و validator در PR #11 آمادهٔ بررسی CI هستند؛ corpus مجاز و اجرای واقعی باقی است.**
 
 خروجی‌های آماده‌سازی:
 - `docs/PERSIAN_SAFETY_ANNOTATION_GUIDE_FA.md` — taxonomy، actionها و adjudication.
