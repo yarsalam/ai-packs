@@ -39,8 +39,9 @@ jobs:
       - name: Run Safety tenant policy tests
         if: matrix.gateway == 'safety-pack/gateway'
         run: |
-          python -m pytest -q tests/test_safety_policy.py tests/test_moderation_eval.py
-          python -m py_compile scripts/evaluate_moderation.py
+          python -m pip install PyYAML==6.0.2
+          python -m pytest -q tests/test_safety_policy.py tests/test_moderation_eval.py tests/test_release_guardrails.py tests/test_safety_benchmark_validation.py
+          python -m py_compile scripts/evaluate_moderation.py scripts/validate_safety_benchmark.py
 
   matching-assistant-runtime-image:
     name: Build and import-check only Matching ai_assistant

@@ -1,4 +1,4 @@
-name: Build self-contained AI Pack distributions
+name: Build and validate self-contained AI Pack distributions
 
 on:
   pull_request:
@@ -16,11 +16,9 @@ on:
         required: true
         default: "49718c978cda59237b2c6a206bdbe301accda157"
         type: string
-  release:
-    types: [published]
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ai-pack-distributions-${{ github.event.pull_request.number || github.ref }}
@@ -80,8 +78,3 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Attach pack and WordPress ZIPs to GitHub release
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*.zip
