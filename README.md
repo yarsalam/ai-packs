@@ -27,6 +27,9 @@
 - [معماری نسخهٔ تجاری و مسیر ارتقا به اپ یارسلام](./docs/PRODUCT_ARCHITECTURE_AND_UPGRADE.md)
 - [قرارداد اولیهٔ Safety API](./docs/SAFETY_API_V1.md)
 - [پروتکل benchmark فارسی Safety و ابزار ارزیابی](./docs/PERSIAN_SAFETY_BENCHMARK.md)
+- [راهنمای برچسب‌گذاری فارسی Safety](./docs/PERSIAN_SAFETY_ANNOTATION_GUIDE_FA.md)
+- [مسیر امن تهیه و نگه‌داری دیتاست فارسی](./docs/PERSIAN_SAFETY_DATA_COLLECTION_FA.md)
+- [قالب manifest خصوصی و validator](./docs/templates/safety-benchmark-manifest.example.yaml) و `scripts/validate_safety_benchmark.py`
 - [تحقیق UX محصولات پیشرو و نیازمندی‌های داشبورد Safety](./docs/COMPETITOR_UX_RESEARCH.md)
 - [ترتیب اجرای تجاری‌سازی از GitHub تا پایلوت و مشتری](./docs/COMMERCIAL_EXECUTION_SEQUENCE.md)
 
