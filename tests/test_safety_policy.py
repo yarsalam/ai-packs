@@ -63,6 +63,35 @@ def test_external_contact_rule_defaults_to_review_not_silent_allow():
     assert result["category"] == "external_contact"
 
 
+def test_semantic_outage_signal_overrides_contradictory_upstream_allow():
+    policy = normalize_policy({"default_action": "allow"})
+    result = decide_moderation(
+        "یک متن معمولی",
+        {
+            "allowed": True,
+            "reason": "semantic_check_unavailable",
+            "review_required": True,
+            "confidence": 0.0,
+            "layer": "semantic_error",
+        },
+        policy,
+    )
+    assert result["action"] == "review"
+    assert result["review_required"] is True
+    assert result["allowed"] is False
+
+
+def test_review_required_signal_overrides_upstream_allow():
+    policy = normalize_policy({"default_action": "allow"})
+    result = decide_moderation(
+        "یک متن معمولی",
+        {"allowed": True, "review_required": True, "reason": "unknown"},
+        policy,
+    )
+    assert result["action"] == "review"
+    assert result["review_required"] is True
+
+
 def test_semantic_dependency_failure_always_routes_to_review():
     policy = normalize_policy({"default_action": "block"})
     result = decide_moderation(

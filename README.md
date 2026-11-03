@@ -17,15 +17,19 @@
 
 - [YarSalam AI Products Preview](./wordpress-showcase/yarsalam-ai-products)
 - پس از نصب و فعال‌سازی، صفحهٔ `/ai-products/` ایجاد می‌شود؛ اگر slug از قبل وجود داشته باشد، صفحهٔ موجود دست‌کاری نمی‌شود.
-- کاتالوگ چهار محصول و وضعیت واقعی آن‌ها را نمایش می‌دهد و یک نمونهٔ ثابت Safety دارد؛ دمو به API زنده وصل نیست و هیچ دادهٔ کاربر را ارسال نمی‌کند.
+- کاتالوگ چهار محصول و داشبورد تعاملی Trust & Safety را نمایش می‌دهد: KPI، نمودار روند، دسته‌های پرچم‌گذاری، صف بررسی انسانی و سازندهٔ سیاست. همهٔ اعداد و پیام‌های Preview ساختگی و با برچسب Demo هستند؛ هیچ API زنده‌ای فراخوانی نمی‌شود.
 - لینک تماس/فرم پایلوت از تنظیمات WordPress تعیین می‌شود.
-- CI افزونه را lint می‌کند و ZIP نصب WordPress را به‌صورت artifact می‌سازد.
+- منوی مدیریتی «AI Packs» وضعیت محصولات، GitHub Actions، آخرین Release رسمی (یا نبود آن) و در صورت پیکربندی امن، telemetry فقط‌خواندنی RAM/Containerها را نشان می‌دهد. توکن عامل خصوصی فقط روی سرور WordPress می‌ماند؛ این افزونه هیچ دستور start/stop اجرا نمی‌کند.
+- CI افزونه را با PHP/Node lint، تست آفلاین بودن Preview و ZIP نصب WordPress validate می‌کند.
 
 ## ارتقای تجاری بدون شکستن اپ یارسلام
 
 - [معماری نسخهٔ تجاری و مسیر ارتقا به اپ یارسلام](./docs/PRODUCT_ARCHITECTURE_AND_UPGRADE.md)
 - [قرارداد اولیهٔ Safety API](./docs/SAFETY_API_V1.md)
 - [پروتکل benchmark فارسی Safety و ابزار ارزیابی](./docs/PERSIAN_SAFETY_BENCHMARK.md)
+- [راهنمای برچسب‌گذاری فارسی Safety](./docs/PERSIAN_SAFETY_ANNOTATION_GUIDE_FA.md)
+- [مسیر امن تهیه و نگه‌داری دیتاست فارسی](./docs/PERSIAN_SAFETY_DATA_COLLECTION_FA.md)
+- [قالب manifest خصوصی و validator](./docs/templates/safety-benchmark-manifest.example.yaml) و `scripts/validate_safety_benchmark.py`
 - [تحقیق UX محصولات پیشرو و نیازمندی‌های داشبورد Safety](./docs/COMPETITOR_UX_RESEARCH.md)
 - [ترتیب اجرای تجاری‌سازی از GitHub تا پایلوت و مشتری](./docs/COMMERCIAL_EXECUTION_SEQUENCE.md)
 
@@ -88,4 +92,4 @@
 - میکروسرویس‌های اصلی و تست رگرسیون آمادگی بسته‌ها: [mobApp PR](https://github.com/yarsalam/mobApp/pull/6).
 - اصلاحات gateway، قرارداد license، quota و ابزار بسته‌بندی: [ai-packs PR](https://github.com/yarsalam/ai-packs/pull/1).
 
-تا زمانی که هر دو PR بازبینی و ادغام نشده‌اند، CI سبز نباشد و آزمون end-to-end مدل‌ها اجرا نشده باشد، این تغییرات را روی production deploy نکنید.
+این مخزن فعلاً در وضعیت technical preview است. PR محصول #7 در ۳ نوامبر ۲۰۲۶ با commit ادغام `e042630` وارد main شد و CI اصلی سبز است؛ این فقط تأیید کد و build است، نه GO تجاری. تا تکمیل گیت‌های `docs/RELEASE_GATES.md`، تمام workflowهای تصویر و توزیع فقط build/validate انجام می‌دهند و هیچ GHCR push یا GitHub Release عمومی ندارند. هیچ تغییری در VPS، سرویس‌های زنده، Redis، دیتابیس یا volumeهای یارسلام با این مسیر انجام نمی‌شود.

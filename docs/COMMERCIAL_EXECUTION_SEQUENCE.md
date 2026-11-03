@@ -6,7 +6,7 @@
 
 ## مرحله ۱ — حذف کار روزمرهٔ دستی از GitHub
 
-**وضعیت: در حال تکمیل / اتوماسیون روزانه فعال**
+**وضعیت: تکمیل شد؛ PR #10 با merge commit `6320021` ادغام و هر ۸ check آخرین SHA سبز شد.**
 
 - بررسی PR، CI، branch drift و وابستگی workflowها.
 - اصلاح شکست‌ها و افزودن تست regression.
@@ -17,7 +17,7 @@
 
 ## مرحله ۲ — شناخت بازار و بازطراحی محصول
 
-**وضعیت: تحقیق اولیه انجام شد؛ UI نسخهٔ 0.2 در حال CI**
+**وضعیت: تحقیق UX و Preview در PR #7 ادغام شده‌اند (2026-11-03).**
 
 مراجع بررسی‌شده:
 - Besedo/Implio: KPIهای moderation، سهم تصمیم خودکار/دستی، روند زمانی و صف دستی.
@@ -33,10 +33,15 @@
 
 ## مرحله ۳ — تبدیل Preview به پایلوت اندازه‌پذیر
 
-**وضعیت: آماده‌سازی ابزار انجام شده؛ دادهٔ benchmark و اجرای واقعی باقی است**
+**وضعیت: راهنمای annotation، مسیر جمع‌آوری امن، manifest و validator در PR #11 آمادهٔ بررسی CI هستند؛ corpus مجاز و اجرای واقعی باقی است.**
+
+خروجی‌های آماده‌سازی:
+- `docs/PERSIAN_SAFETY_ANNOTATION_GUIDE_FA.md` — taxonomy، actionها و adjudication.
+- `docs/PERSIAN_SAFETY_DATA_COLLECTION_FA.md` — بررسی NASEZA/PHate/ParsHate و مسیر opt-in/قراردادی.
+- `docs/templates/safety-benchmark-manifest.example.yaml` و `scripts/validate_safety_benchmark.py` — گیت حقوقی/حریم خصوصی، split، PII heuristic و aggregate-only validation.
 
 گیت‌های لازم:
-1. مجموعهٔ دادهٔ فارسی با مجوز استفاده و حذف شناسه‌های مستقیم؛ متن خصوصی کاربران نباید به مخزن عمومی ارسال شود.
+1. مجموعهٔ دادهٔ فارسی با مجوز استفاده و حذف شناسه‌های مستقیم؛ متن خصوصی کاربران نباید به مخزن عمومی ارسال شود. هیچ candidate فعلی برای استفادهٔ تجاری تأیید نشده است.
 2. راهنمای annotation برای spam، off-platform contact، harassment/abuse، threats و clean content؛ نمونه‌های رسمی، محاوره، Finglish، typo و code-switching.
 3. دو annotator برای بخشی از داده و ثبت توافق/اختلاف.
 4. جداسازی train/tune، validation و sealed test؛ دادهٔ sealed برای تنظیم threshold استفاده نشود.
@@ -55,7 +60,7 @@
 
 ## مرحله ۴ — جذب design partner و سپس مشتری پولی
 
-**شروع پس از آماده‌شدن بستهٔ پایلوت**
+**وضعیت: BLOCKED تا GO مستند issue #8؛ issue #9 عمداً متوقف است و هیچ outreach/proposal کیفیت/ROI انجام نمی‌شود.**
 
 - ابتدا ۳ تا ۵ design partner در حوزهٔ شبکه اجتماعی، همسریابی، مارکت‌پلیس یا انجمن‌های فارسی.
 - به‌جای فروش عمومی، دامنهٔ محدود، مدت، حجم، مسیر داده و معیار ROI پایلوت مشخص شود.

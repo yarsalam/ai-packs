@@ -1,5 +1,9 @@
 name: Gateway contract tests
 
+concurrency:
+  group: ai-pack-gateway-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 on:
   pull_request:
   push:
@@ -35,8 +39,9 @@ jobs:
       - name: Run Safety tenant policy tests
         if: matrix.gateway == 'safety-pack/gateway'
         run: |
-          python -m pytest -q tests/test_safety_policy.py tests/test_moderation_eval.py
-          python -m py_compile scripts/evaluate_moderation.py
+          python -m pip install PyYAML==6.0.2
+          python -m pytest -q tests/test_safety_policy.py tests/test_moderation_eval.py tests/test_release_guardrails.py tests/test_safety_benchmark_validation.py
+          python -m py_compile scripts/evaluate_moderation.py scripts/validate_safety_benchmark.py
 
   matching-assistant-runtime-image:
     name: Build and import-check only Matching ai_assistant
@@ -50,7 +55,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: yarsalam/mobApp
-          ref: 93bcb0d9ddf78ed31580d4aa2e3758b6397c1f0b
+          ref: 49718c978cda59237b2c6a206bdbe301accda157
           path: upstream/mobApp
 
       - name: Set up Python
