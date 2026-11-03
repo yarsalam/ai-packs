@@ -40,7 +40,7 @@ jobs:
           grep -q 'data-yap-panel="queue"' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
           grep -q 'data-yap-panel="policies"' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
           grep -q 'data-yap-decision' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
-          if grep -nE 'fetch\\(|XMLHttpRequest|sendBeacon' wordpress-showcase/yarsalam-ai-products/assets/showcase.js; then
+          if grep -nF 'fetch(' wordpress-showcase/yarsalam-ai-products/assets/showcase.js || grep -nE 'XMLHttpRequest|sendBeacon' wordpress-showcase/yarsalam-ai-products/assets/showcase.js; then
             echo "Preview JavaScript must not make network requests."
             exit 1
           fi
