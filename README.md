@@ -26,6 +26,7 @@
 - [معماری نسخهٔ تجاری و مسیر ارتقا به اپ یارسلام](./docs/PRODUCT_ARCHITECTURE_AND_UPGRADE.md)
 - [قرارداد اولیهٔ Safety API](./docs/SAFETY_API_V1.md)
 - [پروتکل benchmark فارسی Safety و ابزار ارزیابی](./docs/PERSIAN_SAFETY_BENCHMARK.md)
+- [تحقیق UX محصولات پیشرو و نیازمندی‌های داشبورد Safety](./docs/COMPETITOR_UX_RESEARCH.md)
 
 اصل معماری این است: کد اصلی inference در `mobApp` باقی می‌ماند؛ AI Packs توزیع مستقل و Gateway/افزونهٔ مشتری را می‌سازد. هیچ نسخهٔ مشتری نباید به Redis، volume یا سرویس عملیاتی یارسلام متصل شود. قابلیت‌های تجاری پس از benchmark و تست، با PR جدا و backward-compatible به اپ داخلی منتقل می‌شوند.
 
