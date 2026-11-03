@@ -39,7 +39,7 @@ jobs:
       - name: Run Safety tenant policy tests
         if: matrix.gateway == 'safety-pack/gateway'
         run: |
-          python -m pytest -q tests/test_safety_policy.py tests/test_moderation_eval.py
+          python -m pytest -q tests/test_safety_policy.py tests/test_moderation_eval.py tests/test_release_guardrails.py
           python -m py_compile scripts/evaluate_moderation.py
 
   matching-assistant-runtime-image:
