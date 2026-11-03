@@ -39,8 +39,8 @@ permissions:
   packages: write
 
 concurrency:
-  group: publish-other-ai-packs
-  cancel-in-progress: false
+  group: publish-other-ai-packs-${{ github.event.pull_request.number || inputs.pack_name || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build-and-validate:
