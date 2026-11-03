@@ -1,4 +1,4 @@
-name: Publish Safety Pack container images
+name: Validate Safety Pack container images (no publish)
 
 on:
   pull_request:
@@ -18,15 +18,14 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 concurrency:
   group: publish-safety-pack-images-${{ github.event.pull_request.number || inputs.mobapp_ref || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  build-and-push:
-    name: Build and publish Safety Pack images
+  build-and-validate:
+    name: Build and validate Safety Pack images (no registry publish)
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
@@ -143,15 +142,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GitHub Container Registry
-        if: github.event_name == 'workflow_dispatch'
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build images on pull requests; publish only on manual dispatch
+      - name: Build images for validation only
         shell: bash
         env:
           IMAGE_OWNER: yarsalam
@@ -200,14 +191,14 @@ jobs:
                 --tag "$image:latest" \
                 --cache-from "type=gha,scope=safety-$service" \
                 --cache-to "type=gha,mode=max,scope=safety-$service" \
-                --push \
+                --load \
                 "$context"
-              echo "Published $image:$IMAGE_TAG"
+              echo "Built for validation only: $service (no registry push)"
             fi
           done
 
-      - name: Print deployment image tag
+      - name: Print validation result
         run: |
           echo "Pack: safety-pack"
-          echo "Image tag: sha-$GITHUB_SHA"
-          echo "Runtime Compose: deploy/compose/safety-pack.yaml"
+          echo "Safety images were built locally for validation only."
+          echo "No GHCR login, push, public release, or VPS deployment was performed."
