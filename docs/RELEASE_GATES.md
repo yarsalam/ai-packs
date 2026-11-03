@@ -38,6 +38,10 @@ No candidate has been accepted as the commercial pilot corpus.
 
 These resources also do not, by themselves, cover the complete product taxonomy (commercial spam, off-platform contact, harassment/abuse, threats and clean content) or the intended dating/social-platform distribution. Do not merge them into a benchmark until the rights holder's permissions, provenance, privacy basis, permitted purpose, retention and redistribution terms have been documented and reviewed.
 
+## Data governance implementation
+
+The private dataset intake path and annotation protocol are documented in `docs/PERSIAN_SAFETY_DATA_COLLECTION_FA.md` and `docs/PERSIAN_SAFETY_ANNOTATION_GUIDE_FA.md`. The private manifest template and aggregate-only validator are `docs/templates/safety-benchmark-manifest.example.yaml` and `scripts/validate_safety_benchmark.py`. The template intentionally remains `pending`; the validator cannot turn an unlicensed dataset into an approved one. No raw corpus or consent evidence belongs in this public repository.
+
 ## Evidence already available
 
 - Main commit `e04263027c00e64c6bed0b34488a670530557977` has a successful GitHub Actions run `41597682093` (Gateway contract matrix and Matching runtime image build/import check).
