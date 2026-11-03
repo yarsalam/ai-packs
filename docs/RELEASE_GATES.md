@@ -45,6 +45,10 @@ The private dataset intake path and annotation protocol are documented in `docs/
 ## Evidence already available
 
 - Main commit `e04263027c00e64c6bed0b34488a670530557977` has a successful GitHub Actions run `41597682093` (Gateway contract matrix and Matching runtime image build/import check).
+- PR #10 (`security/disable-public-publish-until-release-go-20261103`) merged with merge commit `63200213961e176f58fd643f40a38219d4d08b45`; all 8 checks passed on head `157faa5fd1ed3967c787e4fd8305f4afc3461720`.
+- PR #11 (`feat/safety-benchmark-governance-tooling-20261103`) merged with merge commit `0d617dfa136e437f92e05087208b37785e5de44c`; all 8 checks passed on head `06b9ea5c8ca8e626cc8e88f5d9776febd819067f`, including 30 Safety governance/policy/evaluator tests and the generated-pack single/batch semantic-outage check.
+- PR #12 (`fix/safety-benchmark-report-no-overwrite-20261103`) merged with merge commit `66239f69b05909a176f071001f967ead46936d93`; all 8 checks passed on head `2a6fd5a09f3439bcbf12f5a140055dc00bdf66bd`, including 31 Safety tests. Existing report targets are now rejected rather than overwritten.
+- Post-merge main workflow run `41663587208` completed with all 5 checks successful. These results prove code/build paths only; they do not change the NO-GO release decision.
 - PR #7 merged on 2026-11-03. Its CI included the Safety policy/evaluation tests, WordPress preview package, distribution build, and a generated Safety moderation-engine single/batch embedding-outage test.
 - Those tests are bounded code/build evidence only. No real Persian benchmark metrics, complete cold inference, load profile or cost measurement have been produced.
 
