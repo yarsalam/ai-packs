@@ -21,8 +21,8 @@ permissions:
   packages: write
 
 concurrency:
-  group: publish-safety-pack-images
-  cancel-in-progress: false
+  group: publish-safety-pack-images-${{ github.event.pull_request.number || inputs.mobapp_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build-and-push:
