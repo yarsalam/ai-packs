@@ -82,13 +82,175 @@ final class YarSalam_AI_Products_Preview {
     }
 
     public static function admin_menu(): void {
-        add_options_page(
-            'YarSalam AI Products',
-            'AI Products Preview',
+        add_menu_page(
+            'YarSalam AI Packs',
+            'AI Packs',
+            'manage_options',
+            'yap-ai-packs-console',
+            [__CLASS__, 'console_page'],
+            'dashicons-shield-alt',
+            58
+        );
+        add_submenu_page(
+            'yap-ai-packs-console',
+            'وضعیت محصولات و CI',
+            'وضعیت و CI',
+            'manage_options',
+            'yap-ai-packs-console',
+            [__CLASS__, 'console_page']
+        );
+        add_submenu_page(
+            'yap-ai-packs-console',
+            'پیش‌نمایش محصولات',
+            'پیش‌نمایش محصولات',
             'manage_options',
             'yap-products-preview',
             [__CLASS__, 'settings_page']
         );
+    }
+
+    private static function github_ci_snapshot(): array {
+        $cached = get_transient('yap_ai_packs_ci_snapshot');
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $response = wp_remote_get(
+            'https://api.github.com/repos/yarsalam/ai-packs/actions/runs?per_page=20',
+            [
+                'timeout' => 10,
+                'redirection' => 0,
+                'headers' => [
+                    'Accept' => 'application/vnd.github+json',
+                    'X-GitHub-Api-Version' => '2022-11-28',
+                    'User-Agent' => 'YarSalam-AI-Packs-Console',
+                ],
+            ]
+        );
+
+        if (is_wp_error($response)) {
+            return ['error' => 'اتصال به GitHub برقرار نشد: ' . $response->get_error_message(), 'runs' => []];
+        }
+        $status = (int) wp_remote_retrieve_response_code($response);
+        if ($status !== 200) {
+            return ['error' => 'GitHub API با وضعیت HTTP ' . $status . ' پاسخ داد.', 'runs' => []];
+        }
+
+        $decoded = json_decode((string) wp_remote_retrieve_body($response), true);
+        if (!is_array($decoded) || !isset($decoded['workflow_runs']) || !is_array($decoded['workflow_runs'])) {
+            return ['error' => 'پاسخ GitHub قابل‌خواندن نبود.', 'runs' => []];
+        }
+
+        $snapshot = [
+            'error' => '',
+            'runs' => array_slice($decoded['workflow_runs'], 0, 15),
+            'fetched_at' => time(),
+        ];
+        set_transient('yap_ai_packs_ci_snapshot', $snapshot, 5 * MINUTE_IN_SECONDS);
+        return $snapshot;
+    }
+
+    public static function console_page(): void {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
+        $snapshot = self::github_ci_snapshot();
+        $products = [
+            ['name' => 'Persian Trust & Safety', 'status' => 'پیش‌نمایش تعاملی؛ پایلوت پس از Benchmark'],
+            ['name' => 'SEO & AI Visibility', 'status' => 'پیش‌نمایش فنی؛ آزمون پوشش و امنیت باقی است'],
+            ['name' => 'Revenue Intelligence', 'status' => 'در حال توسعه؛ آموزش و ارزیابی مدل باقی است'],
+            ['name' => 'Matching & Support', 'status' => 'در حال توسعه؛ آزمون نصب و کیفیت باقی است'],
+        ];
+        ?>
+        <div class="wrap">
+            <h1>مرکز کنترل YarSalam AI Packs</h1>
+            <p>نمای مدیریتی فقط‌خواندنی برای وضعیت محصولات و CI مخزن عمومی GitHub. این صفحه هیچ Workflow، استقرار، Secret یا سرویس عملیاتی را اجرا یا تغییر نمی‌دهد.</p>
+
+            <style>
+                .yap-console-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}
+                .yap-console-card{background:#fff;border:1px solid #dcdcde;border-radius:10px;padding:16px;min-width:0}
+                .yap-console-card h2{font-size:14px;margin:0 0 8px}
+                .yap-console-card p{color:#646970;margin:0;font-size:13px}
+                .yap-console-muted{font-size:12px;color:#777;margin-top:10px}
+                .yap-console-ok{color:#16804a;font-weight:700}.yap-console-warn{color:#a66b14;font-weight:700}
+                .yap-console-table{background:#fff;border:1px solid #dcdcde;border-radius:8px;overflow:hidden}
+                .yap-console-table table{border:0;margin:0}
+                .yap-console-table th,.yap-console-table td{padding:10px 12px;vertical-align:middle}
+                .yap-console-table td{font-size:12px}
+                .yap-console-pill{display:inline-block;padding:3px 8px;border-radius:99px;background:#f0f0f1;color:#50575e;font-size:11px}
+                .yap-console-pill.is-success{background:#e6f4ea;color:#137333}.yap-console-pill.is-failure{background:#fce8e6;color:#b3261e}.yap-console-pill.is-running{background:#e8f0fe;color:#2457a6}
+                @media(max-width:900px){.yap-console-grid{grid-template-columns:1fr}}
+            </style>
+
+            <div class="yap-console-grid">
+                <section class="yap-console-card">
+                    <h2>محصولات</h2>
+                    <p>۴ خانواده محصول در مخزن ثبت شده‌اند؛ هر کدام وضعیت عرضه و گیت‌های مستقل دارند.</p>
+                    <div class="yap-console-muted">وضعیت دقیق هر محصول در جدول پایین آمده است.</div>
+                </section>
+                <section class="yap-console-card">
+                    <h2>کیفیت مدل</h2>
+                    <p class="yap-console-warn">Benchmark معتبر فارسی هنوز ثبت نشده است.</p>
+                    <div class="yap-console-muted">تا پیش از ورود دادهٔ مجاز و اجرای ارزیابی، Precision/Recall/F1 و درصد دقت نمایش داده نمی‌شود.</div>
+                </section>
+                <section class="yap-console-card">
+                    <h2>مصرف منابع سرور</h2>
+                    <p class="yap-console-warn">اتصال به عامل پایش خصوصی هنوز پیکربندی نشده است.</p>
+                    <div class="yap-console-muted">برای امنیت، API عامل روی شبکه خصوصی باقی می‌ماند و از این صفحه به‌صورت عمومی در دسترس نیست.</div>
+                </section>
+            </div>
+
+            <h2>وضعیت محصولات</h2>
+            <div class="yap-console-table">
+                <table class="widefat striped">
+                    <thead><tr><th>محصول</th><th>وضعیت</th></tr></thead>
+                    <tbody>
+                    <?php foreach ($products as $product) : ?>
+                        <tr><td><strong><?php echo esc_html($product['name']); ?></strong></td><td><?php echo esc_html($product['status']); ?></td></tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2 style="margin-top:26px">آخرین اجراهای GitHub Actions</h2>
+            <?php if (!empty($snapshot['error'])) : ?>
+                <div class="notice notice-warning"><p><?php echo esc_html($snapshot['error']); ?> <a href="https://github.com/yarsalam/ai-packs/actions" target="_blank" rel="noopener noreferrer">مشاهده Actions در GitHub</a></p></div>
+            <?php elseif (empty($snapshot['runs'])) : ?>
+                <div class="notice notice-info"><p>هنوز اجرای قابل‌نمایشی از GitHub دریافت نشده است.</p></div>
+            <?php else : ?>
+                <div class="yap-console-table">
+                    <table class="widefat striped">
+                        <thead><tr><th>Workflow</th><th>شاخه</th><th>وضعیت</th><th>نتیجه</th><th>آخرین به‌روزرسانی</th></tr></thead>
+                        <tbody>
+                        <?php foreach ($snapshot['runs'] as $run) :
+                            $status = isset($run['status']) ? (string) $run['status'] : 'unknown';
+                            $conclusion = isset($run['conclusion']) && $run['conclusion'] ? (string) $run['conclusion'] : '—';
+                            $pill = $status === 'completed'
+                                ? ($conclusion === 'success' ? 'is-success' : 'is-failure')
+                                : 'is-running';
+                            $run_url = isset($run['html_url']) ? esc_url($run['html_url']) : '';
+                            $workflow_name = isset($run['name']) ? (string) $run['name'] : 'GitHub Actions';
+                            $branch_name = isset($run['head_branch']) ? (string) $run['head_branch'] : '—';
+                            $updated = isset($run['updated_at']) ? mysql2date(get_option('date_format') . ' ' . get_option('time_format'), $run['updated_at']) : '—';
+                        ?>
+                            <tr>
+                                <td><?php if ($run_url) : ?><a href="<?php echo $run_url; ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html($workflow_name); ?></a><?php else : echo esc_html($workflow_name); endif; ?></td>
+                                <td><code><?php echo esc_html($branch_name); ?></code></td>
+                                <td><span class="yap-console-pill <?php echo esc_attr($pill); ?>"><?php echo esc_html($status); ?></span></td>
+                                <td><?php echo esc_html($conclusion); ?></td>
+                                <td><?php echo esc_html($updated); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="yap-console-muted">دادهٔ CI از GitHub API عمومی دریافت می‌شود و حداکثر هر ۵ دقیقه تازه‌سازی خواهد شد. زمان دریافت: <?php echo !empty($snapshot['fetched_at']) ? esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), (int) $snapshot['fetched_at'])) : '—'; ?></p>
+            <?php endif; ?>
+
+            <p style="margin-top:20px"><a class="button button-primary" href="https://github.com/yarsalam/ai-packs/actions" target="_blank" rel="noopener noreferrer">رفتن به GitHub Actions</a> <a class="button" href="https://github.com/yarsalam/ai-packs" target="_blank" rel="noopener noreferrer">مخزن محصول</a></p>
+        </div>
+        <?php
     }
 
     public static function settings_page(): void {
