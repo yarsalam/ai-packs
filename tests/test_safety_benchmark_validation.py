@@ -77,6 +77,45 @@ def test_rejects_missing_commercial_rights(tmp_path):
         validate_manifest(manifest, tmp_path / "public-repo")
 
 
+def test_rejects_personal_data_in_reported_dataset_id(tmp_path):
+    manifest, _ = make_manifest(tmp_path)
+    obj = yaml.safe_load(manifest.read_text(encoding="utf-8"))
+    obj["dataset"]["id"] = "09123456789"
+    manifest.write_text(yaml.safe_dump(obj), encoding="utf-8")
+    with pytest.raises(ValidationError, match="opaque identifier"):
+        validate_manifest(manifest, tmp_path / "public-repo")
+
+
+def test_rejects_boolean_retention_days(tmp_path):
+    manifest, _ = make_manifest(tmp_path)
+    obj = yaml.safe_load(manifest.read_text(encoding="utf-8"))
+    obj["dataset"]["privacy"]["retention_days"] = True
+    manifest.write_text(yaml.safe_dump(obj), encoding="utf-8")
+    with pytest.raises(ValidationError, match="retention_days must be an integer"):
+        validate_manifest(manifest, tmp_path / "public-repo")
+
+
+def test_rejects_boolean_sample_minimum(tmp_path):
+    manifest, _ = make_manifest(tmp_path)
+    obj = yaml.safe_load(manifest.read_text(encoding="utf-8"))
+    obj["dataset"]["minimum_total_samples"] = True
+    manifest.write_text(yaml.safe_dump(obj), encoding="utf-8")
+    with pytest.raises(ValidationError, match="minimum_total_samples must be an integer"):
+        validate_manifest(manifest, tmp_path / "public-repo")
+
+
+def test_report_cannot_overwrite_dataset_split(tmp_path):
+    manifest, _ = make_manifest(tmp_path)
+    with pytest.raises(ValidationError, match="must not overwrite a dataset split"):
+        validate_manifest(manifest, tmp_path / "public-repo", tmp_path / "train.jsonl")
+
+
+def test_report_cannot_overwrite_manifest(tmp_path):
+    manifest, _ = make_manifest(tmp_path)
+    with pytest.raises(ValidationError, match="must not overwrite the manifest"):
+        validate_manifest(manifest, tmp_path / "public-repo", manifest)
+
+
 def test_rejects_source_group_leakage(tmp_path):
     manifest, rows = make_manifest(tmp_path)
     rows["sealed_test"][0]["source_group"] = rows["train"][0]["source_group"]
