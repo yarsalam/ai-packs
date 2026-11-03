@@ -140,13 +140,17 @@ def decide_moderation(text: str, upstream: dict[str, Any], policy: dict[str, Any
     elif review_match:
         category, reason, evidence = "custom_review_term", "tenant_review_term", review_match
         action = "review"
-    elif upstream.get("allowed", False):
-        category, reason, evidence, action = "clean", None, None, "allow"
     else:
         reason = str(upstream.get("reason") or "unknown")
         matched = normalize_persian(str(upstream.get("matched") or upstream.get("matched_exemplar") or ""))
+        # Fail-safe metadata always takes precedence over a contradictory
+        # upstream "allowed" flag. A semantic dependency outage must never
+        # become an automatic approval, even if upstream fields disagree.
         if reason == "semantic_check_unavailable" or upstream.get("review_required"):
             category, action = "semantic_unavailable", "review"
+            evidence = matched or None
+        elif upstream.get("allowed", False):
+            category, reason, evidence, action = "clean", None, None, "allow"
         elif reason == "violence_keyword":
             category = "violence"
             action = policy["category_actions"].get(category, policy["default_action"])
