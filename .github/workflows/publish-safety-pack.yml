@@ -1,27 +1,204 @@
-name: Publish Safety Pack container images
+name: Validate Safety Pack container images (no publish)
 
 on:
+  pull_request:
+    branches: [main, fix/commercial-readiness-baseline]
+    paths:
+      - ".github/workflows/publish-safety-pack.yml"
+      - "deploy/compose/safety-pack.yaml"
+      - "scripts/**"
+      - "safety-pack/**"
   workflow_dispatch:
     inputs:
       mobapp_ref:
         description: "Exact commit, branch, or tag from yarsalam/mobApp"
         required: true
-        default: "93bcb0d9ddf78ed31580d4aa2e3758b6397c1f0b"
+        default: "49718c978cda59237b2c6a206bdbe301accda157"
         type: string
 
-# Registration-only workflow on main.
-# To build and publish images, select feat/safety-ghcr-deployment
-# in the Actions branch selector after this file reaches the default branch.
 permissions:
   contents: read
 
+concurrency:
+  group: publish-safety-pack-images-${{ github.event.pull_request.number || inputs.mobapp_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  registration_notice:
+  build-and-validate:
+    name: Build and validate Safety Pack images (no registry publish)
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     steps:
-      - name: Explain the release branch
+      - name: Checkout ai-packs
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Checkout mobApp service source
+        uses: actions/checkout@v4
+        with:
+          repository: yarsalam/mobApp
+          ref: ${{ inputs.mobapp_ref || '49718c978cda59237b2c6a206bdbe301accda157' }}
+          path: upstream/mobApp
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install distribution builder dependency
+        run: python -m pip install PyYAML==6.0.2
+
+      - name: Build and validate only Safety Pack distribution
+        shell: bash
         run: |
-          echo "This is the default-branch workflow registration stub."
-          echo "For the validated Safety Pack publisher, select branch:"
-          echo "feat/safety-ghcr-deployment"
-          echo "No images are built or published by this stub."
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          from scripts.build_distributions import PACKS, build_one
+          from scripts.validate_distributions import validate_pack
+
+          pack_name = "safety-pack"
+          output = Path("dist")
+          output.mkdir(exist_ok=True)
+          built = build_one(
+              pack_name,
+              PACKS[pack_name],
+              Path("upstream/mobApp").resolve(),
+              output.resolve(),
+          )
+          result = validate_pack(output.resolve(), pack_name)
+          print({"built": str(built), "validation": result})
+          PY
+
+      - name: Verify built moderation engine fails closed when embedding is unavailable
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install httpx==0.27.2
+          python - <<'PY'
+          import asyncio
+          import importlib.util
+          from pathlib import Path
+
+          import httpx
+
+          source = Path("dist/safety-pack/services/ai_moderation/moderation_engine.py")
+          spec = importlib.util.spec_from_file_location("safety_moderation_engine", source)
+          if spec is None or spec.loader is None:
+              raise SystemExit("Could not load generated moderation engine")
+          module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+
+          class FailingEmbeddingClient:
+              def __init__(self, *args, **kwargs):
+                  pass
+              async def __aenter__(self):
+                  return self
+              async def __aexit__(self, exc_type, exc, tb):
+                  return False
+              async def post(self, *args, **kwargs):
+                  raise httpx.ConnectError("simulated embedding outage")
+
+          module.httpx.AsyncClient = FailingEmbeddingClient
+          engine = module.ModerationEngine()
+          single = asyncio.run(engine.moderate_text("یک متن فارسی بدون کلمهٔ ممنوع"))
+          batch = asyncio.run(engine.moderate_batch([
+              "یک متن فارسی معمولی",
+              "یک متن فارسی معمولی دیگر",
+          ]))
+          assert single["allowed"] is False, single
+          assert single["reason"] == "semantic_check_unavailable", single
+          assert single["review_required"] is True, single
+          assert all(item["allowed"] is False for item in batch), batch
+          assert all(item["review_required"] is True for item in batch), batch
+          print("Safety semantic outage single/batch fail-closed runtime test passed.")
+          PY
+
+      - name: Validate committed runtime Compose file
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose \
+            --env-file dist/safety-pack/.env.example \
+            -f deploy/compose/safety-pack.yaml \
+            config --quiet
+          python - <<'PY'
+          import yaml
+          from scripts.build_distributions import PACKS
+
+          compose = yaml.safe_load(open("deploy/compose/safety-pack.yaml", encoding="utf-8"))
+          expected = set(PACKS["safety-pack"]["services"]) | {"redis", "gateway"}
+          actual = set(compose["services"])
+          if actual != expected:
+              raise SystemExit(f"Compose services mismatch: expected={sorted(expected)}, actual={sorted(actual)}")
+          for service in expected - {"redis"}:
+              image = compose["services"][service].get("image", "")
+              if not image.startswith("ghcr.io/yarsalam/ai-packs/safety-pack-"):
+                  raise SystemExit(f"Unexpected image reference for {service}: {image}")
+          print("Runtime Compose validation passed.")
+          PY
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build images for validation only
+        shell: bash
+        env:
+          IMAGE_OWNER: yarsalam
+          IMAGE_REPOSITORY: ai-packs
+          IMAGE_TAG: sha-${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          services=(
+            safety_embedded_ai
+            ai_moderation
+            ai_verification
+            ai_image
+            gateway
+          )
+
+          for service in "${services[@]}"; do
+            if [[ "$service" == "gateway" ]]; then
+              context="dist/safety-pack/gateway"
+              image_component="gateway"
+            else
+              context="dist/safety-pack/services/$service"
+              image_component="${service//_/-}"
+            fi
+
+            image="ghcr.io/$IMAGE_OWNER/$IMAGE_REPOSITORY/safety-pack-$image_component"
+
+            echo "===== BUILD $service ====="
+            if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+              docker buildx build \
+                --platform linux/amd64 \
+                --file "$context/Dockerfile" \
+                --label "org.opencontainers.image.source=https://github.com/yarsalam/ai-packs" \
+                --tag "ai-packs-check:safety-$image_component" \
+                --cache-from "type=gha,scope=safety-$service" \
+                --cache-to "type=gha,mode=max,scope=safety-$service" \
+                --load \
+                "$context"
+              echo "Built for PR validation: $service"
+            else
+              docker buildx build \
+                --platform linux/amd64 \
+                --file "$context/Dockerfile" \
+                --label "org.opencontainers.image.source=https://github.com/yarsalam/ai-packs" \
+                --tag "$image:$IMAGE_TAG" \
+                --tag "$image:latest" \
+                --cache-from "type=gha,scope=safety-$service" \
+                --cache-to "type=gha,mode=max,scope=safety-$service" \
+                --load \
+                "$context"
+              echo "Built for validation only: $service (no registry push)"
+            fi
+          done
+
+      - name: Print validation result
+        run: |
+          echo "Pack: safety-pack"
+          echo "Safety images were built locally for validation only."
+          echo "No GHCR login, push, public release, or VPS deployment was performed."
