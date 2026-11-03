@@ -89,4 +89,4 @@
 - میکروسرویس‌های اصلی و تست رگرسیون آمادگی بسته‌ها: [mobApp PR](https://github.com/yarsalam/mobApp/pull/6).
 - اصلاحات gateway، قرارداد license، quota و ابزار بسته‌بندی: [ai-packs PR](https://github.com/yarsalam/ai-packs/pull/1).
 
-این مخزن فعلاً در وضعیت technical preview است. PRهای زیرساخت image/کنترل به main ادغام شده‌اند؛ PR محصول #7 تا عبور همهٔ CIهای آخرین commit و تست build کامل imageها Draft می‌ماند. سبز شدن CI یا وجود ZIP/Artifact به معنی Release رسمی یا مجوز استقرار production نیست. هیچ تغییری در VPS، سرویس‌های زنده، Redis، دیتابیس یا volumeهای یارسلام با این کار انجام نمی‌شود.
+این مخزن فعلاً در وضعیت technical preview است. PR محصول #7 در ۳ نوامبر ۲۰۲۶ با commit ادغام `e042630` وارد main شد و CI اصلی سبز است؛ این فقط تأیید کد و build است، نه GO تجاری. تا تکمیل گیت‌های `docs/RELEASE_GATES.md`، تمام workflowهای تصویر و توزیع فقط build/validate انجام می‌دهند و هیچ GHCR push یا GitHub Release عمومی ندارند. هیچ تغییری در VPS، سرویس‌های زنده، Redis، دیتابیس یا volumeهای یارسلام با این مسیر انجام نمی‌شود.
