@@ -52,6 +52,13 @@ def required(obj, key, label):
     return value.strip()
 
 
+def positive_integer(value, label, minimum=1):
+    # bool is a subclass of int in Python; reject it for numeric policy fields.
+    if type(value) is not int or value < minimum:
+        fail(label + " must be an integer >= " + str(minimum))
+    return value
+
+
 def pii_flags(value):
     value = unicodedata.normalize("NFKC", value).translate(DIGITS).replace("ك", "ک").replace("ي", "ی")
     return [name for name, pattern in PII_PATTERNS.items() if pattern.search(value)]
@@ -71,16 +78,22 @@ def outside(path, root, label):
     return path
 
 
-def validate_manifest(manifest_path, repo_root):
+def validate_manifest(manifest_path, repo_root, report_path=None):
     root = Path(repo_root).resolve()
     manifest_path = outside(Path(manifest_path), root, "manifest")
+    report_target = None
+    if report_path is not None:
+        report_target = outside(Path(report_path), root, "aggregate report")
+        if report_target == manifest_path:
+            fail("aggregate report must not overwrite the manifest")
     try:
         manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
     except (OSError, yaml.YAMLError) as exc:
         raise ValidationError("could not read a valid YAML manifest") from exc
 
     dataset = mapping(mapping(manifest, "manifest").get("dataset"), "dataset")
-    dataset_id = required(dataset, "id", "dataset")
+    # This value is copied into the aggregate report, so it must be opaque too.
+    dataset_id = opaque(dataset, "id", "dataset")
     required(dataset, "version", "dataset")
     required(dataset, "owner", "dataset")
 
@@ -103,15 +116,13 @@ def validate_manifest(manifest_path, repo_root):
         fail("dataset.privacy.status must be approved")
     if privacy.get("deidentification") != "completed" or privacy.get("pii_review") != "completed":
         fail("dataset de-identification and human PII review must be completed")
-    if not isinstance(privacy.get("retention_days"), int) or privacy["retention_days"] < 1:
-        fail("dataset.privacy.retention_days must be a positive integer")
+    positive_integer(privacy.get("retention_days"), "dataset.privacy.retention_days")
     required(privacy, "access_control", "dataset.privacy")
     required(privacy, "deletion_procedure", "dataset.privacy")
 
     annotation = mapping(dataset.get("annotation"), "dataset.annotation")
     required(annotation, "guideline_version", "dataset.annotation")
-    if not isinstance(annotation.get("minimum_annotators"), int) or annotation["minimum_annotators"] < 2:
-        fail("dataset.annotation.minimum_annotators must be at least 2")
+    positive_integer(annotation.get("minimum_annotators"), "dataset.annotation.minimum_annotators", minimum=2)
     if annotation.get("adjudication") != "completed":
         fail("dataset.annotation.adjudication must be completed")
     fraction = annotation.get("double_annotation_fraction")
@@ -138,8 +149,7 @@ def validate_manifest(manifest_path, repo_root):
     min_variety = dataset.get("minimum_language_variety_support", 10)
     for name, value in (("minimum_total_samples", min_total), ("minimum_sealed_test_samples", min_sealed),
                         ("minimum_category_support", min_category), ("minimum_language_variety_support", min_variety)):
-        if not isinstance(value, int) or value < 1:
-            fail(name + " must be a positive integer")
+        positive_integer(value, name)
 
     splits = mapping(dataset.get("splits"), "dataset.splits")
     if set(splits) != SPLITS:
@@ -158,6 +168,8 @@ def validate_manifest(manifest_path, repo_root):
         if not data_path.is_absolute():
             data_path = manifest_path.parent / data_path
         data_path = outside(data_path, root, split + " dataset")
+        if report_target is not None and report_target == data_path:
+            fail("aggregate report must not overwrite a dataset split")
         if not data_path.is_file():
             fail("dataset split file does not exist: " + split)
 
@@ -277,14 +289,12 @@ def main():
     parser.add_argument("--report", type=Path, help="Optional aggregate-only JSON report outside the repository")
     args = parser.parse_args()
     try:
-        result = validate_manifest(args.manifest, args.repo_root)
+        result = validate_manifest(args.manifest, args.repo_root, args.report)
         rendered = json.dumps(result, ensure_ascii=False, indent=2) + "\n"
         if args.report:
-            report_path = outside(args.report, args.repo_root.resolve(), "aggregate report")
-            if report_path == args.manifest.resolve():
-                fail("aggregate report must not overwrite the manifest")
-            report_path.parent.mkdir(parents=True, exist_ok=True)
-            report_path.write_text(rendered, encoding="utf-8")
+            report_target = Path(args.report).resolve()
+            report_target.parent.mkdir(parents=True, exist_ok=True)
+            report_target.write_text(rendered, encoding="utf-8")
         sys.stdout.write(rendered)
         return 0
     except (ValidationError, OSError) as exc:
