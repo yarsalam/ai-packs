@@ -1,0 +1,72 @@
+name: WordPress product preview package
+
+on:
+  pull_request:
+    paths:
+      - "wordpress-showcase/**"
+      - ".github/workflows/wordpress-showcase.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wordpress-showcase-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  validate-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          tools: none
+
+      - name: PHP syntax check
+        run: |
+          php -l wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          node --check wordpress-showcase/yarsalam-ai-products/assets/showcase.js
+
+      - name: Validate showcase assets and plugin metadata
+        run: |
+          set -euo pipefail
+          test -s wordpress-showcase/yarsalam-ai-products/assets/showcase.css
+          test -s wordpress-showcase/yarsalam-ai-products/assets/showcase.js
+          grep -q 'Plugin Name: YarSalam AI Products Preview' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          grep -q 'add_shortcode' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          grep -q 'function console_page' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          grep -q 'actions/runs?per_page=20' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          grep -q 'releases?per_page=1' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          grep -q 'github_release_snapshot' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          grep -q 'data-yap-panel="overview"' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          grep -q 'data-yap-panel="queue"' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          grep -q 'data-yap-panel="policies"' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          grep -q 'data-yap-decision' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          if grep -nF 'fetch(' wordpress-showcase/yarsalam-ai-products/assets/showcase.js || grep -nE 'XMLHttpRequest|sendBeacon' wordpress-showcase/yarsalam-ai-products/assets/showcase.js; then
+            echo "Preview JavaScript must not make network requests."
+            exit 1
+          fi
+          grep -q 'ساختگی' wordpress-showcase/yarsalam-ai-products/README.md
+          if grep -RniE 'X-License-Key|X-Admin-Token|license_key=' wordpress-showcase/yarsalam-ai-products; then
+            echo "Showcase must not contain customer or admin credentials."
+            exit 1
+          fi
+
+      - name: Build installable WordPress ZIP
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cd wordpress-showcase
+          zip -r ../dist/yarsalam-ai-products-preview.zip yarsalam-ai-products
+
+      - name: Upload WordPress plugin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: yarsalam-ai-products-preview
+          path: dist/yarsalam-ai-products-preview.zip
+          if-no-files-found: error
+          retention-days: 30

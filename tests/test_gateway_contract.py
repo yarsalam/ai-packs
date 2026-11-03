@@ -6,6 +6,7 @@ import asyncio
 import importlib.util
 import json
 import os
+import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -21,7 +22,12 @@ def gateway():
     spec = importlib.util.spec_from_file_location("gateway_under_test", path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    gateway_dir = str(path.parent.resolve())
+    sys.path.insert(0, gateway_dir)
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.path.remove(gateway_dir)
     return module
 
 
