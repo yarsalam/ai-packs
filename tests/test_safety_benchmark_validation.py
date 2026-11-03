@@ -116,6 +116,17 @@ def test_report_cannot_overwrite_manifest(tmp_path):
         validate_manifest(manifest, tmp_path / "public-repo", manifest)
 
 
+def test_report_refuses_to_overwrite_an_existing_private_file(tmp_path):
+    manifest, _ = make_manifest(tmp_path)
+    existing = tmp_path / "previous-private-report.json"
+    existing.write_text("preserve this file", encoding="utf-8")
+
+    with pytest.raises(ValidationError, match="already exists"):
+        validate_manifest(manifest, tmp_path / "public-repo", existing)
+
+    assert existing.read_text(encoding="utf-8") == "preserve this file"
+
+
 def test_rejects_source_group_leakage(tmp_path):
     manifest, rows = make_manifest(tmp_path)
     rows["sealed_test"][0]["source_group"] = rows["train"][0]["source_group"]

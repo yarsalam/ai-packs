@@ -267,6 +267,11 @@ def validate_manifest(manifest_path, repo_root, report_path=None):
     if any(variety_counts[x] < min_variety for x in required_varieties):
         fail("required language-variety support is below the manifest minimum")
 
+    # Never replace an existing file outside the repo either: it may be a private
+    # source artifact or an earlier report that must remain available.
+    if report_target is not None and report_target.exists():
+        fail("aggregate report target already exists; choose a new path")
+
     return {
         "schema_version": 1,
         "dataset_id": dataset_id,
