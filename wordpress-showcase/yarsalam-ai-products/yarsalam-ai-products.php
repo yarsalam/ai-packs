@@ -2,7 +2,7 @@
 /**
  * Plugin Name: YarSalam AI Products Preview
  * Description: Persian RTL product catalog and clearly-labelled static previews for YarSalam AI Packs.
- * Version: 0.1.0
+ * Version: 0.2.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: YarSalam AI Labs
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 final class YarSalam_AI_Products_Preview {
-    const VERSION = '0.1.0';
+    const VERSION = '0.2.0';
     const SHORTCODE = 'yarsalam_ai_products';
     const PAGE_SLUG = 'ai-products';
 
