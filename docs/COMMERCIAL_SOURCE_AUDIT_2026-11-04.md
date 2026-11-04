@@ -181,3 +181,26 @@ Additional model contract concern:
 6. Run exact-head model readiness, full inference on synthetic/legal fixtures, clean install, load/latency/error and cost tests.
 
 **Status:** BLOCKED for commercial LTV claims until the input contract/provenance is fixed and evaluated. The code is from mobApp PR #6's current candidate branch; no production database or customer data was accessed.
+
+
+## 15. Matching recommendation/event contract audit — mobApp PR #6 head 9474b4ace1da44d6c2662b0554918ae521c7eaec
+
+**Source:** `python-ai/services/ml_service/routes/matching.py` and `python-ai/services/ml_service/services/recommendation.py`.
+
+Verified behavior:
+- `RecommendIn` accepts only `user_id`, caller-supplied `candidates` and `limit`. The service deduplicates candidate IDs, removes the requesting user and caps candidate count.
+- Cold-start fallback now uses only observed popular entities inside the caller-provided candidate allowlist; fabricated IDs and fixed scores were removed in the upstream PR. This is a meaningful correctness improvement.
+- The current recommendation request does not carry a scenario/placement, policy context or structured hard-constraint contract. Candidate allowlist is not equivalent to domain-specific policy filtering (eligibility, exclusions, exposure limits or diversity).
+- `/internal/track-events` accepts an untyped `dict`; Redis Stream stores the raw JSON payload and timestamp. No schema version, event ID, recommendation ID, idempotency key, actor/tenant binding, consent context or validated outcome join is enforced.
+- `track_events` catches Redis write errors and only logs them; the route still returns `{"status":"accepted"}`. The caller can therefore receive success even when the event was not persisted.
+- No scenario registry, control/variant assignment, A/B allocation validation or offline/online metric contract is present in these inspected routes.
+
+**Required P1 remediation in a separate backward-compatible mobApp PR:**
+1. Versioned event schema with event_id, recommendation_id, scenario/version, event type, actor/tenant, timestamp, consent context and idempotency.
+2. Propagate persistence failure as a retryable non-2xx response; never acknowledge an event that was not stored.
+3. Add explicit placement/scenario and hard constraints; enforce eligibility before ranking and test that no booster can bypass constraints.
+4. Track impression → click/like/dislike → match/conversion outcomes with recommendation_id and deduplication.
+5. Add offline Recall@K/NDCG@K/coverage/diversity against a fixed temporal split; separately add online control/variant with validated traffic allocation and guardrails.
+6. Add tenant isolation, retention/deletion and audit for event data.
+
+**Status:** Candidate allowlist/cold-start fallback correction is present in upstream PR #6; full scenario, hard-constraint and reliable attribution workflow remain NOT_STARTED/BLOCKED for commercial claims. No production event stream was read or modified.
