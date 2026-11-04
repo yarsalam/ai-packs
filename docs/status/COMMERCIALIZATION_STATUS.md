@@ -129,3 +129,33 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - بنابراین تا زمان مشاهدهٔ یک اجرای زمان‌بندی‌شدهٔ موفق، اجرای پیوستهٔ روزانه تأییدشده محسوب نمی‌شود. درخواست اجرای فوری در همین نوبت پذیرفته شد و کار آن در همین گفتگو ادامه یافت.
 
 **تصمیم فعلی:** public release همچنان NO-GO. هیچ GHCR publish، VPS deployment، production change، secret access، service stop/restart یا data/volume mutation انجام نشده است. Issue #8 و #9 طبق شروط قبلی مستقل و مسدود باقی می‌مانند.
+
+
+## ۷. به‌روزرسانی اجرایی — 2026-11-04 (ادغام استراتژی و ممیزی source)
+
+### PRها و CI
+- PR [#19](https://github.com/yarsalam/ai-packs/pull/19) با merge commit واقعی `328f0688bc2140c03867e29e96de5ecf2033ceca` ادغام شد؛ سند `docs/COMMERCIAL_PRODUCT_STRATEGY.md` اکنون در main مرجع رسمی امکانات هدف و معیار پذیرش چهار پک است. run شماره 154 روی head آن موفق بود.
+- PR [#18](https://github.com/yarsalam/ai-packs/pull/18) با merge commit واقعی `4c443e6ea6f55ae2be99958ff2c7132e61bf2f14` ادغام شد؛ رزرو quota در هر چهار Gateway با Redis Lua اتمیک است. 429 دیگر counter را افزایش نمی‌دهد. تست هم‌زمانی با Redis واقعی و چهار workflow مرتبط موفق شدند: Gateway contract matrix، Safety image validation، self-contained distributions و SEO/Revenue/Matching image validation. همه jobهای گزارش‌شده success بودند.
+- SHA فعلی main هنگام ثبت این update: `4c443e6ea6f55ae2be99958ff2c7132e61bf2f14`.
+
+### ممیزی کد و شکاف‌های محصول
+- ممیزی منبع با سند `docs/COMMERCIAL_SOURCE_AUDIT_2026-11-04.md` ثبت شد؛ مرجع upstream بسته‌بندی `mobApp@49718c978cda59237b2c6a206bdbe301accda157` است.
+- یافته‌های مهم SEO: فقط OpenAI provider در AEO؛ خطای engine به‌صورت mention=false برمی‌گردد؛ TrustFlow فعلی PageRank روی graph ورودی است نه شاخص backlink مستقل؛ خطای embedding در topic similarity به 0.0 تبدیل می‌شود؛ recommender در شرایطی popularity fallback دارد.
+- یافته‌های مهم Revenue: CV R² به‌عنوان confidence استفاده شده و range ثابت ±۱۵٪ prediction interval معتبر نیست؛ uplift در نبود EconML به اختلاف میانگین treated/control fallback می‌کند؛ fallbackهای قدیمی باید از ref بسته‌بندی جداگانه بازبینی شوند.
+- یافته‌های مهم Matching: engagement ثابت 0.5، revenue default برابر 0.35، cold-start با شناسه‌های ثابت و score ثابت 0.85 و match score fallback برابر 0.45؛ event route هنوز contract کامل attribution را اثبات نمی‌کند.
+- یافتهٔ مشترک: فیلد domain در License ذخیره می‌شود اما در `validate_license` بررسی نمی‌شود؛ سیاست domain binding و billing شکست upstream باید تعریف و تست شوند.
+
+### وابستگی upstream — BLOCKED برای تغییر pin
+- workflow توزیع در `.github/workflows/distributions.yml` از ref ثابت `49718c978cda59237b2c6a206bdbe301accda157` استفاده می‌کند.
+- `mobApp/main` در زمان بررسی روی `da4acf20c9851bc4e7fd34b1dcc2094183246109` بود؛ GitHub compare بین این دو تاریخچه را `diverged` با `ahead_by=1 / behind_by=24` گزارش کرد.
+- commit جدید mobApp/main اصلاح مهم LTV (flat feature contract، URL داخلی و حذف fallback عدد ساختگی) دارد، اما چون تاریخچه‌ها diverged هستند، تغییر سادهٔ pin ممنوع است. ابتدا lineage و ۲۴ commit بررسی، سپس PR جدا و تمام build/contract tests اجرا شود.
+
+### کارهای بعدی دقیق
+1. بررسی lineage upstream و reconcile ref بدون force update؛ سپس re-run توزیع و API contracts.
+2. اصلاح Revenue correctness و خروجی uncertainty/fallback در PR مستقل.
+3. اصلاح Matching scoring/cold-start/hard filters و event attribution در PR مستقل.
+4. اصلاح SEO AEO error-state/provenance و backlink naming/failure semantics.
+5. تکمیل Previewهای آفلاین SEO، Revenue و Matching و تست‌های UI.
+6. تکمیل release gates مستقل؛ فروش و public release همچنان NO-GO.
+
+**محدودیت‌ها:** این مرحله فقط audit و تغییرات quota/مستندات را پوشش می‌دهد؛ full inference، حقوق مدل/داده، privacy، cold install، load، p95 latency، error rate و cost-per-1000 هنوز برای هر پک GO نشده‌اند. Safety #8 همچنان BLOCKED و #9 متوقف است.
