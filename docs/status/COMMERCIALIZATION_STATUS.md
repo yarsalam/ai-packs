@@ -227,3 +227,33 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - Exact-head validation: **33 passed, 17 warnings** in Python AI readiness; **8 passed** in Revenue LTV contract.
 - AI Packs PR #24 now pins all four distribution/CI/image-validation workflows to this SHA and passes Perplexity env configuration into SEO service; final AI Packs checks still required.
 - Live Perplexity call remains BLOCKED pending an owner-provided test API key; no live provider success is claimed. PR #6 remains Draft; full inference/clean install/load/cost gates remain open.
+
+
+## ۱۱. به‌روزرسانی اجرایی — 2026-11-04 (استراتژی و ادامهٔ اجرای محصول)
+
+### استراتژی محصول — DONE
+- سند `docs/COMMERCIAL_PRODUCT_STRATEGY.md` از طریق PR #19 با merge commit واقعی `328f0688bc2140c03867e29e96de5ecf2033ceca` وارد main شد.
+- معیارهای مشترک و P0 تا P3 برای SEO، Revenue، Matching و Safety ثبت شده‌اند.
+- تمایزهای هدف قابل اثبات (evidence-first، کیفیت فارسی/دوزبانه، uncertainty صادقانه، action-to-outcome، privacy-by-deployment، cost transparency و open integration) در PR بعدی به سند افزوده می‌شوند؛ تا آن زمان این‌ها هدف محصول‌اند، نه ادعای قابلیت موجود.
+
+### Source pin و قراردادهای عملیاتی — DONE
+- PR #24 با merge commit واقعی `0fe44582c4b9a673482319d4f11fb13d66dd6747` ادغام شد.
+- تمام workflowهای توزیع/CI/اعتبارسنجی تصویر به mobApp readiness SHA `4344cb05afe461551e1bfdc379b26a3c0fedddd9` pin شده‌اند.
+- پنج workflow روی head نهایی PR #24 همگی success شدند: distribution build/validation، control-agent validation، Safety image validation، Gateway contract tests و SEO/Revenue/Matching image validation.
+- Safety WordPress اکنون در هر دو مسیر JSON و multipart هدر دامنه را می‌فرستد؛ smoke client نیز license/domain/usage/inference را با هدر درست تست می‌کند. Matching smoke دامنهٔ candidate allowlist و پاسخ unavailable برای embedding گمشده را بررسی می‌کند.
+- AEO دو engine در upstream PR #6 شامل OpenAI و Perplexity Sonar است؛ خطای provider یا کلید غایب unavailable است و به negative mention تبدیل نمی‌شود. Live Perplexity هنوز به کلید تست مالک نیاز دارد.
+- CIهای PR #24 فقط build/validate انجام دادند؛ هیچ GHCR publish یا deployment انجام نشد.
+
+### Customer usage dashboard — IN_PROGRESS در PR جدید
+- قابلیت نمایش سهمیهٔ واقعی Gateway در Settings هر چهار WordPress plugin در branch `feat/customer-usage-dashboard-clean-main-2026-11-04` منتقل شده است.
+- API clientها `GET /usage` را فراخوانی می‌کنند؛ پنل plan، used/limit/remaining ساعتی و ماهانه، progress، وزن عملیات و refresh را نمایش می‌دهد.
+- AJAX با nonce و `manage_options` محافظت شده؛ خروجی UI با `textContent`/DOM ساخته می‌شود؛ loading/error و پاسخ ناقص مدیریت می‌شوند.
+- این قابلیت billing/payment/invoicing نیست؛ credit weights و quota limits تا اندازه‌گیری واقعی هزینه provisional هستند.
+- PR #25 روی شاخهٔ قدیمی و متعارض با main باقی می‌ماند و نباید merge شود؛ قابلیت آن به branch تمیز منتقل شده تا source pin جدید حفظ شود.
+- گام بعد: اجرای CI کامل روی PR تمیز، بازبینی security/UX، اصلاح خطاها و سپس همگام‌سازی issue/status.
+
+### وضعیت انتشار و موانع
+- Safety Issue #8 همچنان BLOCKED تا corpus فارسی با حقوق/رضایت معتبر، annotation، adjudication و sealed test؛ Issue #9 و outreach/fروش Safety متوقف است.
+- Full inference، cold install مستقل، مجوز مدل/وزن، privacy/retention/deletion، load، latency، error-rate و cost-per-1000 برای هر پک هنوز باید جداگانه اثبات شوند.
+- PR #24 و تست‌های ساخت، مجوز فروش یا public release ایجاد نمی‌کنند. تصمیم کل چهار پک فعلاً NO-GO است.
+- هیچ production، live customer data، secret، سرویس، DB/Redis/volume، DNS یا firewall تغییر نکرده است.
