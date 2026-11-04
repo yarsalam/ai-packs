@@ -336,6 +336,16 @@ def test_pack(pack_name: str, cfg: dict[str, Any], dist_dir: Path,
         add_result(results, "license validation", ok, status, elapsed,
                    f"status={valid.get('status')!r}, plan={valid.get('plan')!r}" if isinstance(valid, dict) else str(valid)[:300])
 
+        wrong_domain_headers = license_headers(license_key)
+        wrong_domain_headers["X-Site-Domain"] = "wrong-domain.example"
+        wrong_status, wrong_domain, wrong_elapsed = request_json(
+            base_url, "/license/validate", headers=wrong_domain_headers, timeout=timeout,
+        )
+        wrong_detail = wrong_domain.get("detail", "") if isinstance(wrong_domain, dict) else ""
+        wrong_ok = wrong_status == 403 and "not authorized for this site domain" in str(wrong_detail).lower()
+        add_result(results, "license domain binding rejects another host", wrong_ok,
+                   wrong_status, wrong_elapsed, f"rejected={wrong_ok}, detail={wrong_detail!r}")
+
         for spec in cfg["tests"]:
             try:
                 status, response, elapsed = request_json(
