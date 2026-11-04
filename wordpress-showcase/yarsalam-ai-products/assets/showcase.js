@@ -7,7 +7,10 @@
   const titles = {
     overview: "نمای کلی",
     queue: "صف بررسی",
-    policies: "سیاست‌ها و قوانین"
+    policies: "سیاست‌ها و قوانین",
+    seo: "SEO و دیده‌شدن AI",
+    revenue: "هوشمندی درآمد",
+    matching: "سیستم پیشنهادگر"
   };
 
   function activateTab(tabName) {
@@ -27,6 +30,22 @@
     const tab = event.target.closest("[data-yap-tab]");
     if (tab && root.contains(tab)) {
       activateTab(tab.getAttribute("data-yap-tab"));
+      return;
+    }
+
+    const previewState = event.target.closest("[data-yap-preview-state]");
+    if (previewState && root.contains(previewState)) {
+      const parts = (previewState.getAttribute("data-yap-preview-state") || "").split(":");
+      const panelName = parts[0];
+      const stateName = parts[1];
+      const panel = root.querySelector('[data-yap-panel="' + panelName + '"]');
+      if (!panel || !stateName) return;
+      panel.querySelectorAll("[data-yap-preview-state]").forEach(function (button) {
+        button.setAttribute("aria-pressed", button === previewState ? "true" : "false");
+      });
+      panel.querySelectorAll("[data-yap-state-view]").forEach(function (view) {
+        view.hidden = view.getAttribute("data-yap-state-view") !== stateName;
+      });
       return;
     }
 
