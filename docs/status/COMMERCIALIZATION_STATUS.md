@@ -295,3 +295,11 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - Citation URLs are parsed and restricted to HTTP(S), rendered as text-backed links with target=_blank and rel=noopener noreferrer; provider text is never injected as HTML.
 - An unavailable provider is explicitly shown as unavailable and is never displayed as “brand not mentioned”.
 - Regression/static contracts added for 503 preservation and citation rendering. This is a prompt-level citation display, not yet the full history/source-gap explorer defined in the product strategy.
+
+
+### Matching hard constraints and event attribution — BLOCKED for commercial ranking claims
+- در mobApp PR #6 head 9474، RecommendIn فقط user_id/candidates/limit می‌گیرد؛ candidate allowlist و cold-start observed-popularity اصلاح شده، اما scenario/placement و hard policy constraints هنوز قرارداد اجرایی ندارند.
+- /internal/track-events هنوز dict آزاد را در Redis Stream ذخیره می‌کند؛ event_id، recommendation_id، schema version، idempotency و outcome join enforce نمی‌شوند.
+- مهم‌تر: track_events خطای Redis را catch و فقط log می‌کند، اما route همچنان status=accepted می‌دهد؛ بنابراین caller ممکن است رویداد ثبت‌نشده را موفق تلقی کند.
+- این گپ با source و معیار پذیرش در source audit section 15 ثبت شد؛ اصلاح باید PR جداگانه mobApp باشد: event contract نسخه‌بندی‌شده، خطای retryable در عدم persistence، scenario/hard filters، attribution end-to-end و offline/online evaluation.
+- تا آن زمان ادعای personalization/CTR/conversion uplift مبتنی بر feedback loop کامل BLOCKED است.
