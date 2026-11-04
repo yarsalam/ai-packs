@@ -219,3 +219,13 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - health=degraded ولی reachable به‌صورت WARN ثبت می‌شود و smoke test مسیرهای مستقل را ادامه می‌دهد.
 - Matching smoke test جدید بررسی می‌کند recommendationها فقط از candidate allowlist باشند و نبود embedding در `/match/predict` به HTTP 503 صریح منجر شود، نه score ساختگی.
 - unit/static contract این موارد در PR #24 اضافه شده؛ اجرای live smoke روی محیط disposable هنوز انجام نشده و release gate آن باز است.
+
+
+## ۱۰. Customer usage dashboard — IN_PROGRESS (PR #25)
+
+- هر چهار WordPress API client متد `get_usage()` برای `GET /usage` دارند؛ Safety از مسیر JSON و با `X-Site-Domain` استفاده می‌کند.
+- هر چهار SettingsPage پنل مصرف ساعتی/ماهانه، plan، used/limit/remaining، progress bar، وزن عملیات و زمان آخرین refresh دارند؛ حالت‌های loading/empty/error پیاده شده‌اند.
+- AJAX endpointها nonce و `manage_options` را بررسی می‌کنند؛ سه connection-test handler فاقد capability check نیز اصلاح شدند.
+- CI قراردادهای PHP lint، API client method، AJAX hook/security و UI states را تست می‌کند.
+- این قابلیت نمایش مصرف است، نه billing/payment/invoicing؛ operation weights و quota limits تا اندازه‌گیری هزینه نهایی provisional هستند.
+- PR #25 به‌صورت Draft روی PR #24 stack شده و تا merge شدن PR #24 نباید merge شود. Final checks روی آخرین SHA لازم است.
