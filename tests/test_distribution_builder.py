@@ -11,9 +11,9 @@ def test_aeo_service_exposes_optional_perplexity_configuration():
 def test_generated_seo_compose_passes_both_aeo_provider_keys():
     compose = build_compose("seo-pack", PACKS["seo-pack"])
     env = compose["services"]["aeo_tracker"]["environment"]
-    assert any("OPENAI_API_KEY=" in item for item in env)
-    assert any("PERPLEXITY_API_KEY=" in item for item in env)
-    assert any("PERPLEXITY_MODEL=" in item for item in env)
+    assert "OPENAI_API_KEY" in env
+    assert "PERPLEXITY_API_KEY" in env
+    assert "PERPLEXITY_MODEL" in env
 
 
 def test_generated_seo_readme_documents_per_engine_rates_and_citations():
