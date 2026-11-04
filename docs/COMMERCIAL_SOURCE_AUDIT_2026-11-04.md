@@ -141,3 +141,43 @@ A post-merge review of all authenticated WordPress request paths found that PR #
 - Sections 10 and 12 record correction evidence on the readiness branch, including AEO unavailable semantics, Matching fabricated-fallback removal, Revenue uncertainty fixes and AEO multi-engine adapters.
 - mobApp PR #6 remains Draft. The pin is reproducible and CI-validated, but that does not make the upstream PR merged or establish full inference, source licensing, clean install, load, latency or cost readiness.
 - Remaining work is a fresh route/schema/model/test audit on the exact pinned SHA and verification that all shipped artifacts contain only that revision. No production deployment or public publishing occurred.
+
+
+## 14. Revenue feature-store provenance audit — mobApp PR #6 head 9474b4ace1da44d6c2662b0554918ae521c7eaec
+
+The current Revenue source still contains material synthetic/default feature values. This finding is independent of the predictor's CV leakage/confidence corrections and remains a P1 blocker for trustworthy LTV inference.
+
+**Source:** `src/feature-store-rvenue/feature-store-rvenue.service.ts`, `python-ai/services/ai_revenue/app.py`, `python-ai/services/ai_revenue/predictor.py`, `src/revenue/revenue-attribution.service.ts`.
+
+| Feature | Current source behavior | Product consequence | Required correction |
+|---|---|---|---|
+| channelType | Encoded from acquisitionSource; unknown values default to 0.5 | Partial real provenance, unknown conflated with average | Explicit unknown/missing state and mapping version |
+| timeToConversion | Derived from first paid payment minus user.createdAt; no payment => 999 | Real but simplistic; cohort/late payment handling unverified | Explicit observation window and censoring/maturity semantics |
+| ltv | Sum of paid IRT payments only in FeatureStoreRevenueService | Currency-limited; refund/chargeback handling not established | Currency-safe net revenue and refund/chargeback adjustment |
+| cityWeight | User count in city divided by total-user heuristic | Proxy is not acquisition/revenue value | Remove unless independently validated; document denominator/time |
+| intentScore | Fixed event-type weights over latest 50 events | Heuristic, not calibrated intent probability | Versioned feature definition, temporal window, evidence and validation |
+| engagementDepth | Raw count of latest 1000 events | Count depends on retention/window and user activity age | Window-normalized event features and missingness metadata |
+| keywordDifficulty | Hard-coded 0.5 in buildFeatures; helper returns 0/50 on missing/error | External data is not actually wired into model feature; error looks like a value | Connect real source or return unavailable; provenance/time/version |
+| contentLength | Hard-coded 0.5 | Synthetic input | Real source or explicit missing |
+| retentionImpact | Hard-coded 0.5 | Synthetic input | Cohort retention feature with observation window, or missing |
+| campaignCost | Hard-coded 0 | CAC/cost cannot be inferred | Currency- and attribution-window-safe campaign spend; otherwise null |
+| competitorPressure | Method always returns 0.3 | Synthetic input | Real licensed source and freshness or missing |
+| seasonalityFactor | Fixed month buckets 1.3/1.5/0.8 | Unvalidated calendar heuristic | Fit/validate by market and temporal split or remove |
+| segmentSize | Hard-coded 0.5 | Synthetic input | Real segment count/definition and point-in-time snapshot |
+| CAC/payback | Defaults to 0 in feature store; attribution service deliberately returns null where cost units are unknown | Zero can be misread as free acquisition / instant payback | Keep null/unavailable until cost currency and attribution are valid |
+
+Additional model contract concern:
+- `LTVRequest` in `python-ai/services/ai_revenue/app.py` still supplies numeric defaults for the 12 model features. A caller omitting a feature can silently get a prediction based on synthetic defaults.
+- `RevenuePredictor.predict_ltv` returns an uncalibrated prediction and no interval; this is correct uncertainty labeling, but it does not repair synthetic inputs.
+- `RevenueAttributionService.calculateLTVBySource` returns null CAC/payback where SEO activity cost currency is undefined; preserve that behavior rather than inventing zero.
+- Training endpoint requires `actualLtv`, but no production/customer data may be copied into public CI or a demo corpus.
+
+**Required P1 remediation in a separate mobApp PR (backward-compatible):**
+1. Add feature provenance/status alongside every model input: observed / derived / missing, source, as-of timestamp, window, units, transformation and feature revision.
+2. Stop treating absent values as numeric 0.5/0/0.3. Use an explicit insufficient-data path or a versioned, validated imputation strategy with missingness indicators; never silently infer.
+3. Fix currency/refund/chargeback and cohort maturity for realized LTV.
+4. Remove or relabel heuristic intent/city/seasonality features; temporal/group split and leakage checks required.
+5. Add contract tests proving omitted/unknown inputs cannot silently produce a normal-looking LTV estimate.
+6. Run exact-head model readiness, full inference on synthetic/legal fixtures, clean install, load/latency/error and cost tests.
+
+**Status:** BLOCKED for commercial LTV claims until the input contract/provenance is fixed and evaluated. The code is from mobApp PR #6's current candidate branch; no production database or customer data was accessed.
