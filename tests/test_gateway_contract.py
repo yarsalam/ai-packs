@@ -49,6 +49,27 @@ class FakeRedis:
         self.counter += 1
         return value
 
+    async def eval(self, script, numkeys, *args):
+        assert numkeys == 2
+        assert "INCRBY" in script and "hourly_limit" in script
+        hour_key, month_key = args[:2]
+        weight, hourly_limit, monthly_limit, hourly_ttl, monthly_ttl = map(int, args[2:])
+        hourly_used = int(self.values.get(hour_key, 0))
+        monthly_used = int(self.values.get(month_key, 0))
+        if hourly_used + weight > hourly_limit:
+            return [0, 1, hourly_used, monthly_used]
+        if monthly_used + weight > monthly_limit:
+            return [0, 2, hourly_used, monthly_used]
+        hourly_total = hourly_used + weight
+        monthly_total = monthly_used + weight
+        self.values[hour_key] = str(hourly_total)
+        self.values[month_key] = str(monthly_total)
+        if hourly_total == weight:
+            self.expiry_calls.append((hour_key, hourly_ttl))
+        if monthly_total == weight:
+            self.expiry_calls.append((month_key, monthly_ttl))
+        return [1, 0, hourly_total, monthly_total]
+
     async def expire(self, key, seconds):
         self.expiry_calls.append((key, seconds))
         return True
@@ -216,6 +237,67 @@ def test_usage_credits_are_counted_and_enforced(gateway, monkeypatch):
         asyncio.run(gateway.get_license(request))
     assert exc.value.status_code == 429
     assert "Hourly" in exc.value.detail
+
+    key_hash = _license_key_hash(gateway, key)
+    assert redis.values[f"{gateway.RATE_LIMIT_PREFIX}{key_hash}:hour"] == "1"
+    assert redis.values[f"{gateway.USAGE_PREFIX}{key_hash}:{datetime.now(timezone.utc):%Y-%m}"] == "1"
+
+
+def test_monthly_quota_rejection_does_not_consume_more_credits(gateway, monkeypatch):
+    key = "monthly-quota-test"
+    redis = _fake_redis_for(gateway, key, plan="pro")
+    monkeypatch.setattr(gateway, "redis_client", redis)
+    monkeypatch.setitem(gateway.PLAN_LIMITS["pro"], "monthly_units", 1)
+
+    request = _request("/ordinary-endpoint", {"X-License-Key": key})
+    assert asyncio.run(gateway.get_license(request))["plan"] == "pro"
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(gateway.get_license(request))
+    assert exc.value.status_code == 429
+    assert "Monthly" in exc.value.detail
+
+    key_hash = _license_key_hash(gateway, key)
+    assert redis.values[f"{gateway.RATE_LIMIT_PREFIX}{key_hash}:hour"] == "1"
+    assert redis.values[f"{gateway.USAGE_PREFIX}{key_hash}:{datetime.now(timezone.utc):%Y-%m}"] == "1"
+
+
+def test_usage_quota_is_atomic_under_concurrent_requests(gateway, monkeypatch):
+    redis_url = os.getenv("AI_PACK_TEST_REDIS_URL")
+    if not redis_url:
+        pytest.skip("AI_PACK_TEST_REDIS_URL is not configured")
+
+    async def exercise():
+        client = gateway.aioredis.from_url(redis_url, decode_responses=True)
+        await client.ping()
+        key = "concurrency-" + os.urandom(12).hex()
+        key_hash = _license_key_hash(gateway, key)
+        now = datetime.now(timezone.utc)
+        hour_key = f"{gateway.RATE_LIMIT_PREFIX}{key_hash}:hour"
+        month_key = f"{gateway.USAGE_PREFIX}{key_hash}:{now:%Y-%m}"
+        monkeypatch.setattr(gateway, "redis_client", client)
+        monkeypatch.setitem(gateway.PLAN_LIMITS["pro"], "hourly_units", 5)
+        monkeypatch.setitem(gateway.PLAN_LIMITS["pro"], "monthly_units", 100)
+
+        try:
+            results = await asyncio.gather(
+                *[
+                    gateway._meter_usage(key, {"plan": "pro"}, "/ordinary-endpoint")
+                    for _ in range(20)
+                ],
+                return_exceptions=True,
+            )
+            successes = sum(result is None for result in results)
+            failures = [result for result in results if isinstance(result, HTTPException)]
+            assert successes == 5
+            assert len(failures) == 15
+            assert all(result.status_code == 429 for result in failures)
+            assert int(await client.get(hour_key)) == 5
+            assert int(await client.get(month_key)) == 5
+        finally:
+            await client.delete(hour_key, month_key)
+            await client.aclose()
+
+    asyncio.run(exercise())
 
 
 def test_usage_snapshot_reports_plan_quotas(gateway, monkeypatch):
