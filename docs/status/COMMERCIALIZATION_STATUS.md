@@ -353,3 +353,9 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - Dedicated mobApp Issue #13 opened: https://github.com/yarsalam/mobApp/issues/13.
 - It records the exact synthetic feature defaults, numeric LTVRequest defaults, IRT-only paid LTV/refund gaps and required provenance/missingness/currency-safe remediation.
 - Commercial LTV/CAC/payback/ROI claims remain NO-GO until Issue #13 is closed with evidence. No production/customer data used.
+
+
+### Matching remaining event/attribution work tracked upstream
+- mobApp Issue #14 opened: https://github.com/yarsalam/mobApp/issues/14.
+- It tracks schema versioning, event_id/recommendation_id, idempotency, tenant/consent binding, scenario/hard constraints, end-to-end attribution and offline/online evaluation.
+- PR #11 fixes only persistence failure acknowledgement; it does not close these broader gaps. Commercial personalization/CTR/conversion claims remain NO-GO until Issue #14 closes with evidence.
