@@ -123,3 +123,12 @@ The readiness branch now contains the following code/test corrections. These are
 ## 11. Safety WordPress request-path correction
 
 A post-merge review of all authenticated WordPress request paths found that PR #22 had added `X-Site-Domain` to Safety multipart upload requests but missed the separate JSON request method. PR #24 adds the header to Safety JSON calls and strengthens CI to require both occurrences (JSON + multipart). Until PR #24 merges, do not treat Safety WordPress domain binding as complete.
+
+
+## 12. AEO multi-engine adapter evidence — mobApp PR #6 head `4344cb05afe461551e1bfdc379b26a3c0fedddd9`
+
+- OpenAI and Perplexity Sonar providers are supported through separate adapters. The default request runs every configured provider; callers may select engines explicitly.
+- Results carry engine/model and provider citations; mention rates are calculated per engine only. Multi-engine requests deliberately set the legacy aggregate `mention_rate` to null.
+- Missing keys, provider failures and unsupported engines produce `unavailable` with `mentioned=null`, excluded from mention-rate denominators.
+- Exact-head tests: Python AI readiness 33 passed / 17 warnings; Revenue LTV contract 8 passed.
+- Live Perplexity validation requires a test API key and is not yet complete. AI Packs compose/distribution env passthrough and SEO WordPress engine selection are being validated in PR #24/#25.
