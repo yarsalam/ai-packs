@@ -130,7 +130,7 @@ def _normalize_domain(raw_domain: Optional[str], allow_wildcard: bool = False) -
     return hostname
 
 
-async def validate_license(\1: str, site_domain: Optional[str] = None) -> dict:
+async def validate_license(license_key: str, site_domain: Optional[str] = None) -> dict:
     """
     License key رو چک می‌کنه.
     Returns: dict با اطلاعات license
