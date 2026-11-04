@@ -546,7 +546,7 @@ final class YarSalam_AI_Products_Preview {
                     <div>
                         <span class="yap-kicker">AI PRODUCT WORKSPACE</span>
                         <h2 id="yap-workspace-title">محیط کاری محصولات هوش مصنوعی</h2>
-                        <p>چهار تجربهٔ محصولی در یک محیط نمایشی؛ داده‌ها ساختگی‌اند و هیچ بخشی به مدل یا API زنده متصل نیست.
+                        <p>چهار تجربهٔ محصولی در یک محیط نمایشی؛ داده‌ها ساختگی‌اند و هیچ بخشی به مدل یا API زنده متصل نیست.</p>
                     </div>
                     <span class="yap-preview-stamp"><i></i> پیش‌نمایش تعاملی</span>
                 </div>
