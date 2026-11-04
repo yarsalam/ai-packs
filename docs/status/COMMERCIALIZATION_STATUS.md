@@ -181,3 +181,28 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - distribution pin روی SHA PR #6 باقی است تا lineage و قراردادها با تاریخچهٔ فعلی mobApp reconcile شوند.
 
 **وضعیت کلی:** PR #21 Preview را به سطح چهار محصول گسترش داد، اما این فقط UI demo است. Release gates و full inference برای هر پک هنوز NO-GO هستند. Safety #8 BLOCKED و #9 متوقف است.
+
+
+## ۹. به‌روزرسانی اجرایی — 2026-11-04 (Domain Binding و Source Reconciliation)
+
+### License domain binding — DONE IN PR #22
+- PR #22 با merge commit واقعی `bce27e145b7be3c6a6a27337e507004cedf9772b` ادغام شد.
+- هر چهار Gateway دامنهٔ مشخص License را با `X-Site-Domain` مقایسه می‌کنند؛ mismatch/missing قبل از quota metering رد می‌شود؛ `domain="*"` برای سازگاری قدیمی باقی است.
+- هر چهار WordPress API client هدر را ارسال می‌کنند؛ Safety در JSON و multipart؛ Gateway هدر را به upstream forward نمی‌کند.
+- contract tests، PHP syntax و header checks و image validation موفق شدند. قرارداد و محدودیت امنیتی در `docs/LICENSE_DOMAIN_BINDING.md` است. این فقط policy/anti-misconfiguration است، نه اثبات رمزنگاری‌شدهٔ مالکیت دامنه.
+
+### Upstream source pin — IN_PROGRESS
+- mobApp PR #10 با merge commit واقعی `d7ad4c17eb98caa3d5674a619753407e4ccb01ab` current main را به branch `fix/ai-pack-commercial-readiness` ادغام کرد؛ PR #6 اکنون تاریخچهٔ main و readiness را بدون force-push حفظ می‌کند.
+- آخرین mobApp PR #6 head برابر `e017905c39835c1da2ddb3e8fd5f6bcd4c8e745b` است؛ PR هنوز Draft و merge نشده.
+- regression workflow روی این SHA: **28 passed, 4 warnings**؛ Revenue LTV contract: **8 passed**.
+- AEO provider failure اکنون `unavailable` است، نه negative mention؛ failed calls cache نمی‌شوند و از denominator حذف می‌شوند.
+- Matching fallbackهای ثابت و IDهای ساختگی حذف شده‌اند؛ cold-start فقط از popularity مشاهده‌شده در candidate set استفاده می‌کند؛ missing embeddings امتیاز جعلی نمی‌دهند.
+- LTV CV scaler داخل foldها fit می‌شود؛ CV R² با confidence اشتباه نمی‌شود؛ interval ثابت حذف و uncalibrated علامت می‌خورد. Uplift fallback فقط descriptive است و هیچ causal claim نمی‌کند.
+- AI Packs source pin در branch `build/pin-mobapp-readiness-2026-11-04-final` به SHA بالا تغییر داده شده است؛ PR جدید پس از validation نهایی باز می‌شود. PR قبلی #23 به دلیل پایهٔ قدیمی و نبود client changes لازم بسته شد؛ merge نشده.
+
+### گپ‌های باقی‌مانده
+- Feature store در mobApp هنوز برای چند ورودی LTV از default/hard-coded values استفاده می‌کند؛ دادهٔ واقعی/provenance و cohort/temporal validation لازم است.
+- Full inference واقعی، cold install، load/latency/error/cost per 1000 و حقوق مدل/وزن‌ها هنوز برای همهٔ پک‌ها اثبات نشده‌اند.
+- English localization و customer workspace واقعی (نه Preview) هنوز باقی است.
+- Safety corpus/benchmark هنوز BLOCKED در Issue #8؛ Issue #9 و فروش/outreach Safety ممنوع.
+- همهٔ پک‌ها هنوز NO-GO برای فروش/public release تا عبور مستقل release gates و GO مالک.
