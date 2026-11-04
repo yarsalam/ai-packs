@@ -118,3 +118,8 @@ The readiness branch now contains the following code/test corrections. These are
 **Validation evidence on exact upstream head:** pack readiness 28 passed / 4 warnings; Revenue LTV model contract 8 passed.
 
 **Still unresolved:** mobApp FeatureStoreRevenueService uses hard-coded/default values for several model features; no temporal/group split, calibrated intervals, randomized assignment provenance, real event/cohort pipeline, full model inference, clean install, load, latency or cost proof. Do not market the above code corrections as measured accuracy/uplift/ROI.
+
+
+## 11. Safety WordPress request-path correction
+
+A post-merge review of all authenticated WordPress request paths found that PR #22 had added `X-Site-Domain` to Safety multipart upload requests but missed the separate JSON request method. PR #24 adds the header to Safety JSON calls and strengthens CI to require both occurrences (JSON + multipart). Until PR #24 merges, do not treat Safety WordPress domain binding as complete.
