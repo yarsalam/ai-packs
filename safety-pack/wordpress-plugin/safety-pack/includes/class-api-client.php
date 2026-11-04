@@ -60,6 +60,7 @@ class ApiClient {
             CURLOPT_TIMEOUT        => 60,
             CURLOPT_HTTPHEADER     => [
                 'X-License-Key: ' . $this->license_key,
+                'X-Site-Domain: ' . (string) wp_parse_url(home_url(), PHP_URL_HOST),
             ],
         ]);
 

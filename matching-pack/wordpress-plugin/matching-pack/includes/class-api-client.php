@@ -27,6 +27,7 @@ class ApiClient {
             'headers' => [
                 'Content-Type'  => 'application/json',
                 'X-License-Key' => $this->license_key,
+                'X-Site-Domain' => (string) wp_parse_url(home_url(), PHP_URL_HOST),
             ],
         ];
         if (!empty($body)) $args['body'] = wp_json_encode($body);

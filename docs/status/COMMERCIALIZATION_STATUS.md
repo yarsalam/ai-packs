@@ -159,3 +159,25 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 6. تکمیل release gates مستقل؛ فروش و public release همچنان NO-GO.
 
 **محدودیت‌ها:** این مرحله فقط audit و تغییرات quota/مستندات را پوشش می‌دهد؛ full inference، حقوق مدل/داده، privacy، cold install، load، p95 latency، error rate و cost-per-1000 هنوز برای هر پک GO نشده‌اند. Safety #8 همچنان BLOCKED و #9 متوقف است.
+
+
+## ۸. به‌روزرسانی اجرایی — 2026-11-04 (Preview و License Domain Binding)
+
+### WordPress Preview چهار محصول
+- PR [#21](https://github.com/yarsalam/ai-packs/pull/21) با merge commit واقعی `2488e6ad37869047078e208320f61beaf716d47e` ادغام شد.
+- Preview آفلاین WordPress اکنون برای هر چهار محصول پنل دارد: Safety (نمای کلی/صف/policy)، SEO (prompt/citation/technical audit)، Revenue (actual/cohort/LTV/experiment) و Matching (Top-K/explanation/constraints/event funnel).
+- برای پنل‌های SEO/Revenue/Matching حالت‌های ready/loading/empty/error/stale قابل تغییر است. داده‌ها synthetic و بدون اتصال به Gateway/production هستند. connectorهای SEO که هنوز پیاده‌سازی نشده‌اند صریحاً «هنوز متصل نشده» نشان داده می‌شوند؛ اختلاف خام Revenue به‌عنوان causal uplift نمایش داده نمی‌شود.
+- workflow `validate-and-package` موفق شد؛ پنج check دیگر Gateway/Matching نیز روی head PR موفق شدند. ZIP فقط artifact موقت CI است، Release عمومی ساخته نشده است.
+
+### License domain binding — IN_PROGRESS
+- PR [#22](https://github.com/yarsalam/ai-packs/pull/22) در branch `feat/license-domain-binding` با head SHA `dfcdf530628dd388618ae360dc2fa37d2ae6ac38` باز است؛ CI آن باید روی آخرین head دوباره بررسی شود.
+- هر چهار Gateway اکنون در PR تغییر کرده‌اند تا domain مشخص در License با هدر `X-Site-Domain` مقایسه شود؛ domain wildcard `*` برای سازگاری قدیمی آزاد می‌ماند. mismatch پیش از quota metering رد می‌شود.
+- هر چهار WordPress API client هدر دامنه را ارسال می‌کنند؛ Safety در مسیر JSON و multipart. Gateway هدر را پیش از proxy به upstream حذف می‌کند.
+- تست‌های contract برای match/mismatch/missing/wildcard/normalization و رد قبل از meter اضافه شده‌اند؛ CI PHP syntax و وجود header در هر plugin نیز افزوده شده است.
+- سند قرارداد `docs/LICENSE_DOMAIN_BINDING.md` محدودیت امنیتی را شفاف می‌کند: این کنترل فقط policy/anti-misconfiguration است، نه اثبات رمزنگاری‌شدهٔ مالکیت دامنه؛ bearer key قابل استفاده با header جعلی است.
+
+### Upstream PRها
+- mobApp PR #6 همچنان Draft است؛ `pack-regressions` سبز و mergeable/clean است، اما full inference/clean install/load باقی است. PR #7 نیز Draft و پیاده‌سازی URL audit همپوشان دارد؛ ادغام هر دو بدون reconcile ممنوع.
+- distribution pin روی SHA PR #6 باقی است تا lineage و قراردادها با تاریخچهٔ فعلی mobApp reconcile شوند.
+
+**وضعیت کلی:** PR #21 Preview را به سطح چهار محصول گسترش داد، اما این فقط UI demo است. Release gates و full inference برای هر پک هنوز NO-GO هستند. Safety #8 BLOCKED و #9 متوقف است.

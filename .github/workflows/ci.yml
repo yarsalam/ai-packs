@@ -54,6 +54,32 @@ jobs:
           python -m pytest -q tests/test_safety_policy.py tests/test_moderation_eval.py tests/test_release_guardrails.py tests/test_safety_benchmark_validation.py
           python -m py_compile scripts/evaluate_moderation.py scripts/validate_safety_benchmark.py
 
+
+  wordpress-plugin-php-contract:
+    name: WordPress plugin PHP and license header contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          tools: none
+      - name: Lint all pack plugin PHP files
+        run: |
+          set -euo pipefail
+          find seo-pack/wordpress-plugin revenue-pack/wordpress-plugin matching-pack/wordpress-plugin safety-pack/wordpress-plugin -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Require domain header in every pack API client
+        run: |
+          set -euo pipefail
+          for client in \
+            seo-pack/wordpress-plugin/seo-pack/includes/class-api-client.php \
+            revenue-pack/wordpress-plugin/revenue-pack/includes/class-api-client.php \
+            matching-pack/wordpress-plugin/matching-pack/includes/class-api-client.php \
+            safety-pack/wordpress-plugin/safety-pack/includes/class-api-client.php; do
+            grep -q 'X-Site-Domain' "$client"
+          done
+
   matching-assistant-runtime-image:
     name: Build and import-check only Matching ai_assistant
     runs-on: ubuntu-latest
