@@ -127,6 +127,25 @@ PACKS: dict[str, dict[str, Any]] = {
                 "payload": {"messages": ["از آشنایی با شما خوشحالم.", "از این رفتار ناراحت شدم."]},
                 "check": "sentiment",
             },
+            {
+                "name": "recommendations stay within caller candidate set",
+                "method": "POST",
+                "path": "/match/recommend",
+                "payload": {
+                    "user_id": 900000000001,
+                    "candidates": [900000000002, 900000000003],
+                    "limit": 5,
+                },
+                "check": "recommendations",
+            },
+            {
+                "name": "missing match embeddings are reported unavailable",
+                "method": "POST",
+                "path": "/match/predict",
+                "payload": {"user_a": 900000000011, "user_b": 900000000012},
+                "check": "unavailable_score",
+                "expected_status": 503,
+            },
         ],
         "capability_gaps": [],
     },
@@ -185,7 +204,7 @@ def add_result(results: list[dict[str, Any]], name: str, ok: bool, status: int |
     })
 
 
-def validate_payload(check: str, response: Any) -> tuple[bool, str]:
+def validate_payload(check: str, response: Any, payload: dict[str, Any] | None = None) -> tuple[bool, str]:
     if not isinstance(response, dict):
         return False, "Expected a JSON object response"
     if check == "similarity":
@@ -232,6 +251,25 @@ def validate_payload(check: str, response: Any) -> tuple[bool, str]:
             and all(isinstance(x, (int, float)) and math.isfinite(x) for x in embedding)
         )
         return ok, f"dimension={dimension!r}, vector_length={len(embedding) if isinstance(embedding, list) else 'invalid'}"
+    if check == "recommendations":
+        candidates = set((payload or {}).get("candidates", []))
+        recommendations = response.get("recommendations")
+        status = response.get("status")
+        if not isinstance(recommendations, list) or status not in {"ok", "insufficient_data", "no_candidates"}:
+            return False, f"status={status!r}, recommendations_type={type(recommendations).__name__}"
+        valid = all(
+            isinstance(item, dict)
+            and item.get("user_id") in candidates
+            and isinstance(item.get("score"), (int, float))
+            and math.isfinite(item.get("score"))
+            and isinstance(item.get("score_components"), dict)
+            for item in recommendations
+        )
+        return valid, f"status={status!r}, returned={len(recommendations)}, candidates={len(candidates)}"
+    if check == "unavailable_score":
+        detail = response.get("detail", "")
+        ok = isinstance(detail, str) and "valid embeddings are required" in detail
+        return ok, f"explicit_unavailable={ok}, detail={detail!r}"
     if check == "sentiment":
         predictions = response.get("sentiments")
         ok = isinstance(predictions, list) and len(predictions) == 2 and all(
@@ -304,10 +342,16 @@ def test_pack(pack_name: str, cfg: dict[str, Any], dist_dir: Path,
                     base_url, spec["path"], method=spec["method"], payload=spec.get("payload"),
                     headers=license_headers(license_key), timeout=timeout,
                 )
-                if status < 200 or status >= 300:
+                expected_status = spec.get("expected_status")
+                if expected_status is not None:
+                    if status != expected_status:
+                        ok, detail = False, f"expected HTTP {expected_status}, got {status}: {json.dumps(response, ensure_ascii=False)[:300]}"
+                    else:
+                        ok, detail = validate_payload(spec["check"], response, spec.get("payload"))
+                elif status < 200 or status >= 300:
                     ok, detail = False, json.dumps(response, ensure_ascii=False)[:400]
                 else:
-                    ok, detail = validate_payload(spec["check"], response)
+                    ok, detail = validate_payload(spec["check"], response, spec.get("payload"))
                 add_result(results, spec["name"], ok, status, elapsed, detail)
             except Exception as exc:
                 add_result(results, spec["name"], False, None, None,
