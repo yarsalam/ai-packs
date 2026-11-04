@@ -128,7 +128,7 @@ def _normalize_domain(raw_domain: Optional[str], allow_wildcard: bool = False) -
     return hostname
 
 
-async def validate_license(\1: str, site_domain: Optional[str] = None) -> dict:
+async def validate_license(key: str, site_domain: Optional[str] = None) -> dict:
     if not key:
         raise HTTPException(401, "License key الزامی است")
     data = await redis_client.get(f"{LICENSE_PREFIX}{_hash(key)}")
