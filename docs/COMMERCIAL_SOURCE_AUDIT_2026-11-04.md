@@ -232,3 +232,12 @@ Verified behavior:
 5. Add regression tests proving OpenAI and Perplexity histories cannot overwrite or ambiguously mix.
 
 **Status:** Current multi-engine request summary is implemented upstream; engine-isolated historical reporting remains NOT_STARTED. Do not market longitudinal AI visibility until this contract is complete.
+
+
+### AEO engine-isolated history remediation — mobApp PR #12 IN_PROGRESS
+- Proposed in https://github.com/yarsalam/mobApp/pull/12, stacked on PR #6 exact base `9474b4ace1da44d6c2662b0554918ae521c7eaec`.
+- Branch `feat/aeo-engine-isolated-history-2026-11-04`, head `66917247dced4db5d7d8e50f31bb8724946b6b99`.
+- New history keys are engine-specific; each snapshot records engine/model; `GET /history/{brand}?engine=...` exposes separate history while defaulting to OpenAI for compatibility.
+- Legacy mixed snapshots migrate only explicit engine-tagged result rows; untagged rows are omitted rather than misattributed.
+- Regression tests cover engine isolation, safe migration, snapshot provenance and API engine selection. Exact-head Python AI readiness workflow is in progress.
+- PR #12 remains Draft/stacked on PR #6; WordPress history/trend UI is still NOT_STARTED.
