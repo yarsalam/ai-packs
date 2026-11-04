@@ -181,3 +181,49 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - distribution pin روی SHA PR #6 باقی است تا lineage و قراردادها با تاریخچهٔ فعلی mobApp reconcile شوند.
 
 **وضعیت کلی:** PR #21 Preview را به سطح چهار محصول گسترش داد، اما این فقط UI demo است. Release gates و full inference برای هر پک هنوز NO-GO هستند. Safety #8 BLOCKED و #9 متوقف است.
+
+
+## ۹. به‌روزرسانی اجرایی — 2026-11-04 (Domain Binding و Source Reconciliation)
+
+### License domain binding — DONE IN PR #22
+- PR #22 با merge commit واقعی `bce27e145b7be3c6a6a27337e507004cedf9772b` ادغام شد.
+- هر چهار Gateway دامنهٔ مشخص License را با `X-Site-Domain` مقایسه می‌کنند؛ mismatch/missing قبل از quota metering رد می‌شود؛ `domain="*"` برای سازگاری قدیمی باقی است.
+- هر چهار WordPress API client هدر را ارسال می‌کنند؛ Safety در JSON و multipart؛ Gateway هدر را به upstream forward نمی‌کند.
+- contract tests، PHP syntax و header checks و image validation موفق شدند. قرارداد و محدودیت امنیتی در `docs/LICENSE_DOMAIN_BINDING.md` است. این فقط policy/anti-misconfiguration است، نه اثبات رمزنگاری‌شدهٔ مالکیت دامنه.
+
+### Upstream source pin — IN_PROGRESS
+- mobApp PR #10 با merge commit واقعی `d7ad4c17eb98caa3d5674a619753407e4ccb01ab` current main را به branch `fix/ai-pack-commercial-readiness` ادغام کرد؛ PR #6 اکنون تاریخچهٔ main و readiness را بدون force-push حفظ می‌کند.
+- آخرین mobApp PR #6 head برابر `e017905c39835c1da2ddb3e8fd5f6bcd4c8e745b` است؛ PR هنوز Draft و merge نشده.
+- regression workflow روی این SHA: **28 passed, 4 warnings**؛ Revenue LTV contract: **8 passed**.
+- AEO provider failure اکنون `unavailable` است، نه negative mention؛ failed calls cache نمی‌شوند و از denominator حذف می‌شوند.
+- Matching fallbackهای ثابت و IDهای ساختگی حذف شده‌اند؛ cold-start فقط از popularity مشاهده‌شده در candidate set استفاده می‌کند؛ missing embeddings امتیاز جعلی نمی‌دهند.
+- LTV CV scaler داخل foldها fit می‌شود؛ CV R² با confidence اشتباه نمی‌شود؛ interval ثابت حذف و uncalibrated علامت می‌خورد. Uplift fallback فقط descriptive است و هیچ causal claim نمی‌کند.
+- AI Packs source pin در branch `build/pin-mobapp-readiness-2026-11-04-final` به SHA بالا تغییر داده شده و PR #24 باز است؛ CI توزیع/تصویر/قرارداد روی آخرین head در حال اجراست. تا سبز شدن همهٔ checks، pin جدید در main فعال نیست. PR قبلی #23 به دلیل پایهٔ قدیمی و نبود client changes لازم بسته شد؛ merge نشده.
+
+### گپ‌های باقی‌مانده
+- Feature store در mobApp هنوز برای چند ورودی LTV از default/hard-coded values استفاده می‌کند؛ دادهٔ واقعی/provenance و cohort/temporal validation لازم است.
+- Full inference واقعی، cold install، load/latency/error/cost per 1000 و حقوق مدل/وزن‌ها هنوز برای همهٔ پک‌ها اثبات نشده‌اند.
+- English localization و customer workspace واقعی (نه Preview) هنوز باقی است.
+- Safety corpus/benchmark هنوز BLOCKED در Issue #8؛ Issue #9 و فروش/outreach Safety ممنوع.
+- همهٔ پک‌ها هنوز NO-GO برای فروش/public release تا عبور مستقل release gates و GO مالک.
+
+
+### Safety WordPress JSON header follow-up — FIX IN PR #24
+- Post-merge path review found that PR #22 had added `X-Site-Domain` to Safety multipart uploads but missed its separate JSON request method. Therefore, domain-bound Safety text moderation and license-status calls could still receive 403.
+- PR #24 adds the header to Safety JSON requests and strengthens CI to require at least two occurrences in Safety API client (JSON + multipart). Until PR #24 merges, Safety WordPress domain binding is not fully complete.
+- The live smoke-test client was also updated to send `X-Site-Domain` on license validation, inference and usage calls; degraded-but-reachable health is a warning, not a hard failure.
+
+
+### Smoke-test contract — PR #24
+- `scripts/smoke_test_packs.py` اکنون `X-Site-Domain: smoke-test.local` را در license validation، inference و usage ارسال می‌کند تا با domain binding هماهنگ باشد.
+- health=degraded ولی reachable به‌صورت WARN ثبت می‌شود و smoke test مسیرهای مستقل را ادامه می‌دهد.
+- Matching smoke test جدید بررسی می‌کند recommendationها فقط از candidate allowlist باشند و نبود embedding در `/match/predict` به HTTP 503 صریح منجر شود، نه score ساختگی.
+- unit/static contract این موارد در PR #24 اضافه شده؛ اجرای live smoke روی محیط disposable هنوز انجام نشده و release gate آن باز است.
+
+
+### Upstream AEO multi-engine revision — 2026-11-04
+- mobApp PR #6 latest tested head: `4344cb05afe461551e1bfdc379b26a3c0fedddd9`.
+- OpenAI + Perplexity Sonar adapters; all configured engines run by default; explicit selection supported; per-engine rates are separate; no cross-engine average; citations/model provenance retained; missing/unconfigured provider is `unavailable`, never a negative mention.
+- Exact-head validation: **33 passed, 17 warnings** in Python AI readiness; **8 passed** in Revenue LTV contract.
+- AI Packs PR #24 now pins all four distribution/CI/image-validation workflows to this SHA and passes Perplexity env configuration into SEO service; final AI Packs checks still required.
+- Live Perplexity call remains BLOCKED pending an owner-provided test API key; no live provider success is claimed. PR #6 remains Draft; full inference/clean install/load/cost gates remain open.

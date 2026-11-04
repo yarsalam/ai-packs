@@ -104,3 +104,31 @@ PR [#22](https://github.com/yarsalam/ai-packs/pull/22) پیاده‌سازی dom
 - تست‌ها و CI PHP syntax برای چهار plugin اضافه شده‌اند.
 
 این کنترل فقط جلوگیری از استفادهٔ اشتباه/سادهٔ کلید روی دامنهٔ دیگر است؛ اثبات مالکیت دامنه یا DRM رمزنگاری‌شده نیست، زیرا holder کلید bearer می‌تواند header را جعل کند. وضعیت نهایی فقط پس از green شدن تمام checks آخرین SHA و ادغام PR #22 به DONE منتقل شود.
+
+
+## 10. Upstream correction evidence — mobApp PR #6 head `e017905c39835c1da2ddb3e8fd5f6bcd4c8e745b`
+
+The readiness branch now contains the following code/test corrections. These are upstream branch facts; the AI Packs distribution pin is updated in a separate PR and must not be treated as active until that PR's CI passes and merges.
+
+- **AEO:** provider errors are `status=unavailable`, `mentioned=null`; errors are not cached; failed runs are excluded from mention-rate denominators; all-failed response is HTTP 503. Regression tests cover legacy cached failures and partial/all-unavailable cases.
+- **Matching:** fabricated cold-start candidate IDs and static 0.85 scores removed; fixed 0.35 revenue and 0.5 engagement defaults removed; fixed 0.45 match-score fallback removed. Only observed popularity within caller-provided candidate IDs can serve cold-start. Similarity/revenue components are explicit; missing revenue remains null; missing embeddings produce unavailable. Tests cover observed vs missing data and route behavior.
+- **Revenue LTV:** StandardScaler is inside a Pipeline for CV folds; raw CV R² is preserved and labelled; fewer than 10 samples do not claim CV quality; confidence and fixed ±15% range are removed; intervals remain uncalibrated; old model CV provenance is marked legacy-unknown.
+- **Revenue uplift:** treatment is validated as binary, minimum treated/control counts enforced, non-finite data rejected; fallback is descriptive group mean difference, not causal; no confidence interval is claimed; legacy fallback without sample counts is rejected. LinearDML output also carries `causal_claim=false` pending validated experiment design.
+
+**Validation evidence on exact upstream head:** pack readiness 28 passed / 4 warnings; Revenue LTV model contract 8 passed.
+
+**Still unresolved:** mobApp FeatureStoreRevenueService uses hard-coded/default values for several model features; no temporal/group split, calibrated intervals, randomized assignment provenance, real event/cohort pipeline, full model inference, clean install, load, latency or cost proof. Do not market the above code corrections as measured accuracy/uplift/ROI.
+
+
+## 11. Safety WordPress request-path correction
+
+A post-merge review of all authenticated WordPress request paths found that PR #22 had added `X-Site-Domain` to Safety multipart upload requests but missed the separate JSON request method. PR #24 adds the header to Safety JSON calls and strengthens CI to require both occurrences (JSON + multipart). Until PR #24 merges, do not treat Safety WordPress domain binding as complete.
+
+
+## 12. AEO multi-engine adapter evidence — mobApp PR #6 head `4344cb05afe461551e1bfdc379b26a3c0fedddd9`
+
+- OpenAI and Perplexity Sonar providers are supported through separate adapters. The default request runs every configured provider; callers may select engines explicitly.
+- Results carry engine/model and provider citations; mention rates are calculated per engine only. Multi-engine requests deliberately set the legacy aggregate `mention_rate` to null.
+- Missing keys, provider failures and unsupported engines produce `unavailable` with `mentioned=null`, excluded from mention-rate denominators.
+- Exact-head tests: Python AI readiness 33 passed / 17 warnings; Revenue LTV contract 8 passed.
+- Live Perplexity validation requires a test API key and is not yet complete. AI Packs compose/distribution env passthrough and SEO WordPress engine selection are being validated in PR #24/#25.

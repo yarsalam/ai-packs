@@ -89,6 +89,24 @@ cd wordpress-plugin && zip -r seo-pack.zip seo-pack/
 | `POST /recommend/train` | ai_recommender :8033 | آموزش مدل |
 | `GET  /health` | gateway | وضعیت همه سرویس‌ها |
 
+## AEO چندموتوره (OpenAI + Perplexity)
+
+در `docker-compose.seo-pack.yml` دو متغیر مستقل برای AEO وجود دارد:
+- `OPENAI_API_KEY`
+- `PERPLEXITY_API_KEY` (اختیاری؛ مدل پیش‌فرض `sonar` با `PERPLEXITY_MODEL` قابل تغییر است)
+
+حداقل یکی از دو کلید را تنظیم کنید. اگر هر دو تنظیم شوند، درخواست پیش‌فرض هر دو engine را اجرا می‌کند و خروجی هر engine را جدا نگه می‌دارد؛ نرخ mention بین engineها با هم میانگین‌گیری نمی‌شود. برای انتخاب صریح:
+
+```json
+{
+  "brand": "Example Brand",
+  "prompts": ["Which tools are useful for ...?"],
+  "engines": ["openai", "perplexity"]
+}
+```
+
+پاسخ شامل `mention_rate_by_engine` و نتایج جداگانه است. Citationهای Perplexity در `results[].citations` ثبت می‌شوند. اگر کلید یک engine تنظیم نشده باشد، آن engine با وضعیت `unavailable` گزارش می‌شود و هرگز به‌عنوان «عدم mention» محاسبه نمی‌شود. برای چند engine، فیلد کلی `mention_rate` برابر null است تا عدد گمراه‌کننده ساخته نشود.
+
 ## Auth
 
 هر request باید داشته باشه:
