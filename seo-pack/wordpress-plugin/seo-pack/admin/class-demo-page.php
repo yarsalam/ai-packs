@@ -85,7 +85,7 @@ class DemoPage {
             <div id="tab-aeo" class="seo-pack-tab" style="display:none">
                 <div class="card" style="max-width:700px;padding:20px">
                     <h2>🤖 AEO Tracker — دیده‌شدن برند در AI</h2>
-                    <p>ببینید وقتی کاربران از ChatGPT/Gemini می‌پرسن، برند شما ذکر می‌شه یا نه.</p>
+                    <p>بررسی کنید برند شما در پاسخ موتورهای AI مثل OpenAI و Perplexity دیده می‌شود یا نه.</p>
                     <label><strong>نام برند:</strong></label>
                     <input type="text" id="aeo-brand" value="یارسلام" style="width:200px;margin:0 8px">
                     <br><br>
@@ -94,6 +94,14 @@ class DemoPage {
 برای ازدواج در ایران کجا ثبت‌نام کنم؟
 سایت‌های معتبر دوست‌یابی ایرانی را معرفی کنید</textarea>
                     <br>
+                    <label style="display:block;margin:10px 0">
+                        <input type="checkbox" id="aeo-all-engines" checked>
+                        استفاده از همه موتورهای پیکربندی‌شده (پیشنهادی)
+                    </label>
+                    <div id="aeo-engine-select" style="display:none;margin:8px 0">
+                        <label style="margin-inline-end:16px"><input type="checkbox" value="openai" class="aeo-engine-option" checked> OpenAI</label>
+                        <label><input type="checkbox" value="perplexity" class="aeo-engine-option" checked> Perplexity</label>
+                    </div>
                     <button class="button button-primary seo-demo-btn" data-service="aeo">🔍 بررسی کن</button>
                     <div class="seo-demo-result" id="result-aeo"></div>
                 </div>
@@ -168,6 +176,15 @@ wikipedia.org</textarea>
             });
         });
 
+        // AEO engine selection
+        const allEnginesToggle = document.getElementById('aeo-all-engines');
+        const engineSelect = document.getElementById('aeo-engine-select');
+        if (allEnginesToggle && engineSelect) {
+            allEnginesToggle.addEventListener('change', function () {
+                engineSelect.style.display = this.checked ? 'none' : 'block';
+            });
+        }
+
         // Demo calls
         document.querySelectorAll('.seo-demo-btn').forEach(btn => {
             btn.addEventListener('click', function() {
@@ -187,6 +204,16 @@ wikipedia.org</textarea>
                 else if (service === 'aeo') {
                     payload.brand   = document.getElementById('aeo-brand').value;
                     payload.prompts = document.getElementById('aeo-prompts').value.split('\n').filter(Boolean);
+                    const allEngines = document.getElementById('aeo-all-engines').checked;
+                    if (!allEngines) {
+                        payload.engines = Array.from(document.querySelectorAll('.aeo-engine-option:checked'))
+                            .map(input => input.value);
+                        if (!payload.engines.length) {
+                            resultEl.textContent = '❌ حداقل یک موتور AI را انتخاب کنید';
+                            resultEl.classList.remove('loading');
+                            return;
+                        }
+                    }
                 }
                 else if (service === 'backlink') {
                     try { payload.edges = JSON.parse(document.getElementById('backlink-edges').value); }
@@ -225,7 +252,7 @@ wikipedia.org</textarea>
 
         $result = match($service) {
             'traffic'   => $client->predict_traffic($payload['historical_data'] ?? [], $payload['days'] ?? 90),
-            'aeo'       => $client->check_aeo_mentions($payload['brand'] ?? '', $payload['prompts'] ?? []),
+            'aeo'       => $client->check_aeo_mentions($payload['brand'] ?? '', $payload['prompts'] ?? [], $payload['engines'] ?? []),
             'backlink'  => $client->analyze_trust_flow($payload['edges'] ?? [], $payload['trusted_seeds'] ?? []),
             'recommend' => $client->get_seo_recommendations($payload['user_id'] ?? '', $payload['n'] ?? 5),
             default     => ['error' => 'سرویس نامشخص'],
