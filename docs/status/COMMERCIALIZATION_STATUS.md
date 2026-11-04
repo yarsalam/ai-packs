@@ -303,3 +303,9 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - مهم‌تر: track_events خطای Redis را catch و فقط log می‌کند، اما route همچنان status=accepted می‌دهد؛ بنابراین caller ممکن است رویداد ثبت‌نشده را موفق تلقی کند.
 - این گپ با source و معیار پذیرش در source audit section 15 ثبت شد؛ اصلاح باید PR جداگانه mobApp باشد: event contract نسخه‌بندی‌شده، خطای retryable در عدم persistence، scenario/hard filters، attribution end-to-end و offline/online evaluation.
 - تا آن زمان ادعای personalization/CTR/conversion uplift مبتنی بر feedback loop کامل BLOCKED است.
+
+
+### SEO backlink claim boundary — IN PR #26
+- WordPress demo no longer labels the internal graph heuristic as generic “backlink quality” or official Trust Flow.
+- UI now calls it an internal experimental graph metric and explicitly says it is not Majestic Trust Flow, an independent domain score or a complete backlink audit.
+- Regression assertion added. A real licensed backlink data provider, provenance, spam/quality methodology and historical coverage remain P2 work.
