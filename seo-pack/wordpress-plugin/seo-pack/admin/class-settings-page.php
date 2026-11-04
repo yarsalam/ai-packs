@@ -16,6 +16,7 @@ class SettingsPage {
         add_action('admin_menu', [$this, 'add_menu']);
         add_action('admin_init', [$this, 'register_settings']);
         add_action('wp_ajax_seo_pack_test_connection', [$this, 'ajax_test_connection']);
+        add_action('wp_ajax_seo_pack_usage', [$this, 'ajax_usage']);
         add_action('wp_ajax_seo_pack_generate_license', [$this, 'ajax_generate_license']);
     }
 
@@ -146,4 +147,16 @@ class SettingsPage {
         $client = ApiClient::get_instance();
         wp_send_json($client->health_check());
     }
+    public function ajax_usage(): void {
+        check_ajax_referer('seo_pack_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Unauthorized'], 403);
+        }
+        $usage = ApiClient::get_instance()->get_usage();
+        if (isset($usage['error'])) {
+            wp_send_json_error(['message' => $usage['error']], 502);
+        }
+        wp_send_json_success($usage);
+    }
+
 }
