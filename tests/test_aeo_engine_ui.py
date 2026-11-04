@@ -40,3 +40,10 @@ def test_aeo_demo_renders_per_engine_status_and_safe_citation_links():
     assert "new URL(rawUrl)" in source
     assert "noopener noreferrer" in source
     assert "این وضعیت به معنی عدم ذکر برند نیست" in source
+
+
+def test_backlink_graph_metric_is_not_mislabeled_as_vendor_trust_flow():
+    source = DEMO.read_text(encoding="utf-8")
+    assert "شاخص داخلی" in source
+    assert "Trust Flow رسمی Majestic" in source
+    assert "امتیاز دامنهٔ مستقل" in source
