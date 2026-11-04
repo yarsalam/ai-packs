@@ -347,3 +347,9 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - Latest head `5d97ed87be06f5f8f9ac9fe62177bb31ba141cd1`: **37 passed, 20 warnings, 1.25s** on Python AI pack readiness.
 - One legacy assertion expecting the shared Redis key failed on the first run; it was corrected to the new engine-specific key, and the latest exact-head run passed.
 - PR #12 remains Draft/stacked on PR #6; no merge or production data migration occurred.
+
+
+### Revenue LTV remediation tracked upstream
+- Dedicated mobApp Issue #13 opened: https://github.com/yarsalam/mobApp/issues/13.
+- It records the exact synthetic feature defaults, numeric LTVRequest defaults, IRT-only paid LTV/refund gaps and required provenance/missingness/currency-safe remediation.
+- Commercial LTV/CAC/payback/ROI claims remain NO-GO until Issue #13 is closed with evidence. No production/customer data used.
