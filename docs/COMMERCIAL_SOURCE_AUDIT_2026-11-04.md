@@ -204,3 +204,12 @@ Verified behavior:
 6. Add tenant isolation, retention/deletion and audit for event data.
 
 **Status:** Candidate allowlist/cold-start fallback correction is present in upstream PR #6; full scenario, hard-constraint and reliable attribution workflow remain NOT_STARTED/BLOCKED for commercial claims. No production event stream was read or modified.
+
+
+### Matching event persistence acknowledgement fix — mobApp PR #11 IN_PROGRESS
+- A narrow backward-compatible remediation is now proposed in mobApp PR #11: https://github.com/yarsalam/mobApp/pull/11
+- Branch `fix/matching-event-persistence-ack-2026-11-04`, exact head `b946c285eb8cd97f2901a6e467f0bdace8ce7bd1`, stacked on PR #6 exact base `9474b4ace1da44d6c2662b0554918ae521c7eaec`.
+- Redis Stream write failures now propagate from RecommendationService; route returns retryable HTTP 503 instead of false `accepted`. Successful request shape remains unchanged. UTC ISO timestamp is used.
+- Regression tests cover service-level failure propagation and route-level 503.
+- Python AI readiness CI is queued/in progress on this exact head. PR #11 remains Draft until green.
+- This narrow fix does not solve schema versioning, event_id/recommendation_id, idempotency, tenant binding or outcome attribution; those remain open.
