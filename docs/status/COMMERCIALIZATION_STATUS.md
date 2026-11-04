@@ -279,3 +279,11 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - `docs/COMMERCIAL_EXECUTION_SEQUENCE.md` با وضعیت واقعی چهار Preview، source pin، PR #26 و release gates همگام شد.
 - `docs/COMMERCIAL_SOURCE_AUDIT_2026-11-04.md` مشخص می‌کند بخش‌های 3 تا 9 audit تاریخی روی SHA قدیمی 49718 هستند؛ source pin فعلی 4344 است و audit کامل روی همین SHA هنوز باید انجام شود.
 - هیچ‌یک از گزارش‌های اصلاح upstream به معنی full inference یا quality GO نیست.
+
+
+### Revenue LTV feature provenance — BLOCKED for commercial claims
+- بررسی مستقیم mobApp PR #6 head `9474b4ace1da44d6c2662b0554918ae521c7eaec` نشان داد FeatureStoreRevenueService هنوز keywordDifficulty/contentLength/retentionImpact/segmentSize را 0.5، campaignCost را 0، competitorPressure را 0.3 و seasonality را از ماه با ضرایب ثابت می‌سازد.
+- cityWeight و intentScore نیز heuristic هستند؛ engagementDepth صرفاً شمارش آخرین eventهاست؛ LTV فقط جمع پرداخت‌های paid با ارز IRT است و refund/chargeback semantics کامل نیست.
+- LTVRequest هنوز برای ۱۲ feature مقدار پیش‌فرض عددی دارد؛ فیلد غایب می‌تواند بی‌صدا prediction عادی‌نما بسازد.
+- این گپ در source audit section 14 با file/field/اثر/اصلاح لازم ثبت شد. اصلاح باید در PR مستقل mobApp با feature provenance، explicit missing/insufficient-data، currency/refund handling و regression tests انجام شود.
+- تا آن زمان LTV prediction/ROI claims تجاری BLOCKED است؛ هیچ دادهٔ production یا customer data استفاده نشده است.
