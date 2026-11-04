@@ -316,3 +316,9 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - It removes the false-success path: Redis write failure propagates and endpoint returns retryable 503; successful response contract is unchanged.
 - Regression tests are added; exact-head Python AI readiness workflow is queued/in progress.
 - Event schema/idempotency/recommendation_id and full outcome attribution remain separate follow-up work.
+
+
+### mobApp PR #11 validation result
+- Python AI pack readiness passed on exact head `b946c285eb8cd97f2901a6e467f0bdace8ce7bd1`: **36 passed, 18 warnings, 1.11s**.
+- Warnings are Pydantic v2 deprecations and Node.js action-runtime deprecation; no test failure.
+- PR #11 remains Draft and stacked on PR #6; merge is deferred until base PR #6 is merged/reconciled.
