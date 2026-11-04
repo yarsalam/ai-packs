@@ -1,7 +1,7 @@
 # ممیزی منبع و شکاف‌های واقعی محصول — 2026-11-04
 
 **مخزن:** `yarsalam/ai-packs`  
-**مرجع بسته‌بندی upstream:** `yarsalam/mobApp@49718c978cda59237b2c6a206bdbe301accda157`  
+**مرجع بسته‌بندی upstream فعلی:** `yarsalam/mobApp@4344cb05afe461551e1bfdc379b26a3c0fedddd9`  
 **آخرین main مشاهده‌شده در mobApp:** `da4acf20c9851bc4e7fd34b1dcc2094183246109`  
 **وضعیت انتشار:** NO-GO؛ این سند ممیزی است، نه تأیید آمادگی فروش.
 
@@ -132,3 +132,12 @@ A post-merge review of all authenticated WordPress request paths found that PR #
 - Missing keys, provider failures and unsupported engines produce `unavailable` with `mentioned=null`, excluded from mention-rate denominators.
 - Exact-head tests: Python AI readiness 33 passed / 17 warnings; Revenue LTV contract 8 passed.
 - Live Perplexity validation requires a test API key and is not yet complete. AI Packs compose/distribution env passthrough and SEO WordPress engine selection are being validated in PR #24/#25.
+
+
+## 13. Current distribution source and historical-audit boundary — 2026-11-04
+
+- AI Packs PR #24 merged as `0fe44582c4b9a673482319d4f11fb13d66dd6747`; all distribution, CI and validation-only image workflows now pin mobApp `4344cb05afe461551e1bfdc379b26a3c0fedddd9`.
+- Sections 3–9 record the original static audit against `49718c978cda59237b2c6a206bdbe301accda157`; do not read those rows as a complete fresh audit of the new pinned SHA.
+- Sections 10 and 12 record correction evidence on the readiness branch, including AEO unavailable semantics, Matching fabricated-fallback removal, Revenue uncertainty fixes and AEO multi-engine adapters.
+- mobApp PR #6 remains Draft. The pin is reproducible and CI-validated, but that does not make the upstream PR merged or establish full inference, source licensing, clean install, load, latency or cost readiness.
+- Remaining work is a fresh route/schema/model/test audit on the exact pinned SHA and verification that all shipped artifacts contain only that revision. No production deployment or public publishing occurred.
