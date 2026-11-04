@@ -206,3 +206,9 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - English localization و customer workspace واقعی (نه Preview) هنوز باقی است.
 - Safety corpus/benchmark هنوز BLOCKED در Issue #8؛ Issue #9 و فروش/outreach Safety ممنوع.
 - همهٔ پک‌ها هنوز NO-GO برای فروش/public release تا عبور مستقل release gates و GO مالک.
+
+
+### Safety WordPress JSON header follow-up — FIX IN PR #24
+- Post-merge path review found that PR #22 had added `X-Site-Domain` to Safety multipart uploads but missed its separate JSON request method. Therefore, domain-bound Safety text moderation and license-status calls could still receive 403.
+- PR #24 adds the header to Safety JSON requests and strengthens CI to require at least two occurrences in Safety API client (JSON + multipart). Until PR #24 merges, Safety WordPress domain binding is not fully complete.
+- The live smoke-test client was also updated to send `X-Site-Domain` on license validation, inference and usage calls; degraded-but-reachable health is a warning, not a hard failure.
