@@ -46,7 +46,7 @@ class DemoPage {
             <nav class="nav-tab-wrapper" style="margin-bottom:20px">
                 <a href="#tab-traffic"    class="nav-tab nav-tab-active" data-tab="traffic">📈 پیش‌بینی ترافیک</a>
                 <a href="#tab-aeo"        class="nav-tab"                data-tab="aeo">🤖 AEO Tracker</a>
-                <a href="#tab-backlink"   class="nav-tab"                data-tab="backlink">🔗 کیفیت بک‌لینک</a>
+                <a href="#tab-backlink"   class="nav-tab"                data-tab="backlink">🔗 تحلیل ساختار لینک</a>
                 <a href="#tab-recommend"  class="nav-tab"                data-tab="recommend">💡 پیشنهادات SEO</a>
             </nav>
 
@@ -110,8 +110,8 @@ class DemoPage {
             <!-- Tab: Backlink -->
             <div id="tab-backlink" class="seo-pack-tab" style="display:none">
                 <div class="card" style="max-width:700px;padding:20px">
-                    <h2>🔗 کیفیت بک‌لینک</h2>
-                    <p>Trust Flow شبکه لینک‌های سایتتون رو محاسبه کنید.</p>
+                    <h2>🔗 تحلیل ساختار لینک — شاخص داخلی</h2>
+                    <p>این خروجی یک شاخص گرافی آزمایشی بر اساس لینک‌ها و seedهای ورودی است؛ Trust Flow رسمی Majestic، امتیاز دامنهٔ مستقل یا ممیزی کامل بک‌لینک نیست.</p>
                     <label><strong>شبکه لینک‌ها (JSON):</strong></label>
                     <textarea id="backlink-edges" rows="6" style="width:100%;font-family:monospace;font-size:12px;direction:ltr">[
   ["google.com", "example.com"],
@@ -120,7 +120,7 @@ class DemoPage {
   ["spamsite.xyz", "example.com"]
 ]</textarea>
                     <br>
-                    <label><strong>سایت‌های مورد اعتماد (هر خط یکی):</strong></label>
+                    <label><strong>دامنه‌های seed برای مقایسهٔ گراف (هر خط یکی):</strong></label>
                     <textarea id="backlink-seeds" rows="3" style="width:100%;font-family:monospace;font-size:12px;direction:ltr">google.com
 wikipedia.org</textarea>
                     <br>
