@@ -185,6 +185,111 @@ wikipedia.org</textarea>
             });
         }
 
+        function renderAeoResult(container, data) {
+            container.replaceChildren();
+
+            const title = document.createElement('h3');
+            title.textContent = 'نتیجه پایش حضور برند در پاسخ‌های AI';
+            container.appendChild(title);
+
+            if (data.status === 'unavailable') {
+                const warning = document.createElement('p');
+                warning.textContent = 'موتورهای انتخاب‌شده در دسترس نیستند؛ این وضعیت به معنی عدم ذکر برند نیست.';
+                warning.setAttribute('role', 'status');
+                container.appendChild(warning);
+            }
+
+            const summaries = data.mention_rate_by_engine && typeof data.mention_rate_by_engine === 'object'
+                ? data.mention_rate_by_engine : {};
+            const summaryTable = document.createElement('table');
+            summaryTable.className = 'widefat striped';
+            Object.keys(summaries).forEach(function (engine) {
+                const item = summaries[engine] || {};
+                const row = document.createElement('tr');
+                const values = [
+                    engine,
+                    item.status || 'unknown',
+                    String(item.sample_count ?? 0),
+                    String(item.available_count ?? 0),
+                    String(item.unavailable_count ?? 0),
+                    item.mention_rate === null || item.mention_rate === undefined
+                        ? 'ناموجود' : (String(Math.round(Number(item.mention_rate) * 100)) + '%')
+                ];
+                values.forEach(function (value) {
+                    const cell = document.createElement('td');
+                    cell.textContent = value;
+                    row.appendChild(cell);
+                });
+                summaryTable.appendChild(row);
+            });
+            if (Object.keys(summaries).length) {
+                const heading = document.createElement('h4');
+                heading.textContent = 'خلاصه به تفکیک موتور';
+                container.appendChild(heading);
+                container.appendChild(summaryTable);
+            }
+
+            const results = Array.isArray(data.results) ? data.results : [];
+            results.forEach(function (item, index) {
+                const details = document.createElement('details');
+                details.style.margin = '10px 0';
+                const summary = document.createElement('summary');
+                const mention = item.mentioned === true ? 'ذکر شد'
+                    : (item.mentioned === false ? 'ذکر نشد' : 'نامشخص / unavailable');
+                summary.textContent = (index + 1) + '. ' + String(item.engine || 'unknown') +
+                    ' · ' + mention + ' · ' + String(item.prompt || '');
+                details.appendChild(summary);
+
+                const metadata = document.createElement('p');
+                metadata.textContent = 'وضعیت: ' + String(item.status || 'unknown') +
+                    ' | مدل: ' + String(item.model || 'نامشخص') +
+                    ' | احساس: ' + String(item.sentiment || 'نامشخص') +
+                    ' | زمان: ' + String(item.checked_at || 'نامشخص');
+                details.appendChild(metadata);
+
+                if (item.response_preview) {
+                    const response = document.createElement('p');
+                    response.textContent = String(item.response_preview);
+                    details.appendChild(response);
+                }
+
+                const citations = Array.isArray(item.citations) ? item.citations : [];
+                if (citations.length) {
+                    const citationHeading = document.createElement('p');
+                    citationHeading.textContent = 'منابع استنادشده:';
+                    details.appendChild(citationHeading);
+                    const list = document.createElement('ul');
+                    citations.forEach(function (citation) {
+                        const rawUrl = typeof citation === 'string' ? citation : (citation && citation.url);
+                        if (typeof rawUrl !== 'string') return;
+                        try {
+                            const parsed = new URL(rawUrl);
+                            if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return;
+                            const link = document.createElement('a');
+                            link.href = parsed.href;
+                            link.textContent = parsed.href;
+                            link.target = '_blank';
+                            link.rel = 'noopener noreferrer';
+                            const entry = document.createElement('li');
+                            entry.appendChild(link);
+                            list.appendChild(entry);
+                        } catch (error) {
+                            // Ignore malformed citation URLs; never render provider text as HTML.
+                        }
+                    });
+                    if (list.childNodes.length) details.appendChild(list);
+                }
+
+                container.appendChild(details);
+            });
+
+            if (!results.length && data.error) {
+                const error = document.createElement('p');
+                error.textContent = String(data.error);
+                container.appendChild(error);
+            }
+        }
+
         // Demo calls
         document.querySelectorAll('.seo-demo-btn').forEach(btn => {
             btn.addEventListener('click', function() {
@@ -232,7 +337,11 @@ wikipedia.org</textarea>
                 })
                 .then(r => r.json())
                 .then(data => {
-                    resultEl.textContent = JSON.stringify(data, null, 2);
+                    if (service === 'aeo' && !data.error) {
+                        renderAeoResult(resultEl, data);
+                    } else {
+                        resultEl.textContent = JSON.stringify(data, null, 2);
+                    }
                 })
                 .catch(e => { resultEl.textContent = '❌ ' + e.message; })
                 .finally(() => resultEl.classList.remove('loading'));
