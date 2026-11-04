@@ -115,6 +115,13 @@ class ApiClient {
         ]);
     }
 
+    /**
+     * Retrieve current hourly/monthly license usage and quota.
+     */
+    public function get_usage(): array {
+        return $this->request('GET', '/usage');
+    }
+
     public function license_status(): array {
         return $this->request('GET', '/license/validate');
     }
