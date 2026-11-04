@@ -256,6 +256,21 @@ def test_training_requires_pro_or_enterprise(gateway, monkeypatch):
     assert "training" in exc.value.detail.lower()
 
 
+def test_mismatched_site_domain_is_rejected_before_quota_metering(gateway, monkeypatch):
+    key = "bound-domain-quota-test"
+    redis = _fake_redis_for(gateway, key, domain="customer.example", plan="pro")
+    monkeypatch.setattr(gateway, "redis_client", redis)
+    request = _request("/ordinary-endpoint", {
+        "X-License-Key": key,
+        "X-Site-Domain": "attacker.example",
+    })
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(gateway.get_license(request))
+    assert exc.value.status_code == 403
+    key_hash = _license_key_hash(gateway, key)
+    assert f"{gateway.RATE_LIMIT_PREFIX}{key_hash}:hour" not in redis.values
+
+
 def test_usage_credits_are_counted_and_enforced(gateway, monkeypatch):
     key = "test-license-key"
     redis = _fake_redis_for(gateway, key, plan="pro")
