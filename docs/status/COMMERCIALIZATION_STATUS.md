@@ -273,3 +273,9 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - Matching: scenarioهای placement-specific، ranked/composite response، control/variant، traffic allocation، filters/boosters/constraints و KPI.
 - Safety: content/user feeds، policy rules، role-based access، retention و appeals.
 - این‌ها نیازمندی‌های هدف هستند؛ benchmark مستندات رقبا اثبات کیفیت یا parity محصول ما نیست.
+
+
+### همگام‌سازی نقشهٔ اجرا و provenance ممیزی — IN PR #26
+- `docs/COMMERCIAL_EXECUTION_SEQUENCE.md` با وضعیت واقعی چهار Preview، source pin، PR #26 و release gates همگام شد.
+- `docs/COMMERCIAL_SOURCE_AUDIT_2026-11-04.md` مشخص می‌کند بخش‌های 3 تا 9 audit تاریخی روی SHA قدیمی 49718 هستند؛ source pin فعلی 4344 است و audit کامل روی همین SHA هنوز باید انجام شود.
+- هیچ‌یک از گزارش‌های اصلاح upstream به معنی full inference یا quality GO نیست.
