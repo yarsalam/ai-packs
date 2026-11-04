@@ -66,6 +66,94 @@ class SettingsPage {
                 border-radius:6px;font-family:monospace;font-size:13px;direction:ltr;display:none;white-space:pre-wrap"></div>
 
             <hr>
+            <h2>📊 مصرف و سهمیه</h2>
+            <p>مصرف واقعی اعتبارهای Gateway و سقف دوره‌های ساعتی و ماهانه را مشاهده کنید.</p>
+            <button type="button" id="mp-usage-btn" class="button button-secondary">به‌روزرسانی مصرف</button>
+            <div id="mp-usage-result" role="status" aria-live="polite"
+                 style="margin-top:12px;max-width:760px;padding:12px;background:#f8f8f8;border-radius:6px">
+                برای مشاهده آخرین مصرف و سهمیه، دکمه را انتخاب کنید.
+            </div>
+            <script>
+            (function () {
+                const button = document.getElementById('mp-usage-btn');
+                const output = document.getElementById('mp-usage-result');
+                if (!button || !output) return;
+                const nonce = '<?php echo esc_js(wp_create_nonce('mp_nonce')); ?>';
+                button.addEventListener('click', async function () {
+                    button.disabled = true;
+                    button.textContent = 'در حال دریافت...';
+                    output.textContent = 'در حال دریافت اطلاعات مصرف از Gateway...';
+                    try {
+                        const body = new URLSearchParams({action: 'matching_pack_usage', nonce: nonce});
+                        const response = await fetch(ajaxurl, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                            body: body.toString()
+                        });
+                        const result = await response.json();
+                        if (!response.ok || !result.success) {
+                            throw new Error((result.data && result.data.message) || 'دریافت مصرف ناموفق بود');
+                        }
+                        const data = result.data || {};
+                        if (!data.hourly || !data.monthly) {
+                            throw new Error('ساختار پاسخ سهمیه معتبر نیست');
+                        }
+                        output.replaceChildren();
+                        const summary = document.createElement('p');
+                        summary.textContent = 'پلن: ' + String(data.plan || 'نامشخص') +
+                            ' · واحد مصرف: ' + String(data.usage_unit || 'credits');
+                        output.appendChild(summary);
+
+                        const table = document.createElement('table');
+                        table.className = 'widefat striped';
+                        const header = document.createElement('tr');
+                        ['دوره', 'مصرف‌شده', 'سقف', 'باقی‌مانده', 'درصد مصرف'].forEach(function (label) {
+                            const cell = document.createElement('th');
+                            cell.textContent = label;
+                            header.appendChild(cell);
+                        });
+                        const thead = document.createElement('thead');
+                        thead.appendChild(header);
+                        table.appendChild(thead);
+                        const tbody = document.createElement('tbody');
+                        [
+                            ['ساعتی', data.hourly],
+                            ['ماهانه (' + String(data.monthly.period || 'جاری') + ')', data.monthly]
+                        ].forEach(function (entry) {
+                            const period = entry[1] || {};
+                            const used = Number(period.used || 0);
+                            const limit = Number(period.limit || 0);
+                            const remaining = Number(period.remaining || 0);
+                            const percent = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+                            const row = document.createElement('tr');
+                            [entry[0], String(used), String(limit), String(remaining), percent + '%'].forEach(function (value) {
+                                const cell = document.createElement('td');
+                                cell.textContent = value;
+                                row.appendChild(cell);
+                            });
+                            tbody.appendChild(row);
+                        });
+                        table.appendChild(tbody);
+                        output.appendChild(table);
+                        const updated = document.createElement('p');
+                        updated.textContent = 'آخرین به‌روزرسانی: ' + new Date().toLocaleString();
+                        output.appendChild(updated);
+                        if (data.weights) {
+                            const note = document.createElement('p');
+                            note.textContent = 'وزن‌های مصرف فعلی موقت‌اند و تا تکمیل اندازه‌گیری هزینه نهایی تلقی نمی‌شوند.';
+                            output.appendChild(note);
+                        }
+                    } catch (error) {
+                        output.textContent = 'خطا در دریافت سهمیه: ' + error.message;
+                    } finally {
+                        button.disabled = false;
+                        button.textContent = 'به‌روزرسانی مصرف';
+                    }
+                });
+            })();
+            </script>
+
+            <hr>
             <h2>📋 سرویس‌ها و وابستگی‌ها</h2>
             <table class="wp-list-table widefat striped" style="max-width:780px">
                 <thead><tr><th>سرویس</th><th>پورت</th><th>مدل</th><th>وابستگی</th></tr></thead>
