@@ -13,6 +13,7 @@ class SettingsPage {
         add_action('admin_menu',  [$this, 'add_menu']);
         add_action('admin_init',  [$this, 'register_settings']);
         add_action('wp_ajax_revenue_pack_test', [$this, 'ajax_test']);
+        add_action('wp_ajax_revenue_pack_usage', [$this, 'ajax_usage']);
     }
 
     public function add_menu(): void {
@@ -99,6 +100,21 @@ class SettingsPage {
 
     public function ajax_test(): void {
         check_ajax_referer('rp_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Unauthorized'], 403);
+        }
         wp_send_json(ApiClient::get_instance()->health_check());
     }
+    public function ajax_usage(): void {
+        check_ajax_referer('rp_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Unauthorized'], 403);
+        }
+        $usage = ApiClient::get_instance()->get_usage();
+        if (isset($usage['error'])) {
+            wp_send_json_error(['message' => $usage['error']], 502);
+        }
+        wp_send_json_success($usage);
+    }
+
 }
