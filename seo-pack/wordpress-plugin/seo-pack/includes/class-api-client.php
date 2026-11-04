@@ -76,12 +76,19 @@ class ApiClient {
      * @param string   $brand    نام برند
      * @param string[] $prompts  سوال‌هایی که به AI می‌پرسیم
      */
-    public function check_aeo_mentions(string $brand, array $prompts): array {
-        return $this->request('POST', '/aeo/check-mentions', [
+    public function check_aeo_mentions(string $brand, array $prompts, array $engines = []): array {
+        $payload = [
             'brand'   => $brand,
             'prompts' => $prompts,
             'persist' => true,
-        ]);
+        ];
+        if (!empty($engines)) {
+            $payload['engines'] = array_values(array_unique(array_intersect(
+                ['openai', 'perplexity'],
+                array_map('sanitize_key', $engines)
+            )));
+        }
+        return $this->request('POST', '/aeo/check-mentions', $payload);
     }
 
     public function get_aeo_history(string $brand): array {
@@ -113,6 +120,13 @@ class ApiClient {
             'user_id' => $user_id,
             'n'       => $n,
         ]);
+    }
+
+    /**
+     * Retrieve current hourly/monthly license usage and quota.
+     */
+    public function get_usage(): array {
+        return $this->request('GET', '/usage');
     }
 
     public function license_status(): array {
