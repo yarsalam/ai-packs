@@ -229,3 +229,10 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - CI قراردادهای PHP lint، API client method، AJAX hook/security و UI states را تست می‌کند.
 - این قابلیت نمایش مصرف است، نه billing/payment/invoicing؛ operation weights و quota limits تا اندازه‌گیری هزینه نهایی provisional هستند.
 - PR #25 به‌صورت Draft روی PR #24 stack شده و تا merge شدن PR #24 نباید merge شود. Final checks روی آخرین SHA لازم است.
+
+
+### AEO multi-engine — IN_PROGRESS (mobApp PR #6 + AI Packs PR #24/#25)
+- mobApp PR #6 Draft adds Perplexity Sonar provider alongside OpenAI, optional `PERPLEXITY_API_KEY`, default selection of all configured engines, separate `mention_rate_by_engine` (no cross-engine average), explicit unavailable status for unconfigured/failed engines, and citation/model provenance.
+- SEO WordPress demo in PR #25 now defaults to all configured engines and permits explicit OpenAI/Perplexity selection. It no longer describes Gemini as supported.
+- AI Packs PR #24 adds Perplexity env passthrough to SEO compose/distribution and README, with distribution contract tests.
+- Live provider verification is still BLOCKED until a valid Perplexity API key is configured in a controlled test environment. Do not put secrets in GitHub docs/issues or claim live coverage before a successful request.
