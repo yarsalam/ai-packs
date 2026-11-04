@@ -400,7 +400,7 @@ def readme_for(pack_name: str, pack: dict[str, Any]) -> str:
 
 کلید را فقط در backend مشتری ذخیره کنید و برای هر درخواست با هدر X-License-Key بفرستید. سهمیهٔ مصرف از GET /usage قابل مشاهده است. آموزش مدل فقط برای پلن‌های Pro و Enterprise فعال است.
 
-**SEO Pack / AEO:** `OPENAI_API_KEY` و `PERPLEXITY_API_KEY` اختیاری و مستقل‌اند؛ حداقل یکی را تنظیم کنید. اگر هر دو تنظیم شوند، درخواست پیش‌فرض هر دو engine را جداگانه اجرا می‌کند و نرخ mention را با هم ادغام نمی‌کند. نتایج Perplexity شامل citationهای قابل‌دسترسی است؛ برای engine بدون کلید، وضعیت `unavailable` گزارش می‌شود، نه «عدم mention». مدل پیش‌فرض Perplexity برابر `sonar` است و با `PERPLEXITY_MODEL` قابل تغییر است. بدون هیچ provider، endpoint AEO پاسخ 503 می‌دهد؛ سایر بخش‌های SEO مستقل‌اند.
+**SEO Pack / AEO:** `OPENAI_API_KEY` و `PERPLEXITY_API_KEY` اختیاری و مستقل‌اند؛ حداقل یکی را تنظیم کنید. اگر هر دو تنظیم شوند، درخواست پیش‌فرض هر دو engine را جداگانه اجرا می‌کند و نرخ mention را با هم ادغام نمی‌کند. خروجی شامل `mention_rate_by_engine` و citationهای Perplexity در `results[].citations` است؛ برای engine بدون کلید، وضعیت `unavailable` گزارش می‌شود، نه «عدم mention». مدل پیش‌فرض Perplexity برابر `sonar` است و با `PERPLEXITY_MODEL` قابل تغییر است. بدون هیچ provider، endpoint AEO پاسخ 503 می‌دهد؛ سایر بخش‌های SEO مستقل‌اند.
 
 **SEO URL Audit:** `POST /seo/audit/url` یک چک‌لیست محدود HTML برای یک URL عمومی می‌سازد؛ امتیاز رتبه‌بندی Google یا crawler کامل نیست. پیش از انتشار عمومی، outbound egress firewall برای جلوگیری از دسترسی به شبکه خصوصی و metadata endpointها الزامی است.
 
