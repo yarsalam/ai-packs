@@ -164,34 +164,6 @@ return {1, 0, hourly_total, monthly_total}
 """
 
 
-USAGE_METER_SCRIPT = """
-local weight = tonumber(ARGV[1])
-local hourly_limit = tonumber(ARGV[2])
-local monthly_limit = tonumber(ARGV[3])
-local hourly_ttl = tonumber(ARGV[4])
-local monthly_ttl = tonumber(ARGV[5])
-local hourly_used = tonumber(redis.call('GET', KEYS[1]) or '0')
-local monthly_used = tonumber(redis.call('GET', KEYS[2]) or '0')
-
-if hourly_used + weight > hourly_limit then
-    return {0, 1, hourly_used, monthly_used}
-end
-if monthly_used + weight > monthly_limit then
-    return {0, 2, hourly_used, monthly_used}
-end
-
-local hourly_total = redis.call('INCRBY', KEYS[1], weight)
-if hourly_total == weight then
-    redis.call('EXPIRE', KEYS[1], hourly_ttl)
-end
-local monthly_total = redis.call('INCRBY', KEYS[2], weight)
-if monthly_total == weight then
-    redis.call('EXPIRE', KEYS[2], monthly_ttl)
-end
-return {1, 0, hourly_total, monthly_total}
-"""
-
-
 
 
 async def _meter_usage(license_key: str, info: dict, path: str) -> None:
