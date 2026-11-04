@@ -19,6 +19,22 @@
 6. Preview عمومی فقط offline و synthetic است؛ به Gateway زنده، production یارسلام یا دادهٔ مشتری متصل نمی‌شود.
 7. انتشار GHCR، GitHub Release عمومی، فروش، outreach و deployment تا GOهای مجاز ممنوع است. Safety تابع شروط سخت‌گیرانهٔ Issue #8 و #9 می‌ماند.
 
+## 1.1. تمایزهای رقابتی که باید واقعاً ساخته و اثبات شوند
+
+این موارد پیشنهاد ارزش متمایز محصولات هستند، نه ادعای قابلیت فعلی. هر مورد تا عبور از معیار پذیرش باید `PLANNED` یا `IN_PROGRESS` بماند و در بازاریابی به‌عنوان ویژگی کامل معرفی نشود.
+
+| تمایز هدف | چرا خریدار اهمیت می‌دهد | معیار اثبات و پذیرش |
+|---|---|---|
+| Evidence-first AI | خروجی قابل اعتمادتر از یک عدد/امتیاز سیاه‌جعبه | هر نتیجه دارای منبع/URL، زمان، engine/model revision، feature provenance، sample count، وضعیت stale و محدودیت باشد؛ نتیجهٔ بدون evidence به‌عنوان قطعی نمایش داده نشود |
+| Persian-native, bilingual | پوشش واقعی بازار فارسی به‌جای ترجمهٔ سطحی | RTL/LTR کامل؛ فارسی رسمی/محاوره، نیم‌فاصله، غلط‌نویسی، Finglish و code-switch فقط با corpus قانونی، sealed benchmark و گزارش جداگانهٔ هر زبان |
+| Honest uncertainty | جلوگیری از اعتماد کاذب و تصمیم تجاری اشتباه | confidence فقط پس از calibration؛ interval فقط با coverage test؛ نبود داده به `unavailable/insufficient_data` تبدیل شود؛ CV R² به‌عنوان probability معرفی نشود |
+| Action-to-outcome loop | مشتری از تشخیص به اصلاح و اندازه‌گیری اثر می‌رسد | هر finding/recommendation قابل assignment، status، evidence، audit و measurement پس از اقدام باشد؛ Revenue آزمایش، Matching feedback و Safety appeal قابل ردیابی باشند |
+| Privacy-by-deployment | کنترل داده و کاهش ریسک افشای اطلاعات مشتری | مرز جداسازی deployment/tenant روشن؛ حداقل‌سازی داده، retention/deletion قابل آزمون، عدم استفاده از دادهٔ مشتری برای preview یا training بدون مجوز |
+| Cost transparency | مشتری هزینهٔ مصرف را قبل از صورتحساب می‌فهمد | usage/quota قابل مشاهده؛ هزینهٔ واقعی هر ۱۰۰۰ عملیات از اندازه‌گیری inference استخراج شود؛ وزن‌های موقت به‌عنوان قیمت قطعی عرضه نشوند |
+| Open integration surface | کاهش lock-in و هزینهٔ اتصال | OpenAPI نسخه‌بندی‌شده، SDK/exampleهای تست‌شده، webhook idempotent/signed و WordPress integration با قرارداد پایدار |
+
+**قانون تمایز:** برتری در فارسی، accuracy، ROI، کاهش هزینه یا کیفیت نسبت به رقبا فقط با benchmark مستقل و قابل بازتولید قابل ادعاست. داشتن رابط فارسی یا استفاده از مدل زبانی به‌تنهایی اثبات برتری فارسی نیست.
+
 ## 2. امکانات مشترک لازم برای هر چهار محصول
 
 | اولویت | قابلیت | معیار پذیرش |
