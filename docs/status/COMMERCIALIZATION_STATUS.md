@@ -1,8 +1,8 @@
 # وضعیت اجرایی تجاری‌سازی YarSalam AI Packs
 
-**آخرین بازبینی:** 2026-11-03  
+**آخرین بازبینی:** 2026-11-04  
 **شاخهٔ مرجع:** `main`  
-**SHA مرجع هنگام ثبت:** `66239f69b05909a176f071001f967ead46936d93`  
+**SHA مرجع هنگام ثبت:** `63f9d2ce88f0972f40e357b20feeeedeb14dc658`  
 **تصمیم انتشار عمومی:** **NO-GO**
 
 این سند وضعیت GitHub و شواهد موجود را ثبت می‌کند؛ سبز بودن CI یا ساخته‌شدن image/ZIP به معنی تأیید کیفیت مدل یا مجوز عرضه نیست.
@@ -45,11 +45,14 @@
 - regression test مربوط به release guardrails در CI اجرا می‌شود.
 - validator benchmark دیگر اجازهٔ overwrite مسیر report موجود را نمی‌دهد.
 
-### مرحلهٔ ۲ — مقایسهٔ UX بازار: تکمیل
+### مرحلهٔ ۲ — مقایسهٔ UX بازار: تحقیق هر چهار پک ثبت شد؛ اجرای Previewهای بعدی در جریان
 
-تحقیق در `docs/COMPETITOR_UX_RESEARCH.md` محصولات Besedo/Implio، Hive و Sightengine را از نظر KPI، صف بررسی انسانی، دلایل flag، policy builder و thresholdها مقایسه می‌کند.
+- Safety: تحقیق Besedo/Implio، Hive و Sightengine در `docs/COMPETITOR_UX_RESEARCH.md` و WordPress Preview/داشبورد در PR #7 ادغام شده‌اند.
+- SEO، Revenue و Matching: تحقیق رقابتی در `docs/COMPETITOR_PRODUCT_BENCHMARK_2026-11-04.md` با PR #15 و merge commit `63f9d2ce88f0972f40e357b20feeeedeb14dc658` وارد main شد. منابع رسمی شامل Semrush/Profound/Peec/Ahrefs، AppsFlyer/RevenueCat/Amplitude و Recombee/Algolia/Bloomreach هستند.
+- PR #15 فقط مستندات بود؛ diff یک فایل جدید با ۲۰۲ خط بود، `mergeable=true` و `mergeable_state=clean` داشت، و API هیچ workflow/check-run مرتبطی برای SHA آن گزارش نکرد. بنابراین این merge به‌معنی عبور CI مدل یا کیفیت inference نیست.
+- PR #14 به‌علت branch drift با PR #15 جایگزین و بدون merge بسته شد؛ شاخهٔ جایگزین مستقیماً از main ساخته شد، بدون force update.
 
-WordPress Preview و داشبورد Safety در PR #7 ادغام شده‌اند. KPIها، صف و داده‌های نمودار صرفاً synthetic demo هستند؛ به Gateway زنده متصل نیستند و نباید به‌عنوان نتیجهٔ مدل یا مشتری نمایش داده شوند.
+WordPress Preview فعلی فقط Safety را به‌صورت تعاملی نشان می‌دهد. KPIها، صف و داده‌های نمودار synthetic demo هستند؛ به Gateway زنده متصل نیستند و نباید به‌عنوان نتیجهٔ مدل یا مشتری نمایش داده شوند. Preview سه پک دیگر هنوز باید ساخته شود.
 
 ### مرحلهٔ ۳ — Safety pilot اندازه‌پذیر: ابزار آماده، داده مسدود
 
@@ -104,3 +107,25 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 4. اجرای baseline و sealed evaluation روی محیط مستقل؛ ثبت support، confusion matrix، precision/recall/F1، FPR/FNR و latency.
 5. تکمیل licensing، security، privacy/retention، cold install، load و cost gates.
 6. فقط پس از شواهد کامل، تصمیم GO/NO-GO در issue #8؛ سپس بازکردن مرحلهٔ #9.
+
+
+## ۶. به‌روزرسانی اجرایی — 2026-11-04
+
+### PR و تحقیق بازار
+- PR [#15](https://github.com/yarsalam/ai-packs/pull/15) با merge commit واقعی `63f9d2ce88f0972f40e357b20feeeedeb14dc658` ادغام شد؛ تنها یک سند تحقیقاتی اضافه شد. هیچ کد اجرایی تغییر نکرد.
+- PR [#14](https://github.com/yarsalam/ai-packs/pull/14) به‌عنوان branch قدیمی superseded بسته شد و merge نشد.
+- Issue [#16](https://github.com/yarsalam/ai-packs/issues/16) برای ممیزی کد SEO، Revenue و Matching، ثبت gapها، Previewها و گیت‌های تست ایجاد شد.
+
+### ممیزی اولیهٔ source در مخزن mobApp
+این یافته‌ها از کد عمومی `yarsalam/mobApp` به دست آمده‌اند و هنوز نیازمند بررسی کامل tests، workflowها و inference هستند:
+- **SEO:** AEO tracker در کد بررسی‌شده فقط provider مربوط به OpenAI را اجرا می‌کند؛ mention با substring ساده محاسبه می‌شود و خطای provider به‌صورت `mentioned=false` گزارش می‌شود. Backlink TrustFlow فعلی PageRank روی edgeهای ورودی caller است، نه crawler/index مستقل. پیشنهادهای SEO شامل expected ROI/revenue ثابت و hard-coded هستند و نباید به‌عنوان نتیجهٔ اندازه‌گیری‌شده نمایش داده شوند.
+- **Revenue:** LTV از featureهای دستی با defaultهای ثابت تغذیه می‌شود؛ مقدار `confidence` در predictor همان CV R² است، نه احتمال کالیبره، و بازهٔ ±۱۵٪ ثابت prediction interval آماری نیست. Uplift در نبود econml به اختلاف میانگین treated/control fallback می‌کند؛ این fallback به‌تنهایی causal uplift معتبر نیست. CORS wildcard در monetization نیز نیازمند بازبینی امنیتی است.
+- **Matching:** ranking فعلی از cosine similarity و revenue signal استفاده می‌کند؛ engagement فعلاً ثابت ۰٫۵ و revenue fallback ثابت ۰٫۳۵ است. cold-start می‌تواند به شناسه‌های پیش‌فرض ۱ تا ۵۰ با score ثابت ۰٫۸۵ برسد و match score در نبود embedding مقدار ثابت ۰٫۴۵ برمی‌گرداند. event stream وجود دارد، اما feedback loop کامل و attribution recommendation-to-outcome هنوز اثبات نشده است. Assistant دادهٔ bio/messages/events را در Redis و فایل JSON ذخیره می‌کند؛ retention/deletion و tenant isolation باید ممیزی شوند.
+- جزئیات و اولویت‌ها در comment مربوط به Issue #16 ثبت شده‌اند. هیچ‌یک از این یافته‌ها مجوز تغییر production نیست.
+
+### اتوماسیون روزانه
+- Automation «پیشبرد خودکار ai-packs» فعال است و prompt آن برای پوشش تحقیق رقابتی، source audit، Preview، تست‌ها و release gates به‌روزرسانی شد.
+- آخرین اجرای ثبت‌شده در 2026-11-03 با وضعیت `failed` تمام شده و پیام نتیجه «There was a problem with your scheduled task» است؛ `next_run_time` نیز در وضعیت فعلی null است.
+- بنابراین تا زمان مشاهدهٔ یک اجرای زمان‌بندی‌شدهٔ موفق، اجرای پیوستهٔ روزانه تأییدشده محسوب نمی‌شود. درخواست اجرای فوری در همین نوبت پذیرفته شد و کار آن در همین گفتگو ادامه یافت.
+
+**تصمیم فعلی:** public release همچنان NO-GO. هیچ GHCR publish، VPS deployment، production change، secret access، service stop/restart یا data/volume mutation انجام نشده است. Issue #8 و #9 طبق شروط قبلی مستقل و مسدود باقی می‌مانند.
