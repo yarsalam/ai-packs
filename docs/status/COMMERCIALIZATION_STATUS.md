@@ -334,3 +334,10 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - در mobApp PR #6، دو tracker موتورهای OpenAI/Perplexity از Redis مشترک و کلید history یکسان aeo:history:{brand} استفاده می‌کنند؛ snapshot سطح بالا provider/model را ثبت نمی‌کند و GET /history/{brand} دادهٔ خام را بدون تفکیک موتور برمی‌گرداند.
 - UI فعلی فقط نتیجهٔ prompt و citation همان اجرا را نشان می‌دهد؛ trend/history مستقل برای هر engine وجود ندارد.
 - گپ و acceptance criteria در source audit section 16 ثبت شد؛ تا زمان جداسازی تاریخچه و denominator/sample count، ادعای AI visibility trend/longitudinal ممنوع است.
+
+
+### AEO history engine isolation — IN PROGRESS
+- mobApp PR #12 stacked on PR #6, head 66917247dced4db5d7d8e50f31bb8724946b6b99.
+- Per-engine Redis keys and snapshot provider/model metadata; API supports engine query with OpenAI default; legacy migration filters only explicit engine-tagged rows.
+- Regression tests cover mixed legacy data and per-engine history. Python AI readiness workflow is running.
+- PR #12 remains Draft until checks pass and PR #6 is merged/reconciled. WordPress history trend UI remains NOT_STARTED.
