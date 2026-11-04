@@ -138,7 +138,7 @@ class SettingsPage {
                         const table = document.createElement('table');
                         table.className = 'widefat striped';
                         const header = document.createElement('tr');
-                        ['دوره', 'مصرف‌شده', 'سقف', 'باقی‌مانده', 'درصد مصرف'].forEach(function (label) {
+                        ['دوره', 'مصرف‌شده', 'سقف', 'باقی‌مانده', 'درصد مصرف', 'نوار مصرف'].forEach(function (label) {
                             const cell = document.createElement('th');
                             cell.textContent = label;
                             header.appendChild(cell);
@@ -162,6 +162,13 @@ class SettingsPage {
                                 cell.textContent = value;
                                 row.appendChild(cell);
                             });
+                            const progressCell = document.createElement('td');
+                            const progress = document.createElement('progress');
+                            progress.max = limit > 0 ? limit : 1;
+                            progress.value = limit > 0 ? Math.min(used, limit) : 0;
+                            progress.setAttribute('aria-label', entry[0] + ' usage ' + percent + '%');
+                            progressCell.appendChild(progress);
+                            row.appendChild(progressCell);
                             tbody.appendChild(row);
                         });
                         table.appendChild(tbody);
@@ -169,7 +176,30 @@ class SettingsPage {
                         const updated = document.createElement('p');
                         updated.textContent = 'آخرین به‌روزرسانی: ' + new Date().toLocaleString();
                         output.appendChild(updated);
-                        if (data.weights) {
+                        if (data.weights && typeof data.weights === 'object') {
+                            const labels = {
+                                ordinary_request: 'درخواست معمولی',
+                                text_analysis_or_recommendation: 'تحلیل متن یا پیشنهاد',
+                                batch_request: 'درخواست دسته‌ای',
+                                image_or_face_verification: 'تصویر یا تأیید چهره',
+                                model_training: 'آموزش مدل'
+                            };
+                            const weightTitle = document.createElement('h3');
+                            weightTitle.textContent = 'وزن مصرف عملیات';
+                            output.appendChild(weightTitle);
+                            const weightTable = document.createElement('table');
+                            weightTable.className = 'widefat striped';
+                            Object.keys(data.weights).forEach(function (key) {
+                                const row = document.createElement('tr');
+                                const name = document.createElement('td');
+                                name.textContent = labels[key] || key;
+                                const value = document.createElement('td');
+                                value.textContent = String(data.weights[key]) + ' اعتبار';
+                                row.appendChild(name);
+                                row.appendChild(value);
+                                weightTable.appendChild(row);
+                            });
+                            output.appendChild(weightTable);
                             const note = document.createElement('p');
                             note.textContent = 'وزن‌های مصرف فعلی موقت‌اند و تا تکمیل اندازه‌گیری هزینه نهایی تلقی نمی‌شوند.';
                             output.appendChild(note);
