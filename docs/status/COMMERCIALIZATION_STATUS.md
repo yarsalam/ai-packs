@@ -309,3 +309,10 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - WordPress demo no longer labels the internal graph heuristic as generic “backlink quality” or official Trust Flow.
 - UI now calls it an internal experimental graph metric and explicitly says it is not Majestic Trust Flow, an independent domain score or a complete backlink audit.
 - Regression assertion added. A real licensed backlink data provider, provenance, spam/quality methodology and historical coverage remain P2 work.
+
+
+### Matching event persistence reliability fix — IN PROGRESS
+- mobApp PR #11 is open Draft and stacked on PR #6; branch head b946c285eb8cd97f2901a6e467f0bdace8ce7bd1.
+- It removes the false-success path: Redis write failure propagates and endpoint returns retryable 503; successful response contract is unchanged.
+- Regression tests are added; exact-head Python AI readiness workflow is queued/in progress.
+- Event schema/idempotency/recommendation_id and full outcome attribution remain separate follow-up work.
