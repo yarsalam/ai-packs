@@ -138,13 +138,43 @@ def test_active_license_is_returned(gateway, monkeypatch):
     key = "test-license-key"
     record = {"active": True, "plan": "pro", "expires": "2099-12-31"}
     monkeypatch.setattr(gateway, "redis_client", _fake_redis_for(gateway, key, **record))
-    assert asyncio.run(gateway.validate_license(key))["plan"] == "pro"
+    assert asyncio.run(gateway.validate_license(key, "customer.example"))["plan"] == "pro"
 
+
+
+
+def test_domain_bound_license_requires_matching_site_domain(gateway, monkeypatch):
+    key = "domain-bound-license"
+    monkeypatch.setattr(gateway, "redis_client", _fake_redis_for(gateway, key, domain="customer.example"))
+    with pytest.raises(HTTPException) as missing:
+        asyncio.run(gateway.validate_license(key))
+    assert missing.value.status_code == 403
+
+    with pytest.raises(HTTPException) as mismatch:
+        asyncio.run(gateway.validate_license(key, "other.example"))
+    assert mismatch.value.status_code == 403
+
+    info = asyncio.run(gateway.validate_license(key, "https://CUSTOMER.example/"))
+    assert info["domain"] == "customer.example"
+
+
+def test_wildcard_license_remains_backward_compatible(gateway, monkeypatch):
+    key = "wildcard-license"
+    monkeypatch.setattr(gateway, "redis_client", _fake_redis_for(gateway, key, domain="*"))
+    assert asyncio.run(gateway.validate_license(key))["domain"] == "*"
+
+
+def test_domain_normalization_rejects_paths_and_ports(gateway):
+    assert gateway._normalize_domain("HTTPS://Example.COM/") == "example.com"
+    with pytest.raises(HTTPException):
+        gateway._normalize_domain("https://example.com/path", allow_wildcard=True)
+    with pytest.raises(HTTPException):
+        gateway._normalize_domain("example.com:8443", allow_wildcard=True)
 
 def test_license_validation_route_checks_the_actual_key(gateway, monkeypatch):
     key = "test-license-key"
     monkeypatch.setattr(gateway, "redis_client", _fake_redis_for(gateway, key))
-    request = SimpleNamespace(headers={"X-License-Key": key})
+    request = SimpleNamespace(headers={"X-License-Key": key, "X-Site-Domain": "customer.example"})
     response = asyncio.run(gateway.license_status(request))
     assert response["status"] == "active"
     assert response["plan"] == "pro"
@@ -181,6 +211,8 @@ def test_gateway_refuses_to_start_without_strong_admin_secret(gateway, monkeypat
 
 
 def _request(path, headers=None, query_string=b""):
+    request_headers = {"X-Site-Domain": "customer.example"}
+    request_headers.update(headers or {})
     scope = {
         "type": "http",
         "asgi": {"version": "3.0"},
@@ -190,7 +222,7 @@ def _request(path, headers=None, query_string=b""):
         "path": path,
         "raw_path": path.encode(),
         "query_string": query_string,
-        "headers": [(k.lower().encode(), v.encode()) for k, v in (headers or {}).items()],
+        "headers": [(k.lower().encode(), v.encode()) for k, v in request_headers.items()],
         "client": ("testclient", 123),
         "server": ("testserver", 80),
         "root_path": "",
