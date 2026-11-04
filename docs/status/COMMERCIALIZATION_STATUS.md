@@ -287,3 +287,11 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - LTVRequest هنوز برای ۱۲ feature مقدار پیش‌فرض عددی دارد؛ فیلد غایب می‌تواند بی‌صدا prediction عادی‌نما بسازد.
 - این گپ در source audit section 14 با file/field/اثر/اصلاح لازم ثبت شد. اصلاح باید در PR مستقل mobApp با feature provenance، explicit missing/insufficient-data، currency/refund handling و regression tests انجام شود.
 - تا آن زمان LTV prediction/ROI claims تجاری BLOCKED است؛ هیچ دادهٔ production یا customer data استفاده نشده است.
+
+
+### SEO AEO result integrity and citation display — IN PR #26
+- SEO WordPress API client now preserves the structured HTTP 503 payload when all selected AEO providers are unavailable; generic endpoints still treat HTTP errors as errors.
+- SEO demo renders per-engine status, sample/available/unavailable counts, mention rate only when available, per-prompt mention/unavailable state, model/time metadata and captured citation URLs.
+- Citation URLs are parsed and restricted to HTTP(S), rendered as text-backed links with target=_blank and rel=noopener noreferrer; provider text is never injected as HTML.
+- An unavailable provider is explicitly shown as unavailable and is never displayed as “brand not mentioned”.
+- Regression/static contracts added for 503 preservation and citation rendering. This is a prompt-level citation display, not yet the full history/source-gap explorer defined in the product strategy.
