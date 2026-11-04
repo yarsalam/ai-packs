@@ -79,6 +79,7 @@ jobs:
             safety-pack/wordpress-plugin/safety-pack/includes/class-api-client.php; do
             grep -q 'X-Site-Domain' "$client"
           done
+          test "$(grep -c 'X-Site-Domain' safety-pack/wordpress-plugin/safety-pack/includes/class-api-client.php)" -ge 2
 
 
   smoke-test-client-contract:
