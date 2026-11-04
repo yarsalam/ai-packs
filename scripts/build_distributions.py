@@ -54,7 +54,7 @@ SERVICE: dict[str, dict[str, Any]] = {
     "aeo_tracker": {
         "source": "ai_aeo_tracker", "port": 8030, "entrypoint": "app:app",
         "requirements": CORE + ["openai==1.65.5"],
-        "env": {"REDIS_URL": REDIS_URL, "REDIS_HOST": "redis", "REDIS_PORT": "6379", "REDIS_PASSWORD": DOLLAR + "{REDIS_PASSWORD}", "OPENAI_API_KEY": DOLLAR + "{OPENAI_API_KEY:-}"},
+        "env": {"REDIS_URL": REDIS_URL, "REDIS_HOST": "redis", "REDIS_PORT": "6379", "REDIS_PASSWORD": DOLLAR + "{REDIS_PASSWORD}", "OPENAI_API_KEY": DOLLAR + "{OPENAI_API_KEY:-}", "PERPLEXITY_API_KEY": DOLLAR + "{PERPLEXITY_API_KEY:-}", "PERPLEXITY_MODEL": DOLLAR + "{PERPLEXITY_MODEL:-sonar}"},
         "volumes": {}, "depends": ["redis"],
     },
     "ai_backlink_quality": {
@@ -400,7 +400,7 @@ def readme_for(pack_name: str, pack: dict[str, Any]) -> str:
 
 کلید را فقط در backend مشتری ذخیره کنید و برای هر درخواست با هدر X-License-Key بفرستید. سهمیهٔ مصرف از GET /usage قابل مشاهده است. آموزش مدل فقط برای پلن‌های Pro و Enterprise فعال است.
 
-**SEO Pack:** `OPENAI_API_KEY` برای قابلیت‌های AEO الزامی است. بدون آن، AEO پاسخ 503 می‌دهد؛ سایر بخش‌های SEO می‌توانند مستقل اجرا شوند.
+**SEO Pack / AEO:** `OPENAI_API_KEY` و `PERPLEXITY_API_KEY` اختیاری و مستقل‌اند؛ حداقل یکی را تنظیم کنید. اگر هر دو تنظیم شوند، درخواست پیش‌فرض هر دو engine را جداگانه اجرا می‌کند و نرخ mention را با هم ادغام نمی‌کند. نتایج Perplexity شامل citationهای قابل‌دسترسی است؛ برای engine بدون کلید، وضعیت `unavailable` گزارش می‌شود، نه «عدم mention». مدل پیش‌فرض Perplexity برابر `sonar` است و با `PERPLEXITY_MODEL` قابل تغییر است. بدون هیچ provider، endpoint AEO پاسخ 503 می‌دهد؛ سایر بخش‌های SEO مستقل‌اند.
 
 **SEO URL Audit:** `POST /seo/audit/url` یک چک‌لیست محدود HTML برای یک URL عمومی می‌سازد؛ امتیاز رتبه‌بندی Google یا crawler کامل نیست. پیش از انتشار عمومی، outbound egress firewall برای جلوگیری از دسترسی به شبکه خصوصی و metadata endpointها الزامی است.
 
@@ -461,6 +461,8 @@ def build_one(pack_name: str, pack: dict[str, Any], upstream: Path, output: Path
         "SENTIMENT_MODEL_REVISION=b6fcfc5",
         "EMOTION_MODEL_REVISION=e47c57d",
     ]
+    if pack_name == "seo-pack":
+        env_lines.extend(["PERPLEXITY_API_KEY=", "PERPLEXITY_MODEL=sonar"])
     (dist / ".env.example").write_text("\n".join(env_lines) + "\n", encoding="utf-8")
     (dist / "README.md").write_text(readme_for(pack_name, pack), encoding="utf-8")
     model_sources = []
