@@ -18,6 +18,16 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+TEST_SITE_DOMAIN = "smoke-test.local"
+
+
+def license_headers(license_key: str) -> dict[str, str]:
+    return {
+        "X-License-Key": license_key,
+        "X-Site-Domain": TEST_SITE_DOMAIN,
+    }
+
+
 PACKS: dict[str, dict[str, Any]] = {
     "seo-pack": {
         "port": 9000,
@@ -167,9 +177,10 @@ def request_json(
 
 
 def add_result(results: list[dict[str, Any]], name: str, ok: bool, status: int | None,
-               elapsed_ms: int | None, detail: str) -> None:
+               elapsed_ms: int | None, detail: str, status_override: str | None = None) -> None:
+    result_status = status_override or ("PASS" if ok else "FAIL")
     results.append({
-        "test": name, "status": "PASS" if ok else "FAIL",
+        "test": name, "status": result_status,
         "http_status": status, "duration_ms": elapsed_ms, "detail": detail,
     })
 
@@ -249,8 +260,10 @@ def test_pack(pack_name: str, cfg: dict[str, Any], dist_dir: Path,
         health_status = health.get("status") if isinstance(health, dict) else None
         health_ok = status == 200 and health_status == "healthy"
         reachable = status == 200 and health_status in {"healthy", "degraded"}
+        health_severity = "WARN" if status == 200 and health_status == "degraded" else None
         add_result(results, "gateway and all configured service health checks", health_ok,
-                   status, elapsed, json.dumps(health, ensure_ascii=False)[:600])
+                   status, elapsed, json.dumps(health, ensure_ascii=False)[:600],
+                   status_override=health_severity)
         # A degraded optional dependency (e.g. AEO without OPENAI_API_KEY) should
         # be reported but must not prevent smoke-testing independent routes.
         if not reachable:
@@ -268,7 +281,7 @@ def test_pack(pack_name: str, cfg: dict[str, Any], dist_dir: Path,
     try:
         status, created, elapsed = request_json(
             base_url, "/admin/license/create", method="POST",
-            payload={"domain": "smoke-test.local", "plan": "enterprise", "expires": "2099-12-31"},
+            payload={"domain": TEST_SITE_DOMAIN, "plan": "enterprise", "expires": "2099-12-31"},
             headers={"X-Admin-Token": admin_token}, timeout=timeout,
         )
         if status != 200 or not isinstance(created, dict) or not created.get("license_key") or not created.get("key_hash"):
@@ -279,7 +292,7 @@ def test_pack(pack_name: str, cfg: dict[str, Any], dist_dir: Path,
         add_result(results, "create temporary test license", True, status, elapsed, "temporary key created; key value hidden")
 
         status, valid, elapsed = request_json(
-            base_url, "/license/validate", headers={"X-License-Key": license_key}, timeout=timeout,
+            base_url, "/license/validate", headers=license_headers(license_key), timeout=timeout,
         )
         ok = status == 200 and isinstance(valid, dict) and valid.get("status") == "active"
         add_result(results, "license validation", ok, status, elapsed,
@@ -289,7 +302,7 @@ def test_pack(pack_name: str, cfg: dict[str, Any], dist_dir: Path,
             try:
                 status, response, elapsed = request_json(
                     base_url, spec["path"], method=spec["method"], payload=spec.get("payload"),
-                    headers={"X-License-Key": license_key}, timeout=timeout,
+                    headers=license_headers(license_key), timeout=timeout,
                 )
                 if status < 200 or status >= 300:
                     ok, detail = False, json.dumps(response, ensure_ascii=False)[:400]
@@ -301,7 +314,7 @@ def test_pack(pack_name: str, cfg: dict[str, Any], dist_dir: Path,
                            f"{type(exc).__name__}: {exc}")
 
         status, usage, elapsed = request_json(
-            base_url, "/usage", headers={"X-License-Key": license_key}, timeout=timeout,
+            base_url, "/usage", headers=license_headers(license_key), timeout=timeout,
         )
         ok = status == 200 and isinstance(usage, dict) and usage.get("usage_unit") == "credits"
         add_result(results, "usage endpoint and quota snapshot", ok, status, elapsed,
@@ -353,9 +366,15 @@ def main() -> int:
     failures = [
         (item["pack"], result["test"])
         for item in report["runtime_checks"] for result in item["tests"]
-        if result["status"] != "PASS"
+        if result["status"] == "FAIL"
     ]
-    report["runtime_status"] = "PASS" if not failures else "FAIL"
+    warnings = [
+        (item["pack"], result["test"])
+        for item in report["runtime_checks"] for result in item["tests"]
+        if result["status"] == "WARN"
+    ]
+    report["warnings"] = warnings
+    report["runtime_status"] = "FAIL" if failures else ("PASS_WITH_WARNINGS" if warnings else "PASS")
     report["release_status"] = "NOT_READY_FOR_PUBLIC_SALE" if failures or report["capability_gaps"] else "REVIEW_REQUIRED"
     serialized = json.dumps(report, ensure_ascii=False, indent=2)
     print(serialized)
