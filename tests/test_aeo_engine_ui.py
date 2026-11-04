@@ -21,3 +21,22 @@ def test_aeo_wordpress_demo_defaults_to_configured_engines_and_can_select_one():
     assert "check_aeo_mentions($payload['brand'] ?? '', $payload['prompts'] ?? [], $payload['engines'] ?? [])" in source
     assert "OpenAI و Perplexity" in source
     assert "ChatGPT/Gemini" not in source
+
+
+def test_aeo_client_preserves_structured_unavailable_response():
+    source = CLIENT.read_text(encoding="utf-8")
+    assert "bool $allowUnavailable = false" in source
+    assert "$allowUnavailable && $code === 503" in source
+    assert "($data['status'] ?? '') === 'unavailable'" in source
+    assert "check-mentions', $payload, true" in source
+
+
+def test_aeo_demo_renders_per_engine_status_and_safe_citation_links():
+    source = DEMO.read_text(encoding="utf-8")
+    assert "function renderAeoResult(container, data)" in source
+    assert "mention_rate_by_engine" in source
+    assert "item.mentioned === null" in source or "item.mentioned === true" in source
+    assert "item.citations" in source
+    assert "new URL(rawUrl)" in source
+    assert "noopener noreferrer" in source
+    assert "این وضعیت به معنی عدم ذکر برند نیست" in source
