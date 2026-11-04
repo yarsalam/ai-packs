@@ -77,3 +77,18 @@
 4. پس از انتشار مستقل و قابل بازگشت به اپ اصلی اضافه شود.
 
 هیچ تغییر تجاری یا تست benchmark نباید به‌طور مستقیم منطق moderation، Redis یا دادهٔ کاربران زنده را تغییر دهد.
+
+
+---
+
+## وضعیت به‌روز — 2026-11-04
+
+- استراتژی کامل قابلیت‌ها و معیارهای پذیرش چهار پک در `docs/COMMERCIAL_PRODUCT_STRATEGY.md` مرجع اصلی اجراست.
+- Preview آفلاین هر چهار محصول در PR #21 وارد main شده است: Safety review/policy، SEO prompt/citation/technical audit، Revenue cohort/LTV/experiment و Matching Top-K/explanation/constraints/event funnel. تمام اعداد و داده‌ها synthetic هستند؛ این Previewها محصول زنده یا evidence کیفیت نیستند.
+- تحقیق رسمی رقبا در `docs/COMPETITOR_PRODUCT_BENCHMARK_2026-11-04.md` ثبت شده و گپ‌ها به acceptance criteria تبدیل شده‌اند.
+- Source pin و smoke/domain corrections در PR #24 با merge commit `0fe44582c4b9a673482319d4f11fb13d66dd6747` ادغام شده‌اند؛ ref توزیع فعلی mobApp برابر `4344cb05afe461551e1bfdc379b26a3c0fedddd9` است.
+- Usage/quota dashboard چهار WordPress plugin و انتخاب engine در SEO در PR #26 در حال بررسی CI است؛ این پنل billing/payment نیست و وزن creditها provisional هستند.
+- اولویت ادامه: (1) P0 نصب مستقل، security، tenant/privacy، model/dependency licensing؛ (2) SEO prompt/citation/history و safe crawler؛ (3) Revenue event/cohort/refund/experiment integrity؛ (4) Matching hard filters/scenario/feedback attribution؛ (5) Safety workflow polish بدون عبور از corpus gate.
+- هر پک باید release gate مستقل را بگذراند. full inference، cold install، security/SBOM/licensing، privacy/retention/deletion، load/latency/error/cost هنوز GO نشده‌اند.
+- Safety #8 تا corpus فارسی مجاز/رضایت‌مند، annotation/adjudication و sealed benchmark BLOCKED می‌ماند؛ #9 و outreach متوقف است.
+- هیچ GHCR/public Release، فروش، outreach، production deployment یا تغییر سرویس زنده مجاز نیست.
