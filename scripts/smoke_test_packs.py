@@ -21,10 +21,10 @@ from typing import Any
 TEST_SITE_DOMAIN = "smoke-test.local"
 
 
-def license_headers(license_key: str) -> dict[str, str]:
+def license_headers(license_key: str, site_domain: str = TEST_SITE_DOMAIN) -> dict[str, str]:
     return {
         "X-License-Key": license_key,
-        "X-Site-Domain": TEST_SITE_DOMAIN,
+        "X-Site-Domain": site_domain,
     }
 
 
@@ -251,6 +251,10 @@ def validate_payload(check: str, response: Any, payload: dict[str, Any] | None =
             and all(isinstance(x, (int, float)) and math.isfinite(x) for x in embedding)
         )
         return ok, f"dimension={dimension!r}, vector_length={len(embedding) if isinstance(embedding, list) else 'invalid'}"
+    if check == "domain_mismatch":
+        detail = response.get("detail", "")
+        ok = isinstance(detail, str) and "not authorized for this site domain" in detail.lower()
+        return ok, f"domain_mismatch_rejected={ok}, detail={detail!r}"
     if check == "recommendations":
         candidates = set((payload or {}).get("candidates", []))
         recommendations = response.get("recommendations")
@@ -336,15 +340,17 @@ def test_pack(pack_name: str, cfg: dict[str, Any], dist_dir: Path,
         add_result(results, "license validation", ok, status, elapsed,
                    f"status={valid.get('status')!r}, plan={valid.get('plan')!r}" if isinstance(valid, dict) else str(valid)[:300])
 
-        wrong_domain_headers = license_headers(license_key)
-        wrong_domain_headers["X-Site-Domain"] = "wrong-domain.example"
+        wrong_domain_headers = license_headers(license_key, "wrong-domain.example")
         wrong_status, wrong_domain, wrong_elapsed = request_json(
             base_url, "/license/validate", headers=wrong_domain_headers, timeout=timeout,
         )
-        wrong_detail = wrong_domain.get("detail", "") if isinstance(wrong_domain, dict) else ""
-        wrong_ok = wrong_status == 403 and "not authorized for this site domain" in str(wrong_detail).lower()
+        wrong_ok, wrong_detail = (
+            validate_payload("domain_mismatch", wrong_domain)
+            if wrong_status == 403 else
+            (False, f"expected HTTP 403, got {wrong_status}")
+        )
         add_result(results, "license domain binding rejects another host", wrong_ok,
-                   wrong_status, wrong_elapsed, f"rejected={wrong_ok}, detail={wrong_detail!r}")
+                   wrong_status, wrong_elapsed, wrong_detail)
 
         for spec in cfg["tests"]:
             try:
