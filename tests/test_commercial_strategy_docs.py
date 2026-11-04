@@ -9,6 +9,8 @@ def test_product_strategy_covers_all_four_pack_acceptance_criteria():
         assert heading in strategy
     for priority in ("P0", "P1", "P2", "P3"):
         assert priority in strategy
+    assert "feature provenance" in strategy
+    assert "missingness" in strategy
 
 
 def test_competitor_benchmark_contains_official_workflow_evidence():
