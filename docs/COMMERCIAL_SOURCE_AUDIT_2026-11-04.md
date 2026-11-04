@@ -93,3 +93,14 @@ commit فعلی `mobApp/main` اصلاح مهم LTV را دارد: schema ورو
 - `ai-packs/{seo,revenue,matching,safety}-pack/gateway/main.py`: license validation و usage metering.
 
 **محدودیت:** این ممیزی بر کد و قراردادهای قابل‌مشاهده استوار است؛ هنوز full inference، حقوق مدل/داده، privacy/retention/deletion، cold install، load، p95 latency، error rate و cost-per-1000 برای هر پک GO نشده‌اند.
+
+
+## 9. پیشرفت اصلاح مشترک — PR #22
+
+PR [#22](https://github.com/yarsalam/ai-packs/pull/22) پیاده‌سازی domain binding اختیاری را در هر چهار Gateway و WordPress client اضافه کرده است. در صورت ادغام:
+- `domain="*"` برای سازگاری backward-compatible بدون محدودیت باقی می‌ماند.
+- domain مشخص normalize و با `X-Site-Domain` مقایسه می‌شود؛ header غایب یا نامطابق قبل از quota meter رد می‌شود.
+- WordPress host از `home_url()` ارسال می‌شود و Gateway header را به upstream model service forward نمی‌کند.
+- تست‌ها و CI PHP syntax برای چهار plugin اضافه شده‌اند.
+
+این کنترل فقط جلوگیری از استفادهٔ اشتباه/سادهٔ کلید روی دامنهٔ دیگر است؛ اثبات مالکیت دامنه یا DRM رمزنگاری‌شده نیست، زیرا holder کلید bearer می‌تواند header را جعل کند. وضعیت نهایی فقط پس از green شدن تمام checks آخرین SHA و ادغام PR #22 به DONE منتقل شود.
