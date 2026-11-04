@@ -219,3 +219,11 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - health=degraded ولی reachable به‌صورت WARN ثبت می‌شود و smoke test مسیرهای مستقل را ادامه می‌دهد.
 - Matching smoke test جدید بررسی می‌کند recommendationها فقط از candidate allowlist باشند و نبود embedding در `/match/predict` به HTTP 503 صریح منجر شود، نه score ساختگی.
 - unit/static contract این موارد در PR #24 اضافه شده؛ اجرای live smoke روی محیط disposable هنوز انجام نشده و release gate آن باز است.
+
+
+### Upstream AEO multi-engine revision — 2026-11-04
+- mobApp PR #6 latest tested head: `4344cb05afe461551e1bfdc379b26a3c0fedddd9`.
+- OpenAI + Perplexity Sonar adapters; all configured engines run by default; explicit selection supported; per-engine rates are separate; no cross-engine average; citations/model provenance retained; missing/unconfigured provider is `unavailable`, never a negative mention.
+- Exact-head validation: **33 passed, 17 warnings** in Python AI readiness; **8 passed** in Revenue LTV contract.
+- AI Packs PR #24 now pins all four distribution/CI/image-validation workflows to this SHA and passes Perplexity env configuration into SEO service; final AI Packs checks still required.
+- Live Perplexity call remains BLOCKED pending an owner-provided test API key; no live provider success is claimed. PR #6 remains Draft; full inference/clean install/load/cost gates remain open.
