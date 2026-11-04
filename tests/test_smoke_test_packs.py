@@ -54,3 +54,15 @@ def test_matching_smoke_accepts_explicit_unavailable_score_not_fabricated_value(
         {"detail": "Match score unavailable: valid embeddings are required for both entities"},
     )
     assert ok is True
+
+
+def test_license_domain_mismatch_is_detected():
+    headers = license_headers("temporary-key", "wrong-domain.example")
+    assert headers["X-Site-Domain"] == "wrong-domain.example"
+    ok, _ = validate_payload(
+        "domain_mismatch",
+        {"detail": "License key is not authorized for this site domain"},
+    )
+    assert ok is True
+    ok, _ = validate_payload("domain_mismatch", {"detail": "some other error"})
+    assert ok is False
