@@ -72,6 +72,7 @@ class SettingsPage {
             <hr>
             <h2>📊 مصرف و سهمیه</h2>
             <p>مصرف واقعی اعتبارهای Gateway و سقف دوره‌های ساعتی و ماهانه را مشاهده کنید.</p>
+            <p class="description">این گزارش صورتحساب پولی، مالیات یا فاکتور نیست؛ فقط اعتبار مصرف‌شده در Gateway را نشان می‌دهد.</p>
             <button type="button" id="rp-usage-btn" class="button button-secondary">به‌روزرسانی مصرف</button>
             <div id="rp-usage-result" role="status" aria-live="polite"
                  style="margin-top:12px;max-width:760px;padding:12px;background:#f8f8f8;border-radius:6px">
