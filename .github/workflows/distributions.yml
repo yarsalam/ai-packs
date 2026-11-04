@@ -14,7 +14,7 @@ on:
       mobapp_ref:
         description: "Git ref in yarsalam/mobApp used as the service source"
         required: true
-        default: "4344cb05afe461551e1bfdc379b26a3c0fedddd9"
+        default: "9474b4ace1da44d6c2662b0554918ae521c7eaec"
         type: string
 
 permissions:
@@ -35,7 +35,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: yarsalam/mobApp
-          ref: ${{ inputs.mobapp_ref || '4344cb05afe461551e1bfdc379b26a3c0fedddd9' }}
+          ref: ${{ inputs.mobapp_ref || '9474b4ace1da44d6c2662b0554918ae521c7eaec' }}
           path: upstream/mobApp
 
       - name: Install packaging tools

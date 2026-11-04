@@ -227,3 +227,12 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - Exact-head validation: **33 passed, 17 warnings** in Python AI readiness; **8 passed** in Revenue LTV contract.
 - AI Packs PR #24 now pins all four distribution/CI/image-validation workflows to this SHA and passes Perplexity env configuration into SEO service; final AI Packs checks still required.
 - Live Perplexity call remains BLOCKED pending an owner-provided test API key; no live provider success is claimed. PR #6 remains Draft; full inference/clean install/load/cost gates remain open.
+
+
+## ۱۲. Upstream AEO cache/retry hardening — candidate pin in progress
+- mobApp PR #6 advanced seven commits beyond the current main pin 4344cb05afe461551e1bfdc379b26a3c0fedddd9 to exact head 9474b4ace1da44d6c2662b0554918ae521c7eaec.
+- Changes are limited to explicit engine name normalization, Perplexity SDK retry/timeout controls and provider/model-aware AEO cache keys; regression tests cover each behavior.
+- Exact-head Python AI readiness and Revenue LTV model contract workflows both succeeded.
+- AI Packs candidate branch build/pin-mobapp-aeo-cache-retry-2026-11-04 updates all four distribution/CI/image-validation workflow pins and records provenance.
+- Until the new AI Packs PR is created, CI-validated on its latest head and merged, main remains pinned to 4344. Do not imply the candidate pin is active.
+- mobApp PR #6 remains Draft; no live Perplexity call, full inference, clean install, load/latency/cost GO or production change is claimed.
