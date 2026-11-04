@@ -123,7 +123,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: yarsalam/mobApp
-          ref: e017905c39835c1da2ddb3e8fd5f6bcd4c8e745b
+          ref: 4344cb05afe461551e1bfdc379b26a3c0fedddd9
           path: upstream/mobApp
 
       - name: Set up Python
