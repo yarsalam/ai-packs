@@ -2,7 +2,7 @@
 /**
  * Plugin Name: YarSalam AI Products Preview
  * Description: Persian RTL product catalog and clearly-labelled static previews for YarSalam AI Packs.
- * Version: 0.2.0
+ * Version: 0.3.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: YarSalam AI Labs
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 final class YarSalam_AI_Products_Preview {
-    const VERSION = '0.2.0';
+    const VERSION = '0.3.0';
     const SHORTCODE = 'yarsalam_ai_products';
     const PAGE_SLUG = 'ai-products';
 
@@ -544,21 +544,25 @@ final class YarSalam_AI_Products_Preview {
             <section class="yap-workspace" id="yap-demo" aria-labelledby="yap-workspace-title">
                 <div class="yap-workspace__intro">
                     <div>
-                        <span class="yap-kicker">TRUST &amp; SAFETY WORKSPACE</span>
-                        <h2 id="yap-workspace-title">محیط مدیریت و نظارت بر محتوا</h2>
-                        <p>پیش‌نمایش تجربهٔ مدیر محصول و اپراتور امنیت؛ با داده‌های کاملاً ساختگی و بدون اتصال به مدل زنده.</p>
+                        <span class="yap-kicker">AI PRODUCT WORKSPACE</span>
+                        <h2 id="yap-workspace-title">محیط کاری محصولات هوش مصنوعی</h2>
+                        <p>چهار تجربهٔ محصولی در یک محیط نمایشی؛ داده‌ها ساختگی‌اند و هیچ بخشی به مدل یا API زنده متصل نیست.</p>
                     </div>
                     <span class="yap-preview-stamp"><i></i> پیش‌نمایش تعاملی</span>
                 </div>
 
                 <div class="yap-workspace__shell">
                     <aside class="yap-workspace__sidebar" aria-label="ناوبری پیش‌نمایش">
-                        <div class="yap-workspace__brand"><span class="yap-brand-mark">Y</span><span><b>YarSalam</b><small>TRUST CENTER</small></span></div>
+                        <div class="yap-workspace__brand"><span class="yap-brand-mark">Y</span><span><b>YarSalam</b><small>AI PRODUCT SUITE</small></span></div>
                         <div class="yap-workspace__tenant"><span class="yap-tenant-avatar">D</span><span><b>Demo Workspace</b><small>محیط نمایشی</small></span><span class="yap-tenant-chevron">⌄</span></div>
                         <span class="yap-workspace__nav-label">مدیریت محتوا</span>
                         <button type="button" class="yap-dash-tab is-active" data-yap-tab="overview" aria-pressed="true"><span>▦</span> نمای کلی</button>
                         <button type="button" class="yap-dash-tab" data-yap-tab="queue" aria-pressed="false"><span>☷</span> صف بررسی <em>۱۲</em></button>
                         <button type="button" class="yap-dash-tab" data-yap-tab="policies" aria-pressed="false"><span>⚙</span> سیاست‌ها و قوانین</button>
+                        <span class="yap-workspace__nav-label">محصولات دیگر</span>
+                        <button type="button" class="yap-dash-tab" data-yap-tab="seo" aria-pressed="false"><span>⌕</span> SEO و دیده‌شدن AI</button>
+                        <button type="button" class="yap-dash-tab" data-yap-tab="revenue" aria-pressed="false"><span>↗</span> هوشمندی درآمد</button>
+                        <button type="button" class="yap-dash-tab" data-yap-tab="matching" aria-pressed="false"><span>◇</span> سیستم پیشنهادگر</button>
                         <div class="yap-sidebar-spacer"></div>
                         <div class="yap-workspace__sidebar-note"><span class="yap-sidebar-shield">✓</span><b>محافظت هوشمند</b><small>سیاست‌های اختصاصی هر کسب‌وکار</small></div>
                         <div class="yap-workspace__profile"><span class="yap-profile-avatar">م</span><span><b>مدیر نمونه</b><small>مدیر امنیت</small></span><span class="yap-profile-more">•••</span></div>
@@ -644,6 +648,110 @@ final class YarSalam_AI_Products_Preview {
                                 <div class="yap-threshold-card"><div><div><b>آستانهٔ نمونه برای ارجاع</b><small>صرفاً نمایش تنظیم آستانه؛ امتیاز واقعی مدل نیست.</small></div><strong><output data-yap-threshold-value>۰٫۶۰</output></strong></div><input type="range" min="10" max="90" step="5" value="60" data-yap-threshold aria-label="آستانهٔ نمونهٔ ارجاع"><div class="yap-threshold-scale"><span>حساسیت بیشتر</span><span>ارجاع کمتر</span></div></div>
                                 <div class="yap-policy-footer"><span>پیش‌نمایش محلی · بدون ذخیره‌سازی</span><button type="button" class="yap-button yap-button--primary" data-yap-policy-save>نمایش ثبت تنظیمات</button></div>
                                 <p class="yap-policy-feedback" aria-live="polite"></p>
+                            </section>
+
+                            <section class="yap-dash-panel yap-product-preview" data-yap-panel="seo" hidden>
+                                <div class="yap-panel-heading"><div><span class="yap-date-label">SEO &amp; AI VISIBILITY · دادهٔ ساختگی</span><h3>پایش دیده‌شدن در جست‌وجو و پاسخ‌های AI</h3><p>نمایش مسیر prompt → پاسخ → mention/citation → اقدام اصلاحی؛ نه گزارش زندهٔ موتورهای جست‌وجو.</p></div><span class="yap-queue-counter">DEMO ONLY</span></div>
+                                <div class="yap-preview-state-switcher" role="group" aria-label="حالت‌های نمایشی SEO">
+                                    <button type="button" data-yap-preview-state="seo:ready" aria-pressed="true">داده نمونه</button><button type="button" data-yap-preview-state="seo:loading" aria-pressed="false">بارگذاری</button><button type="button" data-yap-preview-state="seo:empty" aria-pressed="false">بدون داده</button><button type="button" data-yap-preview-state="seo:error" aria-pressed="false">خطا</button><button type="button" data-yap-preview-state="seo:stale" aria-pressed="false">داده کهنه</button>
+                                </div>
+                                <div data-yap-state-view="ready">
+                                    <div class="yap-kpi-grid">
+                                        <article class="yap-kpi"><div><span>نرخ mention نمونه</span><b class="yap-kpi-icon">◎</b></div><strong>۳۴٪</strong><small>محاسبهٔ ساختگی · نه سهم بازار واقعی</small></article>
+                                        <article class="yap-kpi"><div><span>منابع citation نمونه</span><b class="yap-kpi-icon yap-kpi-green">↗</b></div><strong>۱۸</strong><small>منابع نمایشی برای طراحی UI</small></article>
+                                        <article class="yap-kpi"><div><span>پرامپت‌های ردیابی‌شده</span><b class="yap-kpi-icon">⌕</b></div><strong>۴۰</strong><small>نمونهٔ prompt library</small></article>
+                                        <article class="yap-kpi"><div><span>چک‌لیست فنی URL</span><b class="yap-kpi-icon yap-kpi-amber">✓</b></div><strong>۸/۱۱</strong><small>چک‌لیست heuristic، نه رتبهٔ Google</small></article>
+                                    </div>
+                                    <div class="yap-analytics-grid">
+                                        <article class="yap-widget">
+                                            <div class="yap-widget-heading"><div><h4>پوشش موتورهای پاسخ‌گو</h4><p>وضعیت اتصال باید برای هر engine مستقل و قابل مشاهده باشد.</p></div></div>
+                                            <div class="yap-mini-table"><div><b>OpenAI</b><span class="yap-mini-status is-demo">نمونهٔ نمایشی</span><small>فقط یک provider در پیاده‌سازی فعلی بررسی شده است.</small></div><div><b>Claude</b><span class="yap-mini-status">هنوز متصل نشده</span><small>نیازمند connector، تست و provenance مستقل</small></div><div><b>Gemini</b><span class="yap-mini-status">هنوز متصل نشده</span><small>در این Preview دادهٔ زنده ندارد</small></div><div><b>Perplexity</b><span class="yap-mini-status">هنوز متصل نشده</span><small>در این Preview دادهٔ زنده ندارد</small></div></div>
+                                        </article>
+                                        <article class="yap-widget">
+                                            <div class="yap-widget-heading"><div><h4>منابع ارجاع نمونه</h4><p>دادهٔ ساختگی برای نمایش جدول citation</p></div></div>
+                                            <div class="yap-source-list"><div><b>example.com/guide</b><span>۶ ارجاع</span></div><div><b>docs.example.org</b><span>۴ ارجاع</span></div><div><b>blog.example.net</b><span>۳ ارجاع</span></div><div><b>news.example.test</b><span>۲ ارجاع</span></div></div>
+                                        </article>
+                                    </div>
+                                    <article class="yap-widget">
+                                        <div class="yap-widget-heading"><div><h4>اقدام‌های پیشنهادی بر اساس evidence</h4><p>هر پیشنهاد باید به URL، منبع و شواهد قابل بازبینی متصل باشد.</p></div></div>
+                                        <div class="yap-action-list"><div><span class="yap-priority is-high">بالا</span><b>افزودن توضیح روشن برای موضوع «راهنمای خرید»</b><small>شاهد نمونه: صفحهٔ /guide در دو prompt نمایشی citation نشده است.</small></div><div><span class="yap-priority">متوسط</span><b>بازبینی عنوان و توضیح متای صفحه</b><small>شاهد نمونه: یک مورد از چک‌لیست فنی URL ناموفق است.</small></div><div><span class="yap-priority">متوسط</span><b>بررسی منبع رقیب</b><small>منبع و زمان نمونه‌گیری باید قبل از نتیجه‌گیری تأیید شوند.</small></div></div>
+                                    </article>
+                                </div>
+                                <div class="yap-preview-state-card" data-yap-state-view="loading" hidden><b>در حال دریافت دادهٔ نمونه…</b><p>این حالت فقط برای آزمون طراحی loading است؛ هیچ درخواست شبکه‌ای ارسال نمی‌شود.</p><span class="yap-state-skeleton"></span><span class="yap-state-skeleton short"></span></div>
+                                <div class="yap-preview-state-card is-empty" data-yap-state-view="empty" hidden><b>هنوز داده‌ای برای این پروژه ثبت نشده است.</b><p>پس از اتصال مجاز و اجرای اولین promptها، تاریخچه و citationها در این بخش نمایش داده می‌شوند.</p></div>
+                                <div class="yap-preview-state-card is-error" data-yap-state-view="error" hidden><b>دریافت داده ناموفق بود.</b><p>خطای provider باید «نامشخص» ثبت شود، نه اینکه به‌عنوان عدم mention محاسبه شود.</p></div>
+                                <div class="yap-preview-state-card is-stale" data-yap-state-view="stale" hidden><b>دادهٔ نمایش‌داده‌شده قدیمی است.</b><p>آخرین نمونه: ۲۴ ساعت قبل · نتیجهٔ stale نباید با وضعیت فعلی اشتباه شود.</p></div>
+                                <p class="yap-panel-disclaimer">تمام اعداد و منابع این پنل ساختگی‌اند. در وضعیت محصول فعلی فقط provider OpenAI در کد بررسی‌شده پیاده‌سازی شده؛ سایر engineها در این صفحه صرفاً وضعیت هدف را نشان می‌دهند.</p>
+                            </section>
+
+                            <section class="yap-dash-panel yap-product-preview" data-yap-panel="revenue" hidden>
+                                <div class="yap-panel-heading"><div><span class="yap-date-label">REVENUE INTELLIGENCE · دادهٔ ساختگی</span><h3>تحلیل درآمد، cohort و آزمایش</h3><p>تفکیک درآمد واقعی، پیش‌بینی مدل و نتیجهٔ آزمایش؛ این سه نوع داده نباید با هم مخلوط شوند.</p></div><span class="yap-queue-counter">DEMO ONLY</span></div>
+                                <div class="yap-preview-state-switcher" role="group" aria-label="حالت‌های نمایشی Revenue">
+                                    <button type="button" data-yap-preview-state="revenue:ready" aria-pressed="true">داده نمونه</button><button type="button" data-yap-preview-state="revenue:loading" aria-pressed="false">بارگذاری</button><button type="button" data-yap-preview-state="revenue:empty" aria-pressed="false">بدون داده</button><button type="button" data-yap-preview-state="revenue:error" aria-pressed="false">خطا</button><button type="button" data-yap-preview-state="revenue:stale" aria-pressed="false">داده کهنه</button>
+                                </div>
+                                <div data-yap-state-view="ready">
+                                    <div class="yap-kpi-grid">
+                                        <article class="yap-kpi"><div><span>درآمد ثبت‌شده</span><b class="yap-kpi-icon yap-kpi-green">↗</b></div><strong>۱۲٬۴۰۰</strong><small>واحد پولی ساختگی · actual demo</small></article>
+                                        <article class="yap-kpi"><div><span>LTV مشاهده‌شده</span><b class="yap-kpi-icon">◉</b></div><strong>۳۲</strong><small>میانهٔ cohort نمونه · نه پیش‌بینی</small></article>
+                                        <article class="yap-kpi"><div><span>Retention روز ۳۰</span><b class="yap-kpi-icon yap-kpi-amber">↻</b></div><strong>۴۲٪</strong><small>دادهٔ cohort ساختگی</small></article>
+                                        <article class="yap-kpi"><div><span>آزمایش‌ها</span><b class="yap-kpi-icon">⚗</b></div><strong>۲</strong><small>یک draft · یک نمونهٔ بسته‌شده</small></article>
+                                    </div>
+                                    <div class="yap-analytics-grid">
+                                        <article class="yap-widget">
+                                            <div class="yap-widget-heading"><div><h4>عملکرد cohort نمونه</h4><p>مقادیر مشاهده‌شده، نه پیش‌بینی مدل</p></div></div>
+                                            <div class="yap-mini-table"><div><b>هفتهٔ جذب ۱</b><span>روز ۷: ۷۱٪</span><small>روز ۳۰: ۴۲٪ · ۱۲۰ عضو نمونه</small></div><div><b>هفتهٔ جذب ۲</b><span>روز ۷: ۶۸٪</span><small>روز ۳۰: ۳۹٪ · ۹۸ عضو نمونه</small></div><div><b>هفتهٔ جذب ۳</b><span>روز ۷: ۷۴٪</span><small>روز ۳۰: داده ناکافی</small></div></div>
+                                        </article>
+                                        <article class="yap-widget">
+                                            <div class="yap-widget-heading"><div><h4>وضعیت مدل LTV</h4><p>نمایش provenance و کیفیت مدل</p></div></div>
+                                            <div class="yap-model-status"><span class="yap-mini-status is-warning">مدل نمونه · تأییدنشده</span><b>CV R² ≠ confidence probability</b><p>امتیاز cross-validation احتمال اطمینان فردی نیست. بازهٔ پیش‌بینی فقط پس از calibration معتبر نمایش داده شود.</p></div>
+                                        </article>
+                                    </div>
+                                    <article class="yap-widget">
+                                        <div class="yap-widget-heading"><div><h4>آزمایش و اثر افزایشی</h4><p>نتیجهٔ آزمایش باید با control، assignment و uncertainty گزارش شود.</p></div></div>
+                                        <div class="yap-experiment-row"><div><b>نسخهٔ A / Control</b><span>۶۰۰ نمونهٔ ساختگی</span></div><div><b>نسخهٔ B / Treatment</b><span>۶۰۰ نمونهٔ ساختگی</span></div><div><b>تفاوت خام مشاهده‌شده</b><strong>+۶٫۴٪</strong><small>صرفاً اختلاف توصیفی؛ causal uplift تأیید نشده است.</small></div></div>
+                                        <div class="yap-policy-footer"><span>گیت‌های بعدی: sample-ratio، balance، power و interval</span><span class="yap-mini-status">در انتظار ارزیابی</span></div>
+                                    </article>
+                                </div>
+                                <div class="yap-preview-state-card" data-yap-state-view="loading" hidden><b>در حال محاسبهٔ گزارش نمونه…</b><p>حالت loading نمایشی است؛ هیچ مدل یا سرویس اجرا نمی‌شود.</p><span class="yap-state-skeleton"></span><span class="yap-state-skeleton short"></span></div>
+                                <div class="yap-preview-state-card is-empty" data-yap-state-view="empty" hidden><b>رویداد درآمدی ثبت نشده است.</b><p>برای ساخت cohort باید eventهای نسخه‌بندی‌شده و دادهٔ actual revenue وارد شوند.</p></div>
+                                <div class="yap-preview-state-card is-error" data-yap-state-view="error" hidden><b>منبع داده یا مدل در دسترس نیست.</b><p>در این وضعیت باید خطا و fallback reason نشان داده شود؛ عدد پیش‌بینی ساختگی تولید نشود.</p></div>
+                                <div class="yap-preview-state-card is-stale" data-yap-state-view="stale" hidden><b>گزارش cohort به‌روز نیست.</b><p>آخرین به‌روزرسانی: ۲۴ ساعت قبل · actual و forecast از هم جدا بمانند.</p></div>
+                                <p class="yap-panel-disclaimer">تمام اعداد ساختگی‌اند. تفاوت خام گروه‌ها اثر علّی نیست؛ هیچ ROI، uplift یا کیفیت پیش‌بینی واقعی ادعا نمی‌شود.</p>
+                            </section>
+
+                            <section class="yap-dash-panel yap-product-preview" data-yap-panel="matching" hidden>
+                                <div class="yap-panel-heading"><div><span class="yap-date-label">MATCHING INTELLIGENCE · دادهٔ ساختگی</span><h3>موتور پیشنهاد و توضیح‌پذیری</h3><p>قیود اجباری پیش از ranking، سپس relevance، تنوع و اتصال نتیجه به feedback.</p></div><span class="yap-queue-counter">DEMO ONLY</span></div>
+                                <div class="yap-preview-state-switcher" role="group" aria-label="حالت‌های نمایشی Matching">
+                                    <button type="button" data-yap-preview-state="matching:ready" aria-pressed="true">داده نمونه</button><button type="button" data-yap-preview-state="matching:loading" aria-pressed="false">بارگذاری</button><button type="button" data-yap-preview-state="matching:empty" aria-pressed="false">بدون داده</button><button type="button" data-yap-preview-state="matching:error" aria-pressed="false">خطا</button><button type="button" data-yap-preview-state="matching:stale" aria-pressed="false">داده کهنه</button>
+                                </div>
+                                <div data-yap-state-view="ready">
+                                    <div class="yap-kpi-grid">
+                                        <article class="yap-kpi"><div><span>نامزدهای ورودی</span><b class="yap-kpi-icon">◎</b></div><strong>۱۲۰</strong><small>کاندیدهای ساختگی</small></article>
+                                        <article class="yap-kpi"><div><span>پیشنهادهای Top-K</span><b class="yap-kpi-icon yap-kpi-green">◇</b></div><strong>۵</strong><small>برای یک سناریوی نمونه</small></article>
+                                        <article class="yap-kpi"><div><span>عبور از قیود اجباری</span><b class="yap-kpi-icon yap-kpi-amber">✓</b></div><strong>۱۸/۲۴</strong><small>بقیه پیش از ranking حذف می‌شوند</small></article>
+                                        <article class="yap-kpi"><div><span>پوشش event</span><b class="yap-kpi-icon">↻</b></div><strong>۷۲٪</strong><small>نمونهٔ نمایشی، نه telemetry واقعی</small></article>
+                                    </div>
+                                    <div class="yap-analytics-grid">
+                                        <article class="yap-widget">
+                                            <div class="yap-widget-heading"><div><h4>پیشنهادهای برتر</h4><p>دلیل پیشنهاد و وضعیت قیود برای هر مورد</p></div></div>
+                                            <div class="yap-rec-list"><div><span class="yap-rec-rank">۱</span><span><b>نامزد نمونه A</b><small>علایق مشترک · تعامل اخیر · تنوع دسته</small></span><span class="yap-mini-status is-demo">مجاز</span></div><div><span class="yap-rec-rank">۲</span><span><b>نامزد نمونه B</b><small>شباهت محتوایی · بدون تکرار اخیر</small></span><span class="yap-mini-status is-demo">مجاز</span></div><div><span class="yap-rec-rank">۳</span><span><b>نامزد نمونه C</b><small>تطبیق زمینه · پوشش دستهٔ متفاوت</small></span><span class="yap-mini-status is-demo">مجاز</span></div></div>
+                                        </article>
+                                        <article class="yap-widget">
+                                            <div class="yap-widget-heading"><div><h4>قیود و تنوع</h4><p>فیلترهای اجباری باید قبل از scoring اجرا شوند.</p></div></div>
+                                            <div class="yap-filter-list"><div><span>شرایط اجباری</span><b>فعال</b></div><div><span>محدودیت تکرار</span><b>فعال</b></div><div><span>کنترل تنوع</span><b>نمونه</b></div><div><span>توضیح دلیل پیشنهاد</span><b>نمایشی</b></div></div>
+                                        </article>
+                                    </div>
+                                    <article class="yap-widget">
+                                        <div class="yap-widget-heading"><div><h4>چرخهٔ رویداد و نتیجه</h4><p>اتصال impression → interaction → outcome برای اندازه‌گیری عملکرد</p></div></div>
+                                        <div class="yap-event-funnel"><div><b>۱٬۰۰۰</b><span>Impression</span></div><i>→</i><div><b>۲۸۰</b><span>Interaction</span></div><i>→</i><div><b>۸۴</b><span>Outcome</span></div></div>
+                                        <p class="yap-panel-disclaimer">در نسخهٔ واقعی هر event باید event_id و recommendation_id داشته باشد و قابل deduplicate و ممیزی باشد.</p>
+                                    </article>
+                                </div>
+                                <div class="yap-preview-state-card" data-yap-state-view="loading" hidden><b>در حال ساخت پیشنهادها…</b><p>حالت loading صرفاً برای نمایش UI است؛ هیچ مدل اجرا نمی‌شود.</p><span class="yap-state-skeleton"></span><span class="yap-state-skeleton short"></span></div>
+                                <div class="yap-preview-state-card is-empty" data-yap-state-view="empty" hidden><b>کاتالوگ یا candidate معتبری موجود نیست.</b><p>در حالت empty هیچ شناسه یا امتیاز ساختگی نباید به‌عنوان پیشنهاد واقعی نمایش داده شود.</p></div>
+                                <div class="yap-preview-state-card is-error" data-yap-state-view="error" hidden><b>سرویس embedding یا ranking در دسترس نیست.</b><p>نتیجه باید unavailable باشد؛ fallback ساختگی نباید به‌عنوان match واقعی نشان داده شود.</p></div>
+                                <div class="yap-preview-state-card is-stale" data-yap-state-view="stale" hidden><b>پیشنهادها بر اساس دادهٔ قدیمی ساخته شده‌اند.</b><p>زمان آخرین embedding و آخرین event باید به اپراتور نمایش داده شود.</p></div>
+                                <p class="yap-panel-disclaimer">تمام شناسه‌ها و آمار ساختگی‌اند. این پنل نمونهٔ UX هدف است و اثبات نمی‌کند قابلیت‌های hard filter، diversity یا attribution در سرویس فعلی تکمیل شده‌اند.</p>
                             </section>
                         </div>
                     </div>

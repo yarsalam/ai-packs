@@ -45,12 +45,19 @@ jobs:
           grep -q 'data-yap-panel="overview"' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
           grep -q 'data-yap-panel="queue"' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
           grep -q 'data-yap-panel="policies"' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          grep -q 'data-yap-panel="seo"' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          grep -q 'data-yap-panel="revenue"' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          grep -q 'data-yap-panel="matching"' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
+          grep -q 'data-yap-preview-state' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
           grep -q 'data-yap-decision' wordpress-showcase/yarsalam-ai-products/yarsalam-ai-products.php
           if grep -nF 'fetch(' wordpress-showcase/yarsalam-ai-products/assets/showcase.js || grep -nE 'XMLHttpRequest|sendBeacon' wordpress-showcase/yarsalam-ai-products/assets/showcase.js; then
             echo "Preview JavaScript must not make network requests."
             exit 1
           fi
           grep -q 'ساختگی' wordpress-showcase/yarsalam-ai-products/README.md
+          grep -q 'SEO' wordpress-showcase/yarsalam-ai-products/README.md
+          grep -q 'Revenue' wordpress-showcase/yarsalam-ai-products/README.md
+          grep -q 'Matching' wordpress-showcase/yarsalam-ai-products/README.md
           if grep -RniE 'X-License-Key|X-Admin-Token|license_key=' wordpress-showcase/yarsalam-ai-products; then
             echo "Showcase must not contain customer or admin credentials."
             exit 1
