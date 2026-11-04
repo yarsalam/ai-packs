@@ -91,6 +91,7 @@
 | اولویت | قابلیت مورد انتظار | معیار پذیرش |
 |---|---|---|
 | P0 | event ingestion contract | schema نسخه‌بندی‌شده، pseudonymous customer ID، event ID، timestamp/timezone، amount/currency، campaign/channel و consent context؛ validation و idempotency |
+| P0 | feature provenance و missingness | هر ورودی مدل دارای source، as-of timestamp، window، units، transformation و feature revision باشد؛ هیچ مقدار 0.5/0/0.3 یا مقدار عددی پیش‌فرض برای دادهٔ غایب بی‌صدا استفاده نشود؛ missing به insufficient_data/unavailable یا imputation نسخه‌بندی‌شده و آزموده‌شده تبدیل شود |
 | P0 | tenant/data isolation | جداسازی tenant، کنترل دسترسی، redaction، retention/deletion و جلوگیری از نشت بین مشتریان |
 | P1 | event health/import | ingest API و import امن CSV، خطاهای schema، duplicate، late/out-of-order events و پوشش داده |
 | P1 | cohort analytics | cohort explorer برای acquisition/activation/retention/conversion، ARPU/ARPPU و realized LTV بر اساس درآمد واقعی |
