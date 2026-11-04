@@ -76,12 +76,19 @@ class ApiClient {
      * @param string   $brand    نام برند
      * @param string[] $prompts  سوال‌هایی که به AI می‌پرسیم
      */
-    public function check_aeo_mentions(string $brand, array $prompts): array {
-        return $this->request('POST', '/aeo/check-mentions', [
+    public function check_aeo_mentions(string $brand, array $prompts, array $engines = []): array {
+        $payload = [
             'brand'   => $brand,
             'prompts' => $prompts,
             'persist' => true,
-        ]);
+        ];
+        if (!empty($engines)) {
+            $payload['engines'] = array_values(array_unique(array_intersect(
+                ['openai', 'perplexity'],
+                array_map('sanitize_key', $engines)
+            )));
+        }
+        return $this->request('POST', '/aeo/check-mentions', $payload);
     }
 
     public function get_aeo_history(string $brand): array {
