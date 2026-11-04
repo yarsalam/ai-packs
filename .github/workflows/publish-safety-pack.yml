@@ -13,7 +13,7 @@ on:
       mobapp_ref:
         description: "Exact commit, branch, or tag from yarsalam/mobApp"
         required: true
-        default: "e017905c39835c1da2ddb3e8fd5f6bcd4c8e745b"
+        default: "4344cb05afe461551e1bfdc379b26a3c0fedddd9"
         type: string
 
 permissions:
@@ -38,7 +38,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: yarsalam/mobApp
-          ref: ${{ inputs.mobapp_ref || 'e017905c39835c1da2ddb3e8fd5f6bcd4c8e745b' }}
+          ref: ${{ inputs.mobapp_ref || '4344cb05afe461551e1bfdc379b26a3c0fedddd9' }}
           path: upstream/mobApp
 
       - name: Set up Python
