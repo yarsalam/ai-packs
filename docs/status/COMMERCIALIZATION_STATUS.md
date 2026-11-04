@@ -322,3 +322,9 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - Python AI pack readiness passed on exact head `b946c285eb8cd97f2901a6e467f0bdace8ce7bd1`: **36 passed, 18 warnings, 1.11s**.
 - Warnings are Pydantic v2 deprecations and Node.js action-runtime deprecation; no test failure.
 - PR #11 remains Draft and stacked on PR #6; merge is deferred until base PR #6 is merged/reconciled.
+
+
+### mobApp PR #11 latest-head validation
+- Latest head `bc9c0d6b82ab8f0d5c2edd5c4f78d63d16daf094`: **37 passed, 18 warnings, 1.25s** on Python AI pack readiness.
+- Success-path test verifies persisted payload + UTC ISO timestamp; failure-path tests verify propagated error and retryable HTTP 503.
+- Warnings are existing Pydantic v2 and Node.js action-runtime deprecations. PR #11 remains Draft/stacked on PR #6; no merge or deployment.
