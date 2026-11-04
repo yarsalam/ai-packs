@@ -341,3 +341,9 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - Per-engine Redis keys and snapshot provider/model metadata; API supports engine query with OpenAI default; legacy migration filters only explicit engine-tagged rows.
 - Regression tests cover mixed legacy data and per-engine history. Python AI readiness workflow is running.
 - PR #12 remains Draft until checks pass and PR #6 is merged/reconciled. WordPress history trend UI remains NOT_STARTED.
+
+
+### mobApp PR #12 latest-head validation
+- Latest head `5d97ed87be06f5f8f9ac9fe62177bb31ba141cd1`: **37 passed, 20 warnings, 1.25s** on Python AI pack readiness.
+- One legacy assertion expecting the shared Redis key failed on the first run; it was corrected to the new engine-specific key, and the latest exact-head run passed.
+- PR #12 remains Draft/stacked on PR #6; no merge or production data migration occurred.
