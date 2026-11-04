@@ -198,7 +198,7 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - AEO provider failure اکنون `unavailable` است، نه negative mention؛ failed calls cache نمی‌شوند و از denominator حذف می‌شوند.
 - Matching fallbackهای ثابت و IDهای ساختگی حذف شده‌اند؛ cold-start فقط از popularity مشاهده‌شده در candidate set استفاده می‌کند؛ missing embeddings امتیاز جعلی نمی‌دهند.
 - LTV CV scaler داخل foldها fit می‌شود؛ CV R² با confidence اشتباه نمی‌شود؛ interval ثابت حذف و uncalibrated علامت می‌خورد. Uplift fallback فقط descriptive است و هیچ causal claim نمی‌کند.
-- AI Packs source pin در branch `build/pin-mobapp-readiness-2026-11-04-final` به SHA بالا تغییر داده شده است؛ PR جدید پس از validation نهایی باز می‌شود. PR قبلی #23 به دلیل پایهٔ قدیمی و نبود client changes لازم بسته شد؛ merge نشده.
+- AI Packs source pin در branch `build/pin-mobapp-readiness-2026-11-04-final` به SHA بالا تغییر داده شده و PR #24 باز است؛ CI توزیع/تصویر/قرارداد روی آخرین head در حال اجراست. تا سبز شدن همهٔ checks، pin جدید در main فعال نیست. PR قبلی #23 به دلیل پایهٔ قدیمی و نبود client changes لازم بسته شد؛ merge نشده.
 
 ### گپ‌های باقی‌مانده
 - Feature store در mobApp هنوز برای چند ورودی LTV از default/hard-coded values استفاده می‌کند؛ دادهٔ واقعی/provenance و cohort/temporal validation لازم است.
@@ -212,3 +212,10 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - Post-merge path review found that PR #22 had added `X-Site-Domain` to Safety multipart uploads but missed its separate JSON request method. Therefore, domain-bound Safety text moderation and license-status calls could still receive 403.
 - PR #24 adds the header to Safety JSON requests and strengthens CI to require at least two occurrences in Safety API client (JSON + multipart). Until PR #24 merges, Safety WordPress domain binding is not fully complete.
 - The live smoke-test client was also updated to send `X-Site-Domain` on license validation, inference and usage calls; degraded-but-reachable health is a warning, not a hard failure.
+
+
+### Smoke-test contract — PR #24
+- `scripts/smoke_test_packs.py` اکنون `X-Site-Domain: smoke-test.local` را در license validation، inference و usage ارسال می‌کند تا با domain binding هماهنگ باشد.
+- health=degraded ولی reachable به‌صورت WARN ثبت می‌شود و smoke test مسیرهای مستقل را ادامه می‌دهد.
+- Matching smoke test جدید بررسی می‌کند recommendationها فقط از candidate allowlist باشند و نبود embedding در `/match/predict` به HTTP 503 صریح منجر شود، نه score ساختگی.
+- unit/static contract این موارد در PR #24 اضافه شده؛ اجرای live smoke روی محیط disposable هنوز انجام نشده و release gate آن باز است.
