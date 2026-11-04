@@ -12,6 +12,16 @@ on:
 jobs:
   licensing-contract:
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     strategy:
       fail-fast: false
       matrix:
@@ -31,9 +41,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r "${{ matrix.gateway }}/requirements.txt" pytest==8.4.2
-      - name: Run licensing contract tests
+      - name: Run licensing and atomic quota contract tests
         env:
           GATEWAY_MODULE_PATH: ${{ matrix.gateway }}/main.py
+          AI_PACK_TEST_REDIS_URL: redis://localhost:6379/15
         run: python -m pytest -q tests/test_gateway_contract.py
 
       - name: Run Safety tenant policy tests

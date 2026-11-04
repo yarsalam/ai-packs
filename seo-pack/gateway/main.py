@@ -153,7 +153,38 @@ async def _usage_weight(path: str) -> int:
     return 1
 
 
+USAGE_METER_SCRIPT = """
+local weight = tonumber(ARGV[1])
+local hourly_limit = tonumber(ARGV[2])
+local monthly_limit = tonumber(ARGV[3])
+local hourly_ttl = tonumber(ARGV[4])
+local monthly_ttl = tonumber(ARGV[5])
+local hourly_used = tonumber(redis.call('GET', KEYS[1]) or '0')
+local monthly_used = tonumber(redis.call('GET', KEYS[2]) or '0')
+
+if hourly_used + weight > hourly_limit then
+    return {0, 1, hourly_used, monthly_used}
+end
+if monthly_used + weight > monthly_limit then
+    return {0, 2, hourly_used, monthly_used}
+end
+
+local hourly_total = redis.call('INCRBY', KEYS[1], weight)
+if hourly_total == weight then
+    redis.call('EXPIRE', KEYS[1], hourly_ttl)
+end
+local monthly_total = redis.call('INCRBY', KEYS[2], weight)
+if monthly_total == weight then
+    redis.call('EXPIRE', KEYS[2], monthly_ttl)
+end
+return {1, 0, hourly_total, monthly_total}
+"""
+
+
+
+
 async def _meter_usage(license_key: str, info: dict, path: str) -> None:
+    """Atomically reserve hourly and monthly credits without charging rejected requests."""
     plan = info.get("plan", "basic")
     limits = PLAN_LIMITS[plan]
     if path in TRAINING_PATHS and plan not in ("pro", "enterprise"):
@@ -165,23 +196,33 @@ async def _meter_usage(license_key: str, info: dict, path: str) -> None:
     hour_key = f"{RATE_LIMIT_PREFIX}{key_hash}:hour"
     month_key = f"{USAGE_PREFIX}{key_hash}:{now:%Y-%m}"
 
-    hourly_units = await redis_client.incrby(hour_key, weight)
-    if hourly_units == weight:
-        await redis_client.expire(hour_key, 3600)
+    if now.month == 12:
+        next_month = datetime(now.year + 1, 1, 1, tzinfo=timezone.utc)
+    else:
+        next_month = datetime(now.year, now.month + 1, 1, tzinfo=timezone.utc)
+    month_ttl = max(3600, int((next_month - now).total_seconds()) + 86400)
 
-    monthly_units = await redis_client.incrby(month_key, weight)
-    if monthly_units == weight:
-        if now.month == 12:
-            next_month = datetime(now.year + 1, 1, 1, tzinfo=timezone.utc)
-        else:
-            next_month = datetime(now.year, now.month + 1, 1, tzinfo=timezone.utc)
-        ttl = max(3600, int((next_month - now).total_seconds()) + 86400)
-        await redis_client.expire(month_key, ttl)
+    result = await redis_client.eval(
+        USAGE_METER_SCRIPT,
+        2,
+        hour_key,
+        month_key,
+        weight,
+        limits["hourly_units"],
+        limits["monthly_units"],
+        3600,
+        month_ttl,
+    )
+    if not isinstance(result, (list, tuple)) or len(result) < 2:
+        raise RuntimeError("Redis returned an invalid usage-meter result")
 
-    if hourly_units > limits["hourly_units"]:
+    status = int(result[1])
+    if status == 1:
         raise HTTPException(429, f"Hourly usage quota exceeded for plan '{plan}'")
-    if monthly_units > limits["monthly_units"]:
+    if status == 2:
         raise HTTPException(429, f"Monthly usage quota exceeded for plan '{plan}'")
+    if status != 0 or int(result[0]) != 1:
+        raise RuntimeError("Redis usage-meter script returned an unknown status")
 
 
 async def _usage_snapshot(license_key: str, info: dict) -> dict:
