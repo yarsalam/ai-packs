@@ -264,3 +264,12 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - 14 فایل تغییر کرده‌اند: usage API client و settings/AJAX برای چهار پک، AEO engine selector، تست‌های contract/UI، CI و تمایزهای هدف در strategy.
 - branch قدیمی PR #25 به دلیل divergence و pin قدیمی mobApp بسته شد؛ هیچ merge انجام نشد.
 - CI روی PR #26 هنوز در حال اجراست؛ نتیجهٔ نهایی فقط پس از بررسی آخرین SHA و همهٔ jobها ثبت می‌شود.
+
+
+### تکمیل تحقیق رقابتی رسمی — IN PR #26
+- Benchmark اکنون علاوه بر مقایسهٔ اولیه، جزئیات قابل پذیرش از مستندات رسمی Semrush، RevenueCat، AppsFlyer، Recombee و Hive را ثبت می‌کند.
+- SEO: prompt tracking روزانه، source/domain/page explorer، topic/source gaps و تفکیک refresh cadence.
+- Revenue: realized LTV پس از refund، تفاوت ARPU/ARPPU، cohort lifetime و incomplete cohort؛ incrementality مبتنی بر exposed/holdout و random assignment.
+- Matching: scenarioهای placement-specific، ranked/composite response، control/variant، traffic allocation، filters/boosters/constraints و KPI.
+- Safety: content/user feeds، policy rules، role-based access، retention و appeals.
+- این‌ها نیازمندی‌های هدف هستند؛ benchmark مستندات رقبا اثبات کیفیت یا parity محصول ما نیست.
