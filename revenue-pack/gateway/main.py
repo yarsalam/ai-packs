@@ -16,6 +16,7 @@ Revenue Pack Gateway
 
 import os, hashlib, json, httpx, secrets
 from datetime import datetime, date, timezone
+from urllib.parse import urlsplit
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Request, Depends
@@ -90,7 +91,41 @@ def _license_is_expired(value: str) -> bool:
         raise HTTPException(403, "License expiry is invalid")
 
 
-async def validate_license(key: str) -> dict:
+def _normalize_domain(raw_domain: Optional[str], allow_wildcard: bool = False) -> str:
+    """Normalize a customer domain for optional license binding."""
+    if raw_domain is None or not str(raw_domain).strip():
+        if allow_wildcard:
+            return "*"
+        return ""
+    value = str(raw_domain).strip()
+    if value == "*":
+        if allow_wildcard:
+            return "*"
+        raise HTTPException(422, "A concrete site domain is required")
+    try:
+        parsed = urlsplit(value if "://" in value else f"//{value}")
+        if parsed.scheme and parsed.scheme.lower() not in {"http", "https"}:
+            raise HTTPException(422, "Site domain must use HTTP or HTTPS")
+        if not parsed.hostname or parsed.username is not None or parsed.password is not None:
+            raise HTTPException(422, "Site domain is invalid")
+        if parsed.port is not None or parsed.path not in {"", "/"} or parsed.query or parsed.fragment:
+            raise HTTPException(422, "Provide only the site hostname, without port or path")
+        hostname = parsed.hostname.rstrip(".").encode("idna").decode("ascii").lower()
+    except HTTPException:
+        raise
+    except (UnicodeError, ValueError) as exc:
+        raise HTTPException(422, "Site domain is invalid") from exc
+    labels = hostname.split(".")
+    if len(hostname) > 253 or len(labels) < 2 or any(
+        not label or len(label) > 63 or not label[0].isalnum() or not label[-1].isalnum()
+        or not all(char.isalnum() or char == "-" for char in label)
+        for label in labels
+    ):
+        raise HTTPException(422, "Provide a valid fully-qualified site hostname")
+    return hostname
+
+
+async def validate_license(\1: str, site_domain: Optional[str] = None) -> dict:
     if not key:
         raise HTTPException(401, "License key الزامی است")
     data = await redis_client.get(f"{LICENSE_PREFIX}{_hash(key)}")
@@ -106,6 +141,12 @@ async def validate_license(key: str) -> dict:
     if plan not in PLAN_LIMITS:
         raise HTTPException(403, "License plan is not supported")
     info["plan"] = plan
+    license_domain = _normalize_domain(info.get("domain", "*"), allow_wildcard=True)
+    if license_domain != "*":
+        request_domain = _normalize_domain(site_domain)
+        if not request_domain or request_domain != license_domain:
+            raise HTTPException(403, "License key is not authorized for this site domain")
+    info["domain"] = license_domain
     return info
 async def _usage_weight(path: str) -> int:
     if path in TRAINING_PATHS:
@@ -240,7 +281,7 @@ async def _usage_snapshot(license_key: str, info: dict) -> dict:
 
 async def get_license(request: Request) -> dict:
     key = request.headers.get("X-License-Key")
-    info = await validate_license(key)
+    info = await validate_license(key, request.headers.get("X-Site-Domain"))
     await _meter_usage(key, info, request.url.path)
     return info
 
@@ -250,7 +291,7 @@ async def _proxy(service: str, path: str, request: Request) -> JSONResponse:
     url  = f"{SERVICES[service]}/{path.lstrip('/')}"
     body = await request.body()
     headers = {k: v for k, v in request.headers.items()
-               if k.lower() not in ("host", "x-license-key", "content-length")}
+               if k.lower() not in ("host", "x-license-key", "x-site-domain", "content-length")}
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.request(
@@ -459,7 +500,7 @@ async def create_license(request: Request):
         raise HTTPException(422, "License expiry must be in the future")
     raw_key = secrets.token_urlsafe(32)
     info    = {
-        "domain":  body.get("domain", "*"),
+        "domain":  _normalize_domain(body.get("domain", "*"), allow_wildcard=True),
         "plan":    plan,
         "expires": expires,
         "active":  True,
@@ -488,14 +529,14 @@ async def revoke_license(key_hash: str, request: Request):
 @app.get("/usage", tags=["Usage"])
 async def get_usage(request: Request):
     key = request.headers.get("X-License-Key")
-    info = await validate_license(key)
+    info = await validate_license(key, request.headers.get("X-Site-Domain"))
     return await _usage_snapshot(key, info)
 
 
 @app.get("/license/validate", tags=["License"])
 async def license_status(request: Request):
     """Validate the supplied license; deliberately does not consume an API quota unit."""
-    info = await validate_license(request.headers.get("X-License-Key"))
+    info = await validate_license(request.headers.get("X-License-Key"), request.headers.get("X-Site-Domain"))
     return {
         "status": "active",
         "plan": info.get("plan"),
