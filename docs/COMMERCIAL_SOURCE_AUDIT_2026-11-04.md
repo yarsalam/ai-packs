@@ -213,3 +213,22 @@ Verified behavior:
 - Regression tests cover service-level failure propagation and route-level 503.
 - Python AI readiness CI is queued/in progress on this exact head. PR #11 remains Draft until green.
 - This narrow fix does not solve schema versioning, event_id/recommendation_id, idempotency, tenant binding or outcome attribution; those remain open.
+
+
+## 16. SEO AEO multi-engine history contract audit — mobApp PR #6 head 9474b4ace1da44d6c2662b0554918ae521c7eaec
+
+**Source:** `python-ai/services/ai_aeo_tracker/app.py` and `core/aeo_tracker.py`.
+
+- The API creates separate OpenAI and Perplexity tracker instances but passes the same Redis client to both.
+- Each tracker persists snapshots under the same `aeo:history:{brand}` key. Snapshot-level metadata includes date/status/count/rate but does not explicitly include provider/model; engine identity is only present inside each nested result item.
+- `GET /history/{brand}` calls `tracker.get_history(brand)` on the OpenAI tracker object and returns the shared raw list without per-engine filtering, grouping or recomputed per-engine summary.
+- Current WordPress demo shows current prompt-level citations/status only; it does not expose history or a trend view.
+
+**Required P1 acceptance:**
+1. Store history under an engine/model-aware key or persist engine/model on every snapshot; never merge rates across engines.
+2. API returns per-engine histories with sample/available/unavailable counts, mention-rate denominator and timestamp.
+3. Prompt/model/provider/region/language and data-source provenance are retained for each sample.
+4. History UI shows independent per-engine trend lines, gaps/stale intervals and sample counts; unavailable observations never count as negative mentions.
+5. Add regression tests proving OpenAI and Perplexity histories cannot overwrite or ambiguously mix.
+
+**Status:** Current multi-engine request summary is implemented upstream; engine-isolated historical reporting remains NOT_STARTED. Do not market longitudinal AI visibility until this contract is complete.
