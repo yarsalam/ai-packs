@@ -132,3 +132,19 @@ A post-merge review of all authenticated WordPress request paths found that PR #
 - Missing keys, provider failures and unsupported engines produce `unavailable` with `mentioned=null`, excluded from mention-rate denominators.
 - Exact-head tests: Python AI readiness 33 passed / 17 warnings; Revenue LTV contract 8 passed.
 - Live Perplexity validation requires a test API key and is not yet complete. AI Packs compose/distribution env passthrough and SEO WordPress engine selection are being validated in PR #24/#25.
+
+
+## 14. Follow-up AEO hardening on mobApp PR #6 — candidate pin 9474b4ace1da44d6c2662b0554918ae521c7eaec
+
+Compared with the previously pinned 4344cb05afe461551e1bfdc379b26a3c0fedddd9, the current mobApp PR #6 head adds seven commits limited to AEO provider selection, retry/timeout and cache isolation:
+
+- Normalize explicit engine identifiers by trimming whitespace and lowercasing, with a regression for mixed-case inputs.
+- Configure the Perplexity SDK with max_retries=0 and a 20-second timeout so SDK retries do not multiply application-level retries.
+- Include provider and model in the visibility cache key so model changes cannot reuse stale answers.
+- Tests verify selected-engine normalization, retry/timeout configuration and cache separation by model revision.
+
+Exact current upstream head: 9474b4ace1da44d6c2662b0554918ae521c7eaec.
+- Python AI pack readiness workflow: success.
+- Revenue LTV model contract: success.
+- mobApp PR #6 remains Draft; this is an immutable candidate pin for validation, not a merge or release approval.
+- The current main pin remains 4344 until the AI Packs pin PR passes its own latest-head checks and is merged.
