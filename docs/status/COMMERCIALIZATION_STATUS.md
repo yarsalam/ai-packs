@@ -234,7 +234,7 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 ### استراتژی محصول — DONE
 - سند `docs/COMMERCIAL_PRODUCT_STRATEGY.md` از طریق PR #19 با merge commit واقعی `328f0688bc2140c03867e29e96de5ecf2033ceca` وارد main شد.
 - معیارهای مشترک و P0 تا P3 برای SEO، Revenue، Matching و Safety ثبت شده‌اند.
-- تمایزهای هدف قابل اثبات (evidence-first، کیفیت فارسی/دوزبانه، uncertainty صادقانه، action-to-outcome، privacy-by-deployment، cost transparency و open integration) در PR بعدی به سند افزوده می‌شوند؛ تا آن زمان این‌ها هدف محصول‌اند، نه ادعای قابلیت موجود.
+- تمایزهای هدف قابل اثبات (evidence-first، کیفیت فارسی/دوزبانه، uncertainty صادقانه، action-to-outcome، privacy-by-deployment، cost transparency و open integration) در PR #26 به سند افزوده شده‌اند؛ این‌ها معیار هدف محصول‌اند، نه ادعای قابلیت موجود و تا عبور از معیارهای پذیرش PLANNED می‌مانند.
 
 ### Source pin و قراردادهای عملیاتی — DONE
 - PR #24 با merge commit واقعی `0fe44582c4b9a673482319d4f11fb13d66dd6747` ادغام شد.
@@ -257,3 +257,10 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - Full inference، cold install مستقل، مجوز مدل/وزن، privacy/retention/deletion، load، latency، error-rate و cost-per-1000 برای هر پک هنوز باید جداگانه اثبات شوند.
 - PR #24 و تست‌های ساخت، مجوز فروش یا public release ایجاد نمی‌کنند. تصمیم کل چهار پک فعلاً NO-GO است.
 - هیچ production، live customer data، secret، سرویس، DB/Redis/volume، DNS یا firewall تغییر نکرده است.
+
+
+### PR #26 — customer usage dashboard و AEO UI — IN_PROGRESS
+- PR تمیز #26 از main پس از ادغام PR #24 ساخته شد؛ SHA فعلی head: `66de66744acb6b8dfb1ab3d37275e0507df33a26`.
+- 14 فایل تغییر کرده‌اند: usage API client و settings/AJAX برای چهار پک، AEO engine selector، تست‌های contract/UI، CI و تمایزهای هدف در strategy.
+- branch قدیمی PR #25 به دلیل divergence و pin قدیمی mobApp بسته شد؛ هیچ merge انجام نشد.
+- CI روی PR #26 هنوز در حال اجراست؛ نتیجهٔ نهایی فقط پس از بررسی آخرین SHA و همهٔ jobها ثبت می‌شود.
