@@ -87,3 +87,9 @@ def test_all_pack_usage_panels_fail_closed_on_incomplete_counters():
         assert "Number(period.used || 0)" not in source, name
         assert "Number(period.limit || 0)" not in source, name
         assert "Number(period.remaining || 0)" not in source, name
+
+
+def test_usage_weight_labels_include_seo_remote_url_audit():
+    for name, _, settings_path, _, _, _ in PACKS:
+        source = (ROOT / settings_path).read_text(encoding="utf-8")
+        assert "remote_url_audit: 'ممیزی URL از راه دور'" in source, name
