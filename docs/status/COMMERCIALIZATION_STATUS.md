@@ -367,3 +367,10 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - Nest attribution preserves insufficient data as null; legacy feature cache namespace is bypassed.
 - New API contract tests are added to the Python readiness workflow. Exact-head CI is awaiting GitHub Actions result.
 - Issue #13 remains OPEN: refunds/chargebacks, currency-safe realized revenue, cohort maturity/censoring and temporal validation are not yet solved. Revenue remains NO-GO for commercial LTV/ROI claims.
+
+
+### mobApp dependency security audit — OPEN / P0 release gate
+- The NestJS build validation for mobApp PR #15 reported 54 npm audit findings during `npm ci`: 8 low, 24 moderate, 17 high and 5 critical.
+- Exact affected package paths/reachability have not yet been triaged; do not assume all findings are exploitable or apply blanket forced upgrades.
+- mobApp Issue #16 tracks machine-readable audit, critical/high prioritization, bounded safe upgrades, regression tests and SBOM.
+- Security/SBOM gate remains OPEN; no public release or deployment authorization follows from a successful compile.
