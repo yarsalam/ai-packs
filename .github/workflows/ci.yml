@@ -4,6 +4,9 @@ concurrency:
   group: ai-pack-gateway-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+permissions:
+  contents: read
+
 on:
   pull_request:
   push:
@@ -12,6 +15,7 @@ on:
 jobs:
   licensing-contract:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     services:
       redis:
         image: redis:7-alpine
@@ -24,6 +28,7 @@ jobs:
           --health-retries 5
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix:
         include:
           - gateway: seo-pack/gateway
@@ -58,6 +63,7 @@ jobs:
   wordpress-plugin-php-contract:
     name: WordPress plugin PHP and license header contract
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - name: Set up PHP
@@ -85,6 +91,7 @@ jobs:
   smoke-test-client-contract:
     name: Smoke-test client auth and health-state contract
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
