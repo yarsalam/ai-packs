@@ -27,6 +27,7 @@ concurrency:
 jobs:
   build-distributions:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - name: Checkout ai-packs
         uses: actions/checkout@v4
