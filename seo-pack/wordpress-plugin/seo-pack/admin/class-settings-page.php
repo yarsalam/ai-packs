@@ -16,6 +16,7 @@ class SettingsPage {
         add_action('admin_menu', [$this, 'add_menu']);
         add_action('admin_init', [$this, 'register_settings']);
         add_action('wp_ajax_seo_pack_test_connection', [$this, 'ajax_test_connection']);
+        add_action('wp_ajax_seo_pack_usage', [$this, 'ajax_usage']);
         add_action('wp_ajax_seo_pack_generate_license', [$this, 'ajax_generate_license']);
     }
 
@@ -103,6 +104,140 @@ class SettingsPage {
             <div id="seo-pack-test-result" style="margin-top:12px;padding:12px;background:#f8f8f8;border-radius:4px;display:none;font-family:monospace;font-size:13px;"></div>
 
             <hr>
+            <h2>📊 مصرف و سهمیه</h2>
+            <p>مصرف واقعی اعتبارهای Gateway و سقف دوره‌های ساعتی و ماهانه را مشاهده کنید.</p>
+            <p class="description">این گزارش صورتحساب پولی، مالیات یا فاکتور نیست؛ فقط اعتبار مصرف‌شده در Gateway را نشان می‌دهد.</p>
+            <button type="button" id="seo-pack-usage-btn" class="button button-secondary">به‌روزرسانی مصرف</button>
+            <div id="seo-pack-usage-result" role="status" aria-live="polite"
+                 style="margin-top:12px;max-width:760px;padding:12px;background:#f8f8f8;border-radius:6px">
+                برای مشاهده آخرین مصرف و سهمیه، دکمه را انتخاب کنید.
+            </div>
+            <script>
+            (function () {
+                const button = document.getElementById('seo-pack-usage-btn');
+                const output = document.getElementById('seo-pack-usage-result');
+                if (!button || !output) return;
+                const nonce = '<?php echo esc_js(wp_create_nonce('seo_pack_nonce')); ?>';
+                const readNonNegative = function (value) {
+                    if (value === null || value === undefined || value === '') return null;
+                    const parsed = Number(value);
+                    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+                };
+                button.addEventListener('click', async function () {
+                    button.disabled = true;
+                    button.textContent = 'در حال دریافت...';
+                    output.textContent = 'در حال دریافت اطلاعات مصرف از Gateway...';
+                    try {
+                        const body = new URLSearchParams({action: 'seo_pack_usage', nonce: nonce});
+                        const response = await fetch(ajaxurl, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                            body: body.toString()
+                        });
+                        const result = await response.json();
+                        if (!response.ok || !result.success) {
+                            throw new Error((result.data && result.data.message) || 'دریافت مصرف ناموفق بود');
+                        }
+                        const data = result.data || {};
+                        if (!data.hourly || !data.monthly) {
+                            throw new Error('ساختار پاسخ سهمیه معتبر نیست');
+                        }
+                        [data.hourly, data.monthly].forEach(function (period) {
+                            if (
+                                readNonNegative(period.used) === null ||
+                                readNonNegative(period.limit) === null ||
+                                readNonNegative(period.remaining) === null
+                            ) {
+                                throw new Error('مقادیر مصرف و سقف کامل یا معتبر نیستند');
+                            }
+                        });
+                        output.replaceChildren();
+                        const summary = document.createElement('p');
+                        summary.textContent = 'پلن: ' + String(data.plan || 'نامشخص') +
+                            ' · واحد مصرف: ' + String(data.usage_unit || 'credits');
+                        output.appendChild(summary);
+
+                        const table = document.createElement('table');
+                        table.className = 'widefat striped';
+                        const header = document.createElement('tr');
+                        ['دوره', 'مصرف‌شده', 'سقف', 'باقی‌مانده', 'درصد مصرف', 'نوار مصرف'].forEach(function (label) {
+                            const cell = document.createElement('th');
+                            cell.textContent = label;
+                            header.appendChild(cell);
+                        });
+                        const thead = document.createElement('thead');
+                        thead.appendChild(header);
+                        table.appendChild(thead);
+                        const tbody = document.createElement('tbody');
+                        [
+                            ['ساعتی', data.hourly],
+                            ['ماهانه (' + String(data.monthly.period || 'جاری') + ')', data.monthly]
+                        ].forEach(function (entry) {
+                            const period = entry[1] || {};
+                            const used = readNonNegative(period.used);
+                            const limit = readNonNegative(period.limit);
+                            const remaining = readNonNegative(period.remaining);
+                            const percent = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+                            const row = document.createElement('tr');
+                            [entry[0], String(used), String(limit), String(remaining), percent + '%'].forEach(function (value) {
+                                const cell = document.createElement('td');
+                                cell.textContent = value;
+                                row.appendChild(cell);
+                            });
+                            const progressCell = document.createElement('td');
+                            const progress = document.createElement('progress');
+                            progress.max = limit > 0 ? limit : 1;
+                            progress.value = limit > 0 ? Math.min(used, limit) : 0;
+                            progress.setAttribute('aria-label', entry[0] + ' usage ' + percent + '%');
+                            progressCell.appendChild(progress);
+                            row.appendChild(progressCell);
+                            tbody.appendChild(row);
+                        });
+                        table.appendChild(tbody);
+                        output.appendChild(table);
+                        const updated = document.createElement('p');
+                        updated.textContent = 'آخرین به‌روزرسانی: ' + new Date().toLocaleString();
+                        output.appendChild(updated);
+                        if (data.weights && typeof data.weights === 'object') {
+                            const labels = {
+                                ordinary_request: 'درخواست معمولی',
+                                text_analysis_or_recommendation: 'تحلیل متن یا پیشنهاد',
+                                remote_url_audit: 'ممیزی URL از راه دور',
+                                batch_request: 'درخواست دسته‌ای',
+                                image_or_face_verification: 'تصویر یا تأیید چهره',
+                                model_training: 'آموزش مدل'
+                            };
+                            const weightTitle = document.createElement('h3');
+                            weightTitle.textContent = 'وزن مصرف عملیات';
+                            output.appendChild(weightTitle);
+                            const weightTable = document.createElement('table');
+                            weightTable.className = 'widefat striped';
+                            Object.keys(data.weights).forEach(function (key) {
+                                const row = document.createElement('tr');
+                                const name = document.createElement('td');
+                                name.textContent = labels[key] || key;
+                                const value = document.createElement('td');
+                                value.textContent = String(data.weights[key]) + ' اعتبار';
+                                row.appendChild(name);
+                                row.appendChild(value);
+                                weightTable.appendChild(row);
+                            });
+                            output.appendChild(weightTable);
+                            const note = document.createElement('p');
+                            note.textContent = 'وزن‌های مصرف فعلی موقت‌اند و تا تکمیل اندازه‌گیری هزینه نهایی تلقی نمی‌شوند.';
+                            output.appendChild(note);
+                        }
+                    } catch (error) {
+                        output.textContent = 'خطا در دریافت سهمیه: ' + error.message;
+                    } finally {
+                        button.disabled = false;
+                        button.textContent = 'به‌روزرسانی مصرف';
+                    }
+                });
+            })();
+            </script>
+
+            <hr>
             <h2>📊 وضعیت سرویس‌ها</h2>
             <table class="wp-list-table widefat striped" style="max-width:600px">
                 <thead><tr><th>سرویس</th><th>پورت</th><th>عملکرد</th></tr></thead>
@@ -131,7 +266,9 @@ class SettingsPage {
             })
             .then(r => r.json())
             .then(data => {
-                result.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                const pre = document.createElement('pre');
+                pre.textContent = JSON.stringify(data, null, 2);
+                result.replaceChildren(pre);
             })
             .catch(e => { result.textContent = '❌ خطا: ' + e.message; })
             .finally(() => { btn.disabled = false; btn.textContent = 'تست اتصال به سرویس‌ها'; });
@@ -146,4 +283,16 @@ class SettingsPage {
         $client = ApiClient::get_instance();
         wp_send_json($client->health_check());
     }
+    public function ajax_usage(): void {
+        check_ajax_referer('seo_pack_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Unauthorized'], 403);
+        }
+        $usage = ApiClient::get_instance()->get_usage();
+        if (isset($usage['error'])) {
+            wp_send_json_error(['message' => $usage['error']], 502);
+        }
+        wp_send_json_success($usage);
+    }
+
 }

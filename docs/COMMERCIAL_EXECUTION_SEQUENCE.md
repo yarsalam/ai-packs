@@ -77,3 +77,25 @@
 4. پس از انتشار مستقل و قابل بازگشت به اپ اصلی اضافه شود.
 
 هیچ تغییر تجاری یا تست benchmark نباید به‌طور مستقیم منطق moderation، Redis یا دادهٔ کاربران زنده را تغییر دهد.
+
+
+---
+
+## وضعیت به‌روز — 2026-11-04
+
+- استراتژی کامل قابلیت‌ها و معیارهای پذیرش چهار پک در `docs/COMMERCIAL_PRODUCT_STRATEGY.md` مرجع اصلی اجراست.
+- Preview آفلاین هر چهار محصول در PR #21 وارد main شده است: Safety review/policy، SEO prompt/citation/technical audit، Revenue cohort/LTV/experiment و Matching Top-K/explanation/constraints/event funnel. تمام اعداد و داده‌ها synthetic هستند؛ این Previewها محصول زنده یا evidence کیفیت نیستند.
+- تحقیق رسمی رقبا در `docs/COMPETITOR_PRODUCT_BENCHMARK_2026-11-04.md` ثبت شده و گپ‌ها به acceptance criteria تبدیل شده‌اند.
+- Source pin و smoke/domain corrections در PR #24 با merge commit `0fe44582c4b9a673482319d4f11fb13d66dd6747` ادغام شده‌اند؛ ref توزیع فعلی mobApp برابر `4344cb05afe461551e1bfdc379b26a3c0fedddd9` است.
+- Usage/quota dashboard چهار WordPress plugin و انتخاب engine در SEO در PR #26 در حال بررسی CI است؛ این پنل billing/payment نیست و وزن creditها provisional هستند.
+- اولویت ادامه: (1) P0 نصب مستقل، security، tenant/privacy، model/dependency licensing؛ (2) SEO prompt/citation/history و safe crawler؛ (3) Revenue event/cohort/refund/experiment integrity؛ (4) Matching hard filters/scenario/feedback attribution؛ (5) Safety workflow polish بدون عبور از corpus gate.
+- هر پک باید release gate مستقل را بگذراند. full inference، cold install، security/SBOM/licensing، privacy/retention/deletion، load/latency/error/cost هنوز GO نشده‌اند.
+- Safety #8 تا corpus فارسی مجاز/رضایت‌مند، annotation/adjudication و sealed benchmark BLOCKED می‌ماند؛ #9 و outreach متوقف است.
+- هیچ GHCR/public Release، فروش، outreach، production deployment یا تغییر سرویس زنده مجاز نیست.
+
+
+### وضعیت اجرایی جدید — 2026-11-05
+- PR #26 exact-head checks روی `aeb0d69f599384badd540c49631aa5e97cf8e92b`: چهار workflow توزیع، Gateway contract، Safety image و سایر image validation همگی success؛ PR همچنان Draft و نیازمند review کامل diff است.
+- PR #27 exact-head checks روی `621b6ef9297b4ed0bc45936e201056660f90bf3b`: چهار workflow success. این PR pin چهار workflow را از mobApp PR #6 head `9474b4ace1da44d6c2662b0554918ae521c7eaec` جلو می‌برد؛ تا merge/reconcile شدن upstream PR #6 نباید merge شود.
+- mobApp PR #11 و #12 latest-head Python readiness موفق‌اند؛ هر دو هنوز Draft و stacked بر PR #6 هستند.
+- mobApp PR #15 fail-closed remediation برای Revenue LTV provenance/missingness را اضافه کرده؛ exact-head Python readiness با 47 تست و NestJS build/unit test موفق‌اند. PR هنوز Draft و stacked بر PR #6 است؛ Issue #13 باز می‌ماند و ادعاهای LTV تجاری ممنوع است. Issue #16 نیز 54 یافته npm audit را به‌عنوان release security gate پیگیری می‌کند.

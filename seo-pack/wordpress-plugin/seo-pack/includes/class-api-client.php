@@ -23,7 +23,7 @@ class ApiClient {
     }
 
     // ── Generic request ───────────────────────────────────────────────────
-    private function request(string $method, string $path, array $body = []): array {
+    private function request(string $method, string $path, array $body = [], bool $allowUnavailable = false): array {
         if (empty($this->license_key)) {
             return ['error' => 'License key تنظیم نشده. به تنظیمات پلاگین بروید.'];
         }
@@ -52,8 +52,16 @@ class ApiClient {
         $code = wp_remote_retrieve_response_code($response);
         $data = json_decode(wp_remote_retrieve_body($response), true) ?? [];
 
+        // AEO uses HTTP 503 with a structured unavailable payload when every
+        // selected provider is down/unconfigured. Preserve it so the UI does
+        // not turn provider failure into a generic error or a negative mention.
+        if ($allowUnavailable && $code === 503 && ($data['status'] ?? '') === 'unavailable') {
+            $data['_http_status'] = $code;
+            return $data;
+        }
+
         if ($code >= 400) {
-            return ['error' => $data['detail'] ?? "خطای سرور ($code)"];
+            return ['error' => $data['detail'] ?? "خطای سرور ($code)", 'http_status' => $code];
         }
 
         return $data;
@@ -76,12 +84,19 @@ class ApiClient {
      * @param string   $brand    نام برند
      * @param string[] $prompts  سوال‌هایی که به AI می‌پرسیم
      */
-    public function check_aeo_mentions(string $brand, array $prompts): array {
-        return $this->request('POST', '/aeo/check-mentions', [
+    public function check_aeo_mentions(string $brand, array $prompts, array $engines = []): array {
+        $payload = [
             'brand'   => $brand,
             'prompts' => $prompts,
             'persist' => true,
-        ]);
+        ];
+        if (!empty($engines)) {
+            $payload['engines'] = array_values(array_unique(array_intersect(
+                ['openai', 'perplexity'],
+                array_map('sanitize_key', $engines)
+            )));
+        }
+        return $this->request('POST', '/aeo/check-mentions', $payload, true);
     }
 
     public function get_aeo_history(string $brand): array {
@@ -113,6 +128,13 @@ class ApiClient {
             'user_id' => $user_id,
             'n'       => $n,
         ]);
+    }
+
+    /**
+     * Retrieve current hourly/monthly license usage and quota.
+     */
+    public function get_usage(): array {
+        return $this->request('GET', '/usage');
     }
 
     public function license_status(): array {

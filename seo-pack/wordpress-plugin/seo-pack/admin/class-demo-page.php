@@ -46,7 +46,7 @@ class DemoPage {
             <nav class="nav-tab-wrapper" style="margin-bottom:20px">
                 <a href="#tab-traffic"    class="nav-tab nav-tab-active" data-tab="traffic">📈 پیش‌بینی ترافیک</a>
                 <a href="#tab-aeo"        class="nav-tab"                data-tab="aeo">🤖 AEO Tracker</a>
-                <a href="#tab-backlink"   class="nav-tab"                data-tab="backlink">🔗 کیفیت بک‌لینک</a>
+                <a href="#tab-backlink"   class="nav-tab"                data-tab="backlink">🔗 تحلیل ساختار لینک</a>
                 <a href="#tab-recommend"  class="nav-tab"                data-tab="recommend">💡 پیشنهادات SEO</a>
             </nav>
 
@@ -85,7 +85,7 @@ class DemoPage {
             <div id="tab-aeo" class="seo-pack-tab" style="display:none">
                 <div class="card" style="max-width:700px;padding:20px">
                     <h2>🤖 AEO Tracker — دیده‌شدن برند در AI</h2>
-                    <p>ببینید وقتی کاربران از ChatGPT/Gemini می‌پرسن، برند شما ذکر می‌شه یا نه.</p>
+                    <p>بررسی کنید برند شما در پاسخ موتورهای AI مثل OpenAI و Perplexity دیده می‌شود یا نه.</p>
                     <label><strong>نام برند:</strong></label>
                     <input type="text" id="aeo-brand" value="یارسلام" style="width:200px;margin:0 8px">
                     <br><br>
@@ -94,6 +94,14 @@ class DemoPage {
 برای ازدواج در ایران کجا ثبت‌نام کنم؟
 سایت‌های معتبر دوست‌یابی ایرانی را معرفی کنید</textarea>
                     <br>
+                    <label style="display:block;margin:10px 0">
+                        <input type="checkbox" id="aeo-all-engines" checked>
+                        استفاده از همه موتورهای پیکربندی‌شده (پیشنهادی)
+                    </label>
+                    <div id="aeo-engine-select" style="display:none;margin:8px 0">
+                        <label style="margin-inline-end:16px"><input type="checkbox" value="openai" class="aeo-engine-option" checked> OpenAI</label>
+                        <label><input type="checkbox" value="perplexity" class="aeo-engine-option" checked> Perplexity</label>
+                    </div>
                     <button class="button button-primary seo-demo-btn" data-service="aeo">🔍 بررسی کن</button>
                     <div class="seo-demo-result" id="result-aeo"></div>
                 </div>
@@ -102,8 +110,8 @@ class DemoPage {
             <!-- Tab: Backlink -->
             <div id="tab-backlink" class="seo-pack-tab" style="display:none">
                 <div class="card" style="max-width:700px;padding:20px">
-                    <h2>🔗 کیفیت بک‌لینک</h2>
-                    <p>Trust Flow شبکه لینک‌های سایتتون رو محاسبه کنید.</p>
+                    <h2>🔗 تحلیل ساختار لینک — شاخص داخلی</h2>
+                    <p>این خروجی یک شاخص گرافی آزمایشی بر اساس لینک‌ها و seedهای ورودی است؛ Trust Flow رسمی Majestic، امتیاز دامنهٔ مستقل یا ممیزی کامل بک‌لینک نیست.</p>
                     <label><strong>شبکه لینک‌ها (JSON):</strong></label>
                     <textarea id="backlink-edges" rows="6" style="width:100%;font-family:monospace;font-size:12px;direction:ltr">[
   ["google.com", "example.com"],
@@ -112,7 +120,7 @@ class DemoPage {
   ["spamsite.xyz", "example.com"]
 ]</textarea>
                     <br>
-                    <label><strong>سایت‌های مورد اعتماد (هر خط یکی):</strong></label>
+                    <label><strong>دامنه‌های seed برای مقایسهٔ گراف (هر خط یکی):</strong></label>
                     <textarea id="backlink-seeds" rows="3" style="width:100%;font-family:monospace;font-size:12px;direction:ltr">google.com
 wikipedia.org</textarea>
                     <br>
@@ -168,6 +176,120 @@ wikipedia.org</textarea>
             });
         });
 
+        // AEO engine selection
+        const allEnginesToggle = document.getElementById('aeo-all-engines');
+        const engineSelect = document.getElementById('aeo-engine-select');
+        if (allEnginesToggle && engineSelect) {
+            allEnginesToggle.addEventListener('change', function () {
+                engineSelect.style.display = this.checked ? 'none' : 'block';
+            });
+        }
+
+        function renderAeoResult(container, data) {
+            container.replaceChildren();
+
+            const title = document.createElement('h3');
+            title.textContent = 'نتیجه پایش حضور برند در پاسخ‌های AI';
+            container.appendChild(title);
+
+            if (data.status === 'unavailable') {
+                const warning = document.createElement('p');
+                warning.textContent = 'موتورهای انتخاب‌شده در دسترس نیستند؛ این وضعیت به معنی عدم ذکر برند نیست.';
+                warning.setAttribute('role', 'status');
+                container.appendChild(warning);
+            }
+
+            const summaries = data.mention_rate_by_engine && typeof data.mention_rate_by_engine === 'object'
+                ? data.mention_rate_by_engine : {};
+            const summaryTable = document.createElement('table');
+            summaryTable.className = 'widefat striped';
+            Object.keys(summaries).forEach(function (engine) {
+                const item = summaries[engine] || {};
+                const row = document.createElement('tr');
+                const values = [
+                    engine,
+                    item.status || 'unknown',
+                    String(item.sample_count ?? 0),
+                    String(item.available_count ?? 0),
+                    String(item.unavailable_count ?? 0),
+                    item.mention_rate === null || item.mention_rate === undefined
+                        ? 'ناموجود' : (String(Math.round(Number(item.mention_rate) * 100)) + '%')
+                ];
+                values.forEach(function (value) {
+                    const cell = document.createElement('td');
+                    cell.textContent = value;
+                    row.appendChild(cell);
+                });
+                summaryTable.appendChild(row);
+            });
+            if (Object.keys(summaries).length) {
+                const heading = document.createElement('h4');
+                heading.textContent = 'خلاصه به تفکیک موتور';
+                container.appendChild(heading);
+                container.appendChild(summaryTable);
+            }
+
+            const results = Array.isArray(data.results) ? data.results : [];
+            results.forEach(function (item, index) {
+                const details = document.createElement('details');
+                details.style.margin = '10px 0';
+                const summary = document.createElement('summary');
+                const mention = item.mentioned === true ? 'ذکر شد'
+                    : (item.mentioned === false ? 'ذکر نشد' : 'نامشخص / unavailable');
+                summary.textContent = (index + 1) + '. ' + String(item.engine || 'unknown') +
+                    ' · ' + mention + ' · ' + String(item.prompt || '');
+                details.appendChild(summary);
+
+                const metadata = document.createElement('p');
+                metadata.textContent = 'وضعیت: ' + String(item.status || 'unknown') +
+                    ' | مدل: ' + String(item.model || 'نامشخص') +
+                    ' | احساس: ' + String(item.sentiment || 'نامشخص') +
+                    ' | زمان: ' + String(item.checked_at || 'نامشخص');
+                details.appendChild(metadata);
+
+                if (item.response_preview) {
+                    const response = document.createElement('p');
+                    response.textContent = String(item.response_preview);
+                    details.appendChild(response);
+                }
+
+                const citations = Array.isArray(item.citations) ? item.citations : [];
+                if (citations.length) {
+                    const citationHeading = document.createElement('p');
+                    citationHeading.textContent = 'منابع استنادشده:';
+                    details.appendChild(citationHeading);
+                    const list = document.createElement('ul');
+                    citations.forEach(function (citation) {
+                        const rawUrl = typeof citation === 'string' ? citation : (citation && citation.url);
+                        if (typeof rawUrl !== 'string') return;
+                        try {
+                            const parsed = new URL(rawUrl);
+                            if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return;
+                            const link = document.createElement('a');
+                            link.href = parsed.href;
+                            link.textContent = parsed.href;
+                            link.target = '_blank';
+                            link.rel = 'noopener noreferrer';
+                            const entry = document.createElement('li');
+                            entry.appendChild(link);
+                            list.appendChild(entry);
+                        } catch (error) {
+                            // Ignore malformed citation URLs; never render provider text as HTML.
+                        }
+                    });
+                    if (list.childNodes.length) details.appendChild(list);
+                }
+
+                container.appendChild(details);
+            });
+
+            if (!results.length && data.error) {
+                const error = document.createElement('p');
+                error.textContent = String(data.error);
+                container.appendChild(error);
+            }
+        }
+
         // Demo calls
         document.querySelectorAll('.seo-demo-btn').forEach(btn => {
             btn.addEventListener('click', function() {
@@ -187,6 +309,16 @@ wikipedia.org</textarea>
                 else if (service === 'aeo') {
                     payload.brand   = document.getElementById('aeo-brand').value;
                     payload.prompts = document.getElementById('aeo-prompts').value.split('\n').filter(Boolean);
+                    const allEngines = document.getElementById('aeo-all-engines').checked;
+                    if (!allEngines) {
+                        payload.engines = Array.from(document.querySelectorAll('.aeo-engine-option:checked'))
+                            .map(input => input.value);
+                        if (!payload.engines.length) {
+                            resultEl.textContent = '❌ حداقل یک موتور AI را انتخاب کنید';
+                            resultEl.classList.remove('loading');
+                            return;
+                        }
+                    }
                 }
                 else if (service === 'backlink') {
                     try { payload.edges = JSON.parse(document.getElementById('backlink-edges').value); }
@@ -205,7 +337,11 @@ wikipedia.org</textarea>
                 })
                 .then(r => r.json())
                 .then(data => {
-                    resultEl.textContent = JSON.stringify(data, null, 2);
+                    if (service === 'aeo' && !data.error) {
+                        renderAeoResult(resultEl, data);
+                    } else {
+                        resultEl.textContent = JSON.stringify(data, null, 2);
+                    }
                 })
                 .catch(e => { resultEl.textContent = '❌ ' + e.message; })
                 .finally(() => resultEl.classList.remove('loading'));
@@ -225,7 +361,7 @@ wikipedia.org</textarea>
 
         $result = match($service) {
             'traffic'   => $client->predict_traffic($payload['historical_data'] ?? [], $payload['days'] ?? 90),
-            'aeo'       => $client->check_aeo_mentions($payload['brand'] ?? '', $payload['prompts'] ?? []),
+            'aeo'       => $client->check_aeo_mentions($payload['brand'] ?? '', $payload['prompts'] ?? [], $payload['engines'] ?? []),
             'backlink'  => $client->analyze_trust_flow($payload['edges'] ?? [], $payload['trusted_seeds'] ?? []),
             'recommend' => $client->get_seo_recommendations($payload['user_id'] ?? '', $payload['n'] ?? 5),
             default     => ['error' => 'سرویس نامشخص'],

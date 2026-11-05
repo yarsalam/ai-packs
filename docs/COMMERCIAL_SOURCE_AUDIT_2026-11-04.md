@@ -1,7 +1,7 @@
 # ممیزی منبع و شکاف‌های واقعی محصول — 2026-11-04
 
 **مخزن:** `yarsalam/ai-packs`  
-**مرجع بسته‌بندی upstream:** `yarsalam/mobApp@49718c978cda59237b2c6a206bdbe301accda157`  
+**مرجع بسته‌بندی upstream فعلی:** `yarsalam/mobApp@4344cb05afe461551e1bfdc379b26a3c0fedddd9`  
 **آخرین main مشاهده‌شده در mobApp:** `da4acf20c9851bc4e7fd34b1dcc2094183246109`  
 **وضعیت انتشار:** NO-GO؛ این سند ممیزی است، نه تأیید آمادگی فروش.
 
@@ -132,3 +132,121 @@ A post-merge review of all authenticated WordPress request paths found that PR #
 - Missing keys, provider failures and unsupported engines produce `unavailable` with `mentioned=null`, excluded from mention-rate denominators.
 - Exact-head tests: Python AI readiness 33 passed / 17 warnings; Revenue LTV contract 8 passed.
 - Live Perplexity validation requires a test API key and is not yet complete. AI Packs compose/distribution env passthrough and SEO WordPress engine selection are being validated in PR #24/#25.
+
+
+## 13. Current distribution source and historical-audit boundary — 2026-11-04
+
+- AI Packs PR #24 merged as `0fe44582c4b9a673482319d4f11fb13d66dd6747`; all distribution, CI and validation-only image workflows now pin mobApp `4344cb05afe461551e1bfdc379b26a3c0fedddd9`.
+- Sections 3–9 record the original static audit against `49718c978cda59237b2c6a206bdbe301accda157`; do not read those rows as a complete fresh audit of the new pinned SHA.
+- Sections 10 and 12 record correction evidence on the readiness branch, including AEO unavailable semantics, Matching fabricated-fallback removal, Revenue uncertainty fixes and AEO multi-engine adapters.
+- mobApp PR #6 remains Draft. The pin is reproducible and CI-validated, but that does not make the upstream PR merged or establish full inference, source licensing, clean install, load, latency or cost readiness.
+- Remaining work is a fresh route/schema/model/test audit on the exact pinned SHA and verification that all shipped artifacts contain only that revision. No production deployment or public publishing occurred.
+
+
+## 14. Revenue feature-store provenance audit — mobApp PR #6 head 9474b4ace1da44d6c2662b0554918ae521c7eaec
+
+The current Revenue source still contains material synthetic/default feature values. This finding is independent of the predictor's CV leakage/confidence corrections and remains a P1 blocker for trustworthy LTV inference.
+
+**Source:** `src/feature-store-rvenue/feature-store-rvenue.service.ts`, `python-ai/services/ai_revenue/app.py`, `python-ai/services/ai_revenue/predictor.py`, `src/revenue/revenue-attribution.service.ts`.
+
+| Feature | Current source behavior | Product consequence | Required correction |
+|---|---|---|---|
+| channelType | Encoded from acquisitionSource; unknown values default to 0.5 | Partial real provenance, unknown conflated with average | Explicit unknown/missing state and mapping version |
+| timeToConversion | Derived from first paid payment minus user.createdAt; no payment => 999 | Real but simplistic; cohort/late payment handling unverified | Explicit observation window and censoring/maturity semantics |
+| ltv | Sum of paid IRT payments only in FeatureStoreRevenueService | Currency-limited; refund/chargeback handling not established | Currency-safe net revenue and refund/chargeback adjustment |
+| cityWeight | User count in city divided by total-user heuristic | Proxy is not acquisition/revenue value | Remove unless independently validated; document denominator/time |
+| intentScore | Fixed event-type weights over latest 50 events | Heuristic, not calibrated intent probability | Versioned feature definition, temporal window, evidence and validation |
+| engagementDepth | Raw count of latest 1000 events | Count depends on retention/window and user activity age | Window-normalized event features and missingness metadata |
+| keywordDifficulty | Hard-coded 0.5 in buildFeatures; helper returns 0/50 on missing/error | External data is not actually wired into model feature; error looks like a value | Connect real source or return unavailable; provenance/time/version |
+| contentLength | Hard-coded 0.5 | Synthetic input | Real source or explicit missing |
+| retentionImpact | Hard-coded 0.5 | Synthetic input | Cohort retention feature with observation window, or missing |
+| campaignCost | Hard-coded 0 | CAC/cost cannot be inferred | Currency- and attribution-window-safe campaign spend; otherwise null |
+| competitorPressure | Method always returns 0.3 | Synthetic input | Real licensed source and freshness or missing |
+| seasonalityFactor | Fixed month buckets 1.3/1.5/0.8 | Unvalidated calendar heuristic | Fit/validate by market and temporal split or remove |
+| segmentSize | Hard-coded 0.5 | Synthetic input | Real segment count/definition and point-in-time snapshot |
+| CAC/payback | Defaults to 0 in feature store; attribution service deliberately returns null where cost units are unknown | Zero can be misread as free acquisition / instant payback | Keep null/unavailable until cost currency and attribution are valid |
+
+Additional model contract concern:
+- `LTVRequest` in `python-ai/services/ai_revenue/app.py` still supplies numeric defaults for the 12 model features. A caller omitting a feature can silently get a prediction based on synthetic defaults.
+- `RevenuePredictor.predict_ltv` returns an uncalibrated prediction and no interval; this is correct uncertainty labeling, but it does not repair synthetic inputs.
+- `RevenueAttributionService.calculateLTVBySource` returns null CAC/payback where SEO activity cost currency is undefined; preserve that behavior rather than inventing zero.
+- Training endpoint requires `actualLtv`, but no production/customer data may be copied into public CI or a demo corpus.
+
+**Required P1 remediation in a separate mobApp PR (backward-compatible):**
+1. Add feature provenance/status alongside every model input: observed / derived / missing, source, as-of timestamp, window, units, transformation and feature revision.
+2. Stop treating absent values as numeric 0.5/0/0.3. Use an explicit insufficient-data path or a versioned, validated imputation strategy with missingness indicators; never silently infer.
+3. Fix currency/refund/chargeback and cohort maturity for realized LTV.
+4. Remove or relabel heuristic intent/city/seasonality features; temporal/group split and leakage checks required.
+5. Add contract tests proving omitted/unknown inputs cannot silently produce a normal-looking LTV estimate.
+6. Run exact-head model readiness, full inference on synthetic/legal fixtures, clean install, load/latency/error and cost tests.
+
+**Status:** BLOCKED for commercial LTV claims until the input contract/provenance is fixed and evaluated. The code is from mobApp PR #6's current candidate branch; no production database or customer data was accessed.
+
+
+## 15. Matching recommendation/event contract audit — mobApp PR #6 head 9474b4ace1da44d6c2662b0554918ae521c7eaec
+
+**Source:** `python-ai/services/ml_service/routes/matching.py` and `python-ai/services/ml_service/services/recommendation.py`.
+
+Verified behavior:
+- `RecommendIn` accepts only `user_id`, caller-supplied `candidates` and `limit`. The service deduplicates candidate IDs, removes the requesting user and caps candidate count.
+- Cold-start fallback now uses only observed popular entities inside the caller-provided candidate allowlist; fabricated IDs and fixed scores were removed in the upstream PR. This is a meaningful correctness improvement.
+- The current recommendation request does not carry a scenario/placement, policy context or structured hard-constraint contract. Candidate allowlist is not equivalent to domain-specific policy filtering (eligibility, exclusions, exposure limits or diversity).
+- `/internal/track-events` accepts an untyped `dict`; Redis Stream stores the raw JSON payload and timestamp. No schema version, event ID, recommendation ID, idempotency key, actor/tenant binding, consent context or validated outcome join is enforced.
+- `track_events` catches Redis write errors and only logs them; the route still returns `{"status":"accepted"}`. The caller can therefore receive success even when the event was not persisted.
+- No scenario registry, control/variant assignment, A/B allocation validation or offline/online metric contract is present in these inspected routes.
+
+**Required P1 remediation in a separate backward-compatible mobApp PR:**
+1. Versioned event schema with event_id, recommendation_id, scenario/version, event type, actor/tenant, timestamp, consent context and idempotency.
+2. Propagate persistence failure as a retryable non-2xx response; never acknowledge an event that was not stored.
+3. Add explicit placement/scenario and hard constraints; enforce eligibility before ranking and test that no booster can bypass constraints.
+4. Track impression → click/like/dislike → match/conversion outcomes with recommendation_id and deduplication.
+5. Add offline Recall@K/NDCG@K/coverage/diversity against a fixed temporal split; separately add online control/variant with validated traffic allocation and guardrails.
+6. Add tenant isolation, retention/deletion and audit for event data.
+
+**Status:** Candidate allowlist/cold-start fallback correction is present in upstream PR #6; full scenario, hard-constraint and reliable attribution workflow remain NOT_STARTED/BLOCKED for commercial claims. No production event stream was read or modified.
+
+
+### Matching event persistence acknowledgement fix — mobApp PR #11 IN_PROGRESS
+- A narrow backward-compatible remediation is now proposed in mobApp PR #11: https://github.com/yarsalam/mobApp/pull/11
+- Branch `fix/matching-event-persistence-ack-2026-11-04`, exact head `b946c285eb8cd97f2901a6e467f0bdace8ce7bd1`, stacked on PR #6 exact base `9474b4ace1da44d6c2662b0554918ae521c7eaec`.
+- Redis Stream write failures now propagate from RecommendationService; route returns retryable HTTP 503 instead of false `accepted`. Successful request shape remains unchanged. UTC ISO timestamp is used.
+- Regression tests cover service-level failure propagation and route-level 503.
+- Python AI readiness CI is queued/in progress on this exact head. PR #11 remains Draft until green.
+- This narrow fix does not solve schema versioning, event_id/recommendation_id, idempotency, tenant binding or outcome attribution; those remain open.
+
+
+## 16. SEO AEO multi-engine history contract audit — mobApp PR #6 head 9474b4ace1da44d6c2662b0554918ae521c7eaec
+
+**Source:** `python-ai/services/ai_aeo_tracker/app.py` and `core/aeo_tracker.py`.
+
+- The API creates separate OpenAI and Perplexity tracker instances but passes the same Redis client to both.
+- Each tracker persists snapshots under the same `aeo:history:{brand}` key. Snapshot-level metadata includes date/status/count/rate but does not explicitly include provider/model; engine identity is only present inside each nested result item.
+- `GET /history/{brand}` calls `tracker.get_history(brand)` on the OpenAI tracker object and returns the shared raw list without per-engine filtering, grouping or recomputed per-engine summary.
+- Current WordPress demo shows current prompt-level citations/status only; it does not expose history or a trend view.
+
+**Required P1 acceptance:**
+1. Store history under an engine/model-aware key or persist engine/model on every snapshot; never merge rates across engines.
+2. API returns per-engine histories with sample/available/unavailable counts, mention-rate denominator and timestamp.
+3. Prompt/model/provider/region/language and data-source provenance are retained for each sample.
+4. History UI shows independent per-engine trend lines, gaps/stale intervals and sample counts; unavailable observations never count as negative mentions.
+5. Add regression tests proving OpenAI and Perplexity histories cannot overwrite or ambiguously mix.
+
+**Status:** Current multi-engine request summary is implemented upstream; engine-isolated historical reporting remains NOT_STARTED. Do not market longitudinal AI visibility until this contract is complete.
+
+
+### AEO engine-isolated history remediation — mobApp PR #12 IN_PROGRESS
+- Proposed in https://github.com/yarsalam/mobApp/pull/12, stacked on PR #6 exact base `9474b4ace1da44d6c2662b0554918ae521c7eaec`.
+- Branch `feat/aeo-engine-isolated-history-2026-11-04`, head `66917247dced4db5d7d8e50f31bb8724946b6b99`.
+- New history keys are engine-specific; each snapshot records engine/model; `GET /history/{brand}?engine=...` exposes separate history while defaulting to OpenAI for compatibility.
+- Legacy mixed snapshots migrate only explicit engine-tagged result rows; untagged rows are omitted rather than misattributed.
+- Regression tests cover engine isolation, safe migration, snapshot provenance and API engine selection. Exact-head Python AI readiness workflow is in progress.
+- PR #12 remains Draft/stacked on PR #6; WordPress history/trend UI is still NOT_STARTED.
+
+
+### Revenue LTV missingness/provenance remediation — mobApp PR #15 IN_PROGRESS (2026-11-05)
+- PR: https://github.com/yarsalam/mobApp/pull/15; branch `fix/revenue-ltv-provenance-fail-closed-2026-11-05`; exact head `e36995ba0a25b1ab1162fa1ffa817f435ca1d610`.
+- Removes synthetic defaults from the Nest Revenue feature store, marks unavailable inputs as null, attaches per-feature source/as-of/window/units/transformation/revision, and changes the cache namespace to avoid reusing legacy fabricated values.
+- Python `/predict/ltv` now requires finite values plus complete matching provenance and returns explicit `422 insufficient_data` for incomplete inputs; training rejects incomplete labeled rows.
+- Nest attribution preserves this state as `null` instead of silently returning a cohort-average number.
+- Exact-head Python readiness passed (47 tests, 18 warnings); NestJS build and focused feature-store provenance tests passed. PR remains Draft and stacked on mobApp PR #6.
+- This is a narrow fail-closed remediation, not closure of Issue #13. Currency normalization, refund/chargeback handling, cohort maturity/censoring, temporal validation and full source provenance remain OPEN. Do not claim commercial LTV/CAC/payback/ROI readiness.

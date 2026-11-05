@@ -140,6 +140,13 @@ class ApiClient {
         return $this->request_multipart('/image/analyze', ['file' => $file_path]);
     }
 
+    /**
+     * Retrieve current hourly/monthly license usage and quota.
+     */
+    public function get_usage(): array {
+        return $this->request_json('GET', '/usage');
+    }
+
     public function license_status(): array {
         return $this->request_json('GET', '/license/validate');
     }

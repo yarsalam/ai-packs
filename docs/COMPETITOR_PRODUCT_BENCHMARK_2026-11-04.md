@@ -200,3 +200,105 @@
 - Hive Moderation Dashboard: https://docs.thehive.ai/docs/what-is-the-moderation-dashboard
 - Sightengine: https://sightengine.com/
 - Besedo/Implio: https://besedo.com/
+
+
+---
+
+## ۹. راستی‌آزمایی تکمیلی مستندات رسمی بازار — 2026-11-04
+
+این بخش جزئیات قابل تبدیل به acceptance criteria را از صفحات رسمی مستندات محصول استخراج می‌کند. این شواهد توصیف قابلیت منتشرشده‌اند؛ کیفیت خروجی یا دسترسی قراردادی را اثبات نمی‌کنند.
+
+### SEO / AI visibility — Semrush
+
+منابع رسمی:
+- Data sources and refresh cadence: https://www.semrush.com/kb/1607-semrush-ai-visibility-data
+- Visibility Overview: https://www.semrush.com/kb/1596-visibility-overview-report
+- Prompt Tracking and Sources: https://www.semrush.com/kb/1503-prompt-tracking
+- AI Visibility metrics: https://www.semrush.com/kb/1594-ai-seo-metrics
+
+قابلیت‌های مستندشده:
+- Prompt database، prompt tracking اختصاصی، brand performance و site audit منابع/چرخهٔ refresh متفاوت دارند؛ همه را نباید یک dataset یا یک زمان‌تازگی فرض کرد.
+- Prompt Tracking روزانه برای promptهای انتخاب‌شده، مقایسهٔ رقبا و نمایش domain/page citation دارد.
+- Sources report هم domain و هم URL را فهرست می‌کند؛ فیلتر domain category، mention rate و prompt text دارد.
+- Visibility Overview، performing topics، missing/topic opportunities، source opportunities، cited sources و cited pages را تفکیک می‌کند.
+- خود Semrush تأکید می‌کند هیچ پلتفرمی visibility دقیق و یکسان برای همهٔ کاربران نمی‌دهد؛ score یک benchmark جهت‌نماست، نه ground truth.
+
+**Gap/acceptance برای SEO Pack:**
+1. history و refresh cadence به تفکیک provider/engine و نوع منبع.
+2. prompt campaign با تاریخچه و prompt-level response.
+3. citation source explorer با domain/page grouping، category و competitor filters.
+4. topic/prompt/source gap که هر فرصت به prompt و citation evidence قابل کلیک متصل باشد.
+5. AI crawler accessibility audit با فهرست crawler، status، زمان و evidence.
+6. metrics باید sample/denominator، region/language، provider و stale state داشته باشند؛ visibility score فقط پس از تعریف و benchmark مستقل عرضه شود.
+
+### Revenue analytics — RevenueCat و AppsFlyer
+
+منابع رسمی:
+- RevenueCat Realized LTV: https://www.revenuecat.com/docs/dashboard-and-metrics/charts/realized-ltv-per-customer-chart
+- RevenueCat Realized LTV per Paying Customer: https://www.revenuecat.com/docs/dashboard-and-metrics/charts/realized-ltv-per-paying-customer-chart
+- RevenueCat Cohort Explorer: https://www.revenuecat.com/docs/dashboard-and-metrics/charts/cohort-explorer
+- AppsFlyer Incrementality: https://www.appsflyer.com/products/measurement/incrementality/
+- AppsFlyer Audiences/control group: https://support.appsflyer.com/hc/en-us/articles/115002689186-Audiences-guide
+
+قابلیت‌های مستندشده:
+- RevenueCat realized LTV را از درآمد واقعی cohort پس از کسر refund محاسبه می‌کند؛ cohort، segment/filter و customer lifetime قابل انتخاب‌اند.
+- دوره‌های cohort که هنوز lifetime کامل را طی نکرده‌اند incomplete علامت می‌خورند؛ این موضوع برای مقایسهٔ منصفانه ضروری است.
+- Realized LTV per customer با per paying customer تفاوت denominator دارد؛ ARPU و ARPPU نباید یکی شوند.
+- AppsFlyer برای incrementality گروه exposed و holdout دارد؛ کنترل تصادفی و validation برای causal lift ضروری‌اند.
+
+**Gap/acceptance برای Revenue Pack:**
+1. event contract واقعی و idempotent، cohort date و identity resolution شفاف.
+2. realized gross/net revenue با refund/chargeback/currency/timezone و تفکیک ARPU/ARPPU.
+3. cohort lifetime selector و برچسب incomplete/mature cohort.
+4. experiment registry شامل hypothesis، random assignment provenance، exposed/control، allocation، dates و guardrails.
+5. lift report فقط وقتی causal design معتبر است؛ otherwise با برچسب descriptive difference و بدون causal language.
+6. model forecast باید کنار actual و با model revision/assumptions/uncertainty جدا نمایش داده شود.
+
+### Recommendations — Recombee
+
+منابع رسمی:
+- Scenarios: https://docs.recombee.com/scenarios
+- A/B Testing: https://docs.recombee.com/ab-testing
+
+قابلیت‌های مستندشده:
+- Scenario یک placement/use case مشخص است؛ Ranked List و Composite دو نوع خروجی متفاوت‌اند.
+- هر scenario پارامترهای مستقل دارد و از API با نام scenario درخواست می‌شود.
+- A/B experiment یک control scenario و یک یا چند variant دارد؛ logic، filters، boosters و exposure constraints قابل تغییرند.
+- traffic allocation باید جمعاً 100% باشد و experiment حداقل یک metric مشخص دارد؛ معیارهای نمونه شامل CTR و conversion هستند.
+
+**Gap/acceptance برای Matching Pack:**
+1. scenario/placement registry با version و API selection.
+2. ranked-list و composite recommendation contract در صورت نیاز واقعی مشتری.
+3. filter/constraint قبل از ranking، booster بعد از eligibility؛ تست عدم دور زدن hard filters.
+4. experiment allocation validation (جمع دقیق 100%)، control/variant و minimum sample/stop rule.
+5. KPIهای CTR/conversion/retention فقط با impression و outcome event دارای recommendation ID محاسبه شوند.
+6. offline relevance metrics و online business outcomes جداگانه گزارش شوند.
+
+### Trust & Safety — Hive Moderation
+
+منابع رسمی:
+- Moderation Dashboard: https://docs.thehive.ai/docs/what-is-the-moderation-dashboard
+- User/Content Feeds: https://docs.thehive.ai/docs/user-content-feeds
+- Rules: https://docs.thehive.ai/docs/rules
+- Appeals: https://docs.thehive.ai/docs/handle-appeals
+
+قابلیت‌های مستندشده:
+- custom automated moderation actions و routing به manual review feed از طریق policy/rules.
+- user/content feed با category thresholds، timestamp، last action، search/filter/sort.
+- roleهای admin/general با دسترسی‌های متفاوت؛ retention مطابق policy پروژه.
+- appeals هم برای actionهای rule-based و هم manual review پشتیبانی می‌شود.
+
+**Gap/acceptance برای Safety Pack:**
+1. feed واقعی با item state، reason/category، threshold، actor و last action.
+2. rule engine با allow/review/block، per-category thresholds، version، preview و rollback.
+3. RBAC واقعی و آزمون عدم دسترسی نقش general به policy/admin.
+4. appeal/reversal lifecycle با SLA، reason و audit trail.
+5. retention و deletion policy قابل تنظیم و قابل اثبات.
+6. کیفیت فارسی همچنان فقط با corpus قانونی، annotation و sealed evaluation قابل ادعاست؛ این قابلیت‌های workflow جایگزین benchmark مدل نیستند.
+
+## تصمیم‌های محصولی ناشی از این بررسی
+
+- اولویت SEO: source/citation intelligence و تاریخچهٔ prompt/engine قبل از افزودن scoreهای بازاریابی.
+- اولویت Revenue: cohort/realized metrics و event integrity قبل از forecast و causal uplift.
+- اولویت Matching: scenario + hard filters + event attribution قبل از A/B marketing dashboard.
+- اولویت Safety: review/policy/appeal/audit workflow؛ کیفیت فارسی به‌صورت مستقل BLOCKED می‌ماند.

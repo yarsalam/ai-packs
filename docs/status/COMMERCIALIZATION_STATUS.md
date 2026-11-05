@@ -227,3 +227,152 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - Exact-head validation: **33 passed, 17 warnings** in Python AI readiness; **8 passed** in Revenue LTV contract.
 - AI Packs PR #24 now pins all four distribution/CI/image-validation workflows to this SHA and passes Perplexity env configuration into SEO service; final AI Packs checks still required.
 - Live Perplexity call remains BLOCKED pending an owner-provided test API key; no live provider success is claimed. PR #6 remains Draft; full inference/clean install/load/cost gates remain open.
+
+
+## ۱۱. به‌روزرسانی اجرایی — 2026-11-04 (استراتژی و ادامهٔ اجرای محصول)
+
+### استراتژی محصول — DONE
+- سند `docs/COMMERCIAL_PRODUCT_STRATEGY.md` از طریق PR #19 با merge commit واقعی `328f0688bc2140c03867e29e96de5ecf2033ceca` وارد main شد.
+- معیارهای مشترک و P0 تا P3 برای SEO، Revenue، Matching و Safety ثبت شده‌اند.
+- تمایزهای هدف قابل اثبات (evidence-first، کیفیت فارسی/دوزبانه، uncertainty صادقانه، action-to-outcome، privacy-by-deployment، cost transparency و open integration) در PR #26 به سند افزوده شده‌اند؛ این‌ها معیار هدف محصول‌اند، نه ادعای قابلیت موجود و تا عبور از معیارهای پذیرش PLANNED می‌مانند.
+
+### Source pin و قراردادهای عملیاتی — DONE
+- PR #24 با merge commit واقعی `0fe44582c4b9a673482319d4f11fb13d66dd6747` ادغام شد.
+- تمام workflowهای توزیع/CI/اعتبارسنجی تصویر به mobApp readiness SHA `4344cb05afe461551e1bfdc379b26a3c0fedddd9` pin شده‌اند.
+- پنج workflow روی head نهایی PR #24 همگی success شدند: distribution build/validation، control-agent validation، Safety image validation، Gateway contract tests و SEO/Revenue/Matching image validation.
+- Safety WordPress اکنون در هر دو مسیر JSON و multipart هدر دامنه را می‌فرستد؛ smoke client نیز license/domain/usage/inference را با هدر درست تست می‌کند. Matching smoke دامنهٔ candidate allowlist و پاسخ unavailable برای embedding گمشده را بررسی می‌کند.
+- AEO دو engine در upstream PR #6 شامل OpenAI و Perplexity Sonar است؛ خطای provider یا کلید غایب unavailable است و به negative mention تبدیل نمی‌شود. Live Perplexity هنوز به کلید تست مالک نیاز دارد.
+- CIهای PR #24 فقط build/validate انجام دادند؛ هیچ GHCR publish یا deployment انجام نشد.
+
+### Customer usage dashboard — IN_PROGRESS در PR جدید
+- قابلیت نمایش سهمیهٔ واقعی Gateway در Settings هر چهار WordPress plugin در branch `feat/customer-usage-dashboard-clean-main-2026-11-04` منتقل شده است.
+- API clientها `GET /usage` را فراخوانی می‌کنند؛ پنل plan، used/limit/remaining ساعتی و ماهانه، progress، وزن عملیات و refresh را نمایش می‌دهد.
+- AJAX با nonce و `manage_options` محافظت شده؛ خروجی UI با `textContent`/DOM ساخته می‌شود؛ loading/error و پاسخ ناقص مدیریت می‌شوند.
+- این قابلیت billing/payment/invoicing نیست؛ credit weights و quota limits تا اندازه‌گیری واقعی هزینه provisional هستند.
+- PR #25 روی شاخهٔ قدیمی و متعارض با main باقی می‌ماند و نباید merge شود؛ قابلیت آن به branch تمیز منتقل شده تا source pin جدید حفظ شود.
+- گام بعد: اجرای CI کامل روی PR تمیز، بازبینی security/UX، اصلاح خطاها و سپس همگام‌سازی issue/status.
+
+### وضعیت انتشار و موانع
+- Safety Issue #8 همچنان BLOCKED تا corpus فارسی با حقوق/رضایت معتبر، annotation، adjudication و sealed test؛ Issue #9 و outreach/fروش Safety متوقف است.
+- Full inference، cold install مستقل، مجوز مدل/وزن، privacy/retention/deletion، load، latency، error-rate و cost-per-1000 برای هر پک هنوز باید جداگانه اثبات شوند.
+- PR #24 و تست‌های ساخت، مجوز فروش یا public release ایجاد نمی‌کنند. تصمیم کل چهار پک فعلاً NO-GO است.
+- هیچ production، live customer data، secret، سرویس، DB/Redis/volume، DNS یا firewall تغییر نکرده است.
+
+
+### PR #26 — customer usage dashboard و AEO UI — IN_PROGRESS
+- PR تمیز #26 از main پس از ادغام PR #24 ساخته شد؛ SHA فعلی head: `66de66744acb6b8dfb1ab3d37275e0507df33a26`.
+- 14 فایل تغییر کرده‌اند: usage API client و settings/AJAX برای چهار پک، AEO engine selector، تست‌های contract/UI، CI و تمایزهای هدف در strategy.
+- branch قدیمی PR #25 به دلیل divergence و pin قدیمی mobApp بسته شد؛ هیچ merge انجام نشد.
+- CI روی PR #26 هنوز در حال اجراست؛ نتیجهٔ نهایی فقط پس از بررسی آخرین SHA و همهٔ jobها ثبت می‌شود.
+
+
+### تکمیل تحقیق رقابتی رسمی — IN PR #26
+- Benchmark اکنون علاوه بر مقایسهٔ اولیه، جزئیات قابل پذیرش از مستندات رسمی Semrush، RevenueCat، AppsFlyer، Recombee و Hive را ثبت می‌کند.
+- SEO: prompt tracking روزانه، source/domain/page explorer، topic/source gaps و تفکیک refresh cadence.
+- Revenue: realized LTV پس از refund، تفاوت ARPU/ARPPU، cohort lifetime و incomplete cohort؛ incrementality مبتنی بر exposed/holdout و random assignment.
+- Matching: scenarioهای placement-specific، ranked/composite response، control/variant، traffic allocation، filters/boosters/constraints و KPI.
+- Safety: content/user feeds، policy rules، role-based access، retention و appeals.
+- این‌ها نیازمندی‌های هدف هستند؛ benchmark مستندات رقبا اثبات کیفیت یا parity محصول ما نیست.
+
+
+### همگام‌سازی نقشهٔ اجرا و provenance ممیزی — IN PR #26
+- `docs/COMMERCIAL_EXECUTION_SEQUENCE.md` با وضعیت واقعی چهار Preview، source pin، PR #26 و release gates همگام شد.
+- `docs/COMMERCIAL_SOURCE_AUDIT_2026-11-04.md` مشخص می‌کند بخش‌های 3 تا 9 audit تاریخی روی SHA قدیمی 49718 هستند؛ source pin فعلی 4344 است و audit کامل روی همین SHA هنوز باید انجام شود.
+- هیچ‌یک از گزارش‌های اصلاح upstream به معنی full inference یا quality GO نیست.
+
+
+### Revenue LTV feature provenance — BLOCKED for commercial claims
+- بررسی مستقیم mobApp PR #6 head `9474b4ace1da44d6c2662b0554918ae521c7eaec` نشان داد FeatureStoreRevenueService هنوز keywordDifficulty/contentLength/retentionImpact/segmentSize را 0.5، campaignCost را 0، competitorPressure را 0.3 و seasonality را از ماه با ضرایب ثابت می‌سازد.
+- cityWeight و intentScore نیز heuristic هستند؛ engagementDepth صرفاً شمارش آخرین eventهاست؛ LTV فقط جمع پرداخت‌های paid با ارز IRT است و refund/chargeback semantics کامل نیست.
+- LTVRequest هنوز برای ۱۲ feature مقدار پیش‌فرض عددی دارد؛ فیلد غایب می‌تواند بی‌صدا prediction عادی‌نما بسازد.
+- این گپ در source audit section 14 با file/field/اثر/اصلاح لازم ثبت شد. اصلاح باید در PR مستقل mobApp با feature provenance، explicit missing/insufficient-data، currency/refund handling و regression tests انجام شود.
+- تا آن زمان LTV prediction/ROI claims تجاری BLOCKED است؛ هیچ دادهٔ production یا customer data استفاده نشده است.
+
+
+### SEO AEO result integrity and citation display — IN PR #26
+- SEO WordPress API client now preserves the structured HTTP 503 payload when all selected AEO providers are unavailable; generic endpoints still treat HTTP errors as errors.
+- SEO demo renders per-engine status, sample/available/unavailable counts, mention rate only when available, per-prompt mention/unavailable state, model/time metadata and captured citation URLs.
+- Citation URLs are parsed and restricted to HTTP(S), rendered as text-backed links with target=_blank and rel=noopener noreferrer; provider text is never injected as HTML.
+- An unavailable provider is explicitly shown as unavailable and is never displayed as “brand not mentioned”.
+- Regression/static contracts added for 503 preservation and citation rendering. This is a prompt-level citation display, not yet the full history/source-gap explorer defined in the product strategy.
+
+
+### Matching hard constraints and event attribution — BLOCKED for commercial ranking claims
+- در mobApp PR #6 head 9474، RecommendIn فقط user_id/candidates/limit می‌گیرد؛ candidate allowlist و cold-start observed-popularity اصلاح شده، اما scenario/placement و hard policy constraints هنوز قرارداد اجرایی ندارند.
+- /internal/track-events هنوز dict آزاد را در Redis Stream ذخیره می‌کند؛ event_id، recommendation_id، schema version، idempotency و outcome join enforce نمی‌شوند.
+- مهم‌تر: track_events خطای Redis را catch و فقط log می‌کند، اما route همچنان status=accepted می‌دهد؛ بنابراین caller ممکن است رویداد ثبت‌نشده را موفق تلقی کند.
+- این گپ با source و معیار پذیرش در source audit section 15 ثبت شد؛ اصلاح باید PR جداگانه mobApp باشد: event contract نسخه‌بندی‌شده، خطای retryable در عدم persistence، scenario/hard filters، attribution end-to-end و offline/online evaluation.
+- تا آن زمان ادعای personalization/CTR/conversion uplift مبتنی بر feedback loop کامل BLOCKED است.
+
+
+### SEO backlink claim boundary — IN PR #26
+- WordPress demo no longer labels the internal graph heuristic as generic “backlink quality” or official Trust Flow.
+- UI now calls it an internal experimental graph metric and explicitly says it is not Majestic Trust Flow, an independent domain score or a complete backlink audit.
+- Regression assertion added. A real licensed backlink data provider, provenance, spam/quality methodology and historical coverage remain P2 work.
+
+
+### Matching event persistence reliability fix — IN PROGRESS
+- mobApp PR #11 is open Draft and stacked on PR #6; branch head b946c285eb8cd97f2901a6e467f0bdace8ce7bd1.
+- It removes the false-success path: Redis write failure propagates and endpoint returns retryable 503; successful response contract is unchanged.
+- Regression tests are added; exact-head Python AI readiness workflow is queued/in progress.
+- Event schema/idempotency/recommendation_id and full outcome attribution remain separate follow-up work.
+
+
+### mobApp PR #11 validation result
+- Python AI pack readiness passed on exact head `b946c285eb8cd97f2901a6e467f0bdace8ce7bd1`: **36 passed, 18 warnings, 1.11s**.
+- Warnings are Pydantic v2 deprecations and Node.js action-runtime deprecation; no test failure.
+- PR #11 remains Draft and stacked on PR #6; merge is deferred until base PR #6 is merged/reconciled.
+
+
+### mobApp PR #11 latest-head validation
+- Latest head `bc9c0d6b82ab8f0d5c2edd5c4f78d63d16daf094`: **37 passed, 18 warnings, 1.25s** on Python AI pack readiness.
+- Success-path test verifies persisted payload + UTC ISO timestamp; failure-path tests verify propagated error and retryable HTTP 503.
+- Warnings are existing Pydantic v2 and Node.js action-runtime deprecations. PR #11 remains Draft/stacked on PR #6; no merge or deployment.
+
+
+### SEO AEO historical reporting — NOT_STARTED
+- در mobApp PR #6، دو tracker موتورهای OpenAI/Perplexity از Redis مشترک و کلید history یکسان aeo:history:{brand} استفاده می‌کنند؛ snapshot سطح بالا provider/model را ثبت نمی‌کند و GET /history/{brand} دادهٔ خام را بدون تفکیک موتور برمی‌گرداند.
+- UI فعلی فقط نتیجهٔ prompt و citation همان اجرا را نشان می‌دهد؛ trend/history مستقل برای هر engine وجود ندارد.
+- گپ و acceptance criteria در source audit section 16 ثبت شد؛ تا زمان جداسازی تاریخچه و denominator/sample count، ادعای AI visibility trend/longitudinal ممنوع است.
+
+
+### AEO history engine isolation — IN PROGRESS
+- mobApp PR #12 stacked on PR #6, head 66917247dced4db5d7d8e50f31bb8724946b6b99.
+- Per-engine Redis keys and snapshot provider/model metadata; API supports engine query with OpenAI default; legacy migration filters only explicit engine-tagged rows.
+- Regression tests cover mixed legacy data and per-engine history. Python AI readiness workflow is running.
+- PR #12 remains Draft until checks pass and PR #6 is merged/reconciled. WordPress history trend UI remains NOT_STARTED.
+
+
+### mobApp PR #12 latest-head validation
+- Latest head `5d97ed87be06f5f8f9ac9fe62177bb31ba141cd1`: **37 passed, 20 warnings, 1.25s** on Python AI pack readiness.
+- One legacy assertion expecting the shared Redis key failed on the first run; it was corrected to the new engine-specific key, and the latest exact-head run passed.
+- PR #12 remains Draft/stacked on PR #6; no merge or production data migration occurred.
+
+
+### Revenue LTV remediation tracked upstream
+- Dedicated mobApp Issue #13 opened: https://github.com/yarsalam/mobApp/issues/13.
+- It records the exact synthetic feature defaults, numeric LTVRequest defaults, IRT-only paid LTV/refund gaps and required provenance/missingness/currency-safe remediation.
+- Commercial LTV/CAC/payback/ROI claims remain NO-GO until Issue #13 is closed with evidence. No production/customer data used.
+
+
+### Matching remaining event/attribution work tracked upstream
+- mobApp Issue #14 opened: https://github.com/yarsalam/mobApp/issues/14.
+- It tracks schema versioning, event_id/recommendation_id, idempotency, tenant/consent binding, scenario/hard constraints, end-to-end attribution and offline/online evaluation.
+- PR #11 fixes only persistence failure acknowledgement; it does not close these broader gaps. Commercial personalization/CTR/conversion claims remain NO-GO until Issue #14 closes with evidence.
+
+
+### Revenue LTV missingness/provenance remediation — IN_PROGRESS
+- mobApp PR #15: https://github.com/yarsalam/mobApp/pull/15; head `e36995ba0a25b1ab1162fa1ffa817f435ca1d610`; stacked on PR #6.
+- Synthetic defaults in the Revenue feature store are now represented as missing; per-feature provenance is required by the Python LTV API; incomplete input returns `422 insufficient_data`.
+- Nest attribution preserves insufficient data as null; legacy feature cache namespace is bypassed.
+- Python readiness passed on the exact head (47 passed, 18 warnings); NestJS build and focused feature-store provenance unit tests passed. Issue #16 separately tracks the npm audit findings from the build.
+- Issue #13 remains OPEN: refunds/chargebacks, currency-safe realized revenue, cohort maturity/censoring and temporal validation are not yet solved. Revenue remains NO-GO for commercial LTV/ROI claims.
+
+
+### mobApp dependency security audit — OPEN / P0 release gate
+- The NestJS build validation for mobApp PR #15 reported 54 npm audit findings during `npm ci`: 8 low, 24 moderate, 17 high and 5 critical.
+- Exact affected package paths/reachability have not yet been triaged; do not assume all findings are exploitable or apply blanket forced upgrades.
+- mobApp Issue #16 tracks machine-readable audit, critical/high prioritization, bounded safe upgrades, regression tests and SBOM.
+- Security/SBOM gate remains OPEN; no public release or deployment authorization follows from a successful compile.
+
+- Historical Trivy scan on mobApp PR #8 head `4098c5833ad52c4e4d1d9a967da993ce5dc1e7f3` also failed: 17 OS findings (12 HIGH/5 CRITICAL) and 67 Node findings (64 HIGH/3 CRITICAL). Treat as historical evidence until rescanned on the current image; PR #4/#8 registry publish steps were skipped.
