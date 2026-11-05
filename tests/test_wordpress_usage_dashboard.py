@@ -75,3 +75,15 @@ def test_seo_connection_response_is_rendered_as_text_not_html():
     assert "result.innerHTML" not in source
     assert "pre.textContent = JSON.stringify(data, null, 2)" in source
     assert "result.replaceChildren(pre)" in source
+
+
+def test_all_pack_usage_panels_fail_closed_on_incomplete_counters():
+    for name, _, settings_path, _, _, _ in PACKS:
+        source = (ROOT / settings_path).read_text(encoding="utf-8")
+        assert "const readNonNegative = function (value)" in source, name
+        assert "readNonNegative(period.used) === null" in source, name
+        assert "readNonNegative(period.limit) === null" in source, name
+        assert "readNonNegative(period.remaining) === null" in source, name
+        assert "Number(period.used || 0)" not in source, name
+        assert "Number(period.limit || 0)" not in source, name
+        assert "Number(period.remaining || 0)" not in source, name
