@@ -1,0 +1,50 @@
+name: AI Packs automation health
+
+on:
+  pull_request:
+    paths:
+      - "scripts/automation_health_check.py"
+      - "scripts/test_automation_health_check.py"
+      - ".github/workflows/automation-health.yml"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/automation_health_check.py"
+      - ".github/workflows/automation-health.yml"
+  schedule:
+    - cron: "37 3 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ai-packs-automation-health-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Compile health monitor and tests
+        run: python3 -m py_compile scripts/automation_health_check.py scripts/test_automation_health_check.py
+      - name: Unit-test sanitized health detection
+        run: python3 -m unittest scripts.test_automation_health_check -v
+
+  scheduled-health:
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Run read-only sanitized Actions health snapshot
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/automation_health_check.py
