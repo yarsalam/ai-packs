@@ -374,3 +374,5 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - Exact affected package paths/reachability have not yet been triaged; do not assume all findings are exploitable or apply blanket forced upgrades.
 - mobApp Issue #16 tracks machine-readable audit, critical/high prioritization, bounded safe upgrades, regression tests and SBOM.
 - Security/SBOM gate remains OPEN; no public release or deployment authorization follows from a successful compile.
+
+- Historical Trivy scan on mobApp PR #8 head `4098c5833ad52c4e4d1d9a967da993ce5dc1e7f3` also failed: 17 OS findings (12 HIGH/5 CRITICAL) and 67 Node findings (64 HIGH/3 CRITICAL). Treat as historical evidence until rescanned on the current image; PR #4/#8 registry publish steps were skipped.
