@@ -359,3 +359,11 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 - mobApp Issue #14 opened: https://github.com/yarsalam/mobApp/issues/14.
 - It tracks schema versioning, event_id/recommendation_id, idempotency, tenant/consent binding, scenario/hard constraints, end-to-end attribution and offline/online evaluation.
 - PR #11 fixes only persistence failure acknowledgement; it does not close these broader gaps. Commercial personalization/CTR/conversion claims remain NO-GO until Issue #14 closes with evidence.
+
+
+### Revenue LTV missingness/provenance remediation — IN_PROGRESS
+- mobApp PR #15: https://github.com/yarsalam/mobApp/pull/15; head `a026a86402094de018de10f42337cfeebce3c532`; stacked on PR #6.
+- Synthetic defaults in the Revenue feature store are now represented as missing; per-feature provenance is required by the Python LTV API; incomplete input returns `422 insufficient_data`.
+- Nest attribution preserves insufficient data as null; legacy feature cache namespace is bypassed.
+- New API contract tests are added to the Python readiness workflow. Exact-head CI is awaiting GitHub Actions result.
+- Issue #13 remains OPEN: refunds/chargebacks, currency-safe realized revenue, cohort maturity/censoring and temporal validation are not yet solved. Revenue remains NO-GO for commercial LTV/ROI claims.
