@@ -65,3 +65,13 @@ def test_all_pack_settings_pages_render_usage_loading_error_and_live_states():
         assert "در حال دریافت اطلاعات مصرف از Gateway" in source, name
         assert "خطا در دریافت سهمیه" in source, name
         assert "replaceChildren()" in source, name
+
+
+def test_seo_connection_response_is_rendered_as_text_not_html():
+    source = (
+        ROOT
+        / "seo-pack/wordpress-plugin/seo-pack/admin/class-settings-page.php"
+    ).read_text(encoding="utf-8")
+    assert "result.innerHTML" not in source
+    assert "pre.textContent = JSON.stringify(data, null, 2)" in source
+    assert "result.replaceChildren(pre)" in source
