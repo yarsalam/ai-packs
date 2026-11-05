@@ -84,6 +84,11 @@ class SettingsPage {
                 const output = document.getElementById('rp-usage-result');
                 if (!button || !output) return;
                 const nonce = '<?php echo esc_js(wp_create_nonce('rp_nonce')); ?>';
+                const readNonNegative = function (value) {
+                    if (value === null || value === undefined || value === '') return null;
+                    const parsed = Number(value);
+                    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+                };
                 button.addEventListener('click', async function () {
                     button.disabled = true;
                     button.textContent = 'در حال دریافت...';
@@ -103,6 +108,15 @@ class SettingsPage {
                         if (!data.hourly || !data.monthly) {
                             throw new Error('ساختار پاسخ سهمیه معتبر نیست');
                         }
+                        [data.hourly, data.monthly].forEach(function (period) {
+                            if (
+                                readNonNegative(period.used) === null ||
+                                readNonNegative(period.limit) === null ||
+                                readNonNegative(period.remaining) === null
+                            ) {
+                                throw new Error('مقادیر مصرف و سقف کامل یا معتبر نیستند');
+                            }
+                        });
                         output.replaceChildren();
                         const summary = document.createElement('p');
                         summary.textContent = 'پلن: ' + String(data.plan || 'نامشخص') +
@@ -126,9 +140,9 @@ class SettingsPage {
                             ['ماهانه (' + String(data.monthly.period || 'جاری') + ')', data.monthly]
                         ].forEach(function (entry) {
                             const period = entry[1] || {};
-                            const used = Number(period.used || 0);
-                            const limit = Number(period.limit || 0);
-                            const remaining = Number(period.remaining || 0);
+                            const used = readNonNegative(period.used);
+                            const limit = readNonNegative(period.limit);
+                            const remaining = readNonNegative(period.remaining);
                             const percent = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
                             const row = document.createElement('tr');
                             [entry[0], String(used), String(limit), String(remaining), percent + '%'].forEach(function (value) {
