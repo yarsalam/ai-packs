@@ -251,7 +251,9 @@ class SettingsPage {
             })
             .then(r => r.json())
             .then(data => {
-                result.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                const pre = document.createElement('pre');
+                pre.textContent = JSON.stringify(data, null, 2);
+                result.replaceChildren(pre);
             })
             .catch(e => { result.textContent = '❌ خطا: ' + e.message; })
             .finally(() => { btn.disabled = false; btn.textContent = 'تست اتصال به سرویس‌ها'; });
