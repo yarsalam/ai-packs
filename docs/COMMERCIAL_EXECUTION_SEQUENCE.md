@@ -98,4 +98,4 @@
 - PR #26 exact-head checks روی `aeb0d69f599384badd540c49631aa5e97cf8e92b`: چهار workflow توزیع، Gateway contract، Safety image و سایر image validation همگی success؛ PR همچنان Draft و نیازمند review کامل diff است.
 - PR #27 exact-head checks روی `621b6ef9297b4ed0bc45936e201056660f90bf3b`: چهار workflow success. این PR pin چهار workflow را از mobApp PR #6 head `9474b4ace1da44d6c2662b0554918ae521c7eaec` جلو می‌برد؛ تا merge/reconcile شدن upstream PR #6 نباید merge شود.
 - mobApp PR #11 و #12 latest-head Python readiness موفق‌اند؛ هر دو هنوز Draft و stacked بر PR #6 هستند.
-- mobApp PR #15 یک fail-closed remediation برای Revenue LTV provenance/missingness اضافه کرده و منتظر exact-head CI است؛ Issue #13 همچنان باز و ادعاهای LTV تجاری ممنوع است.
+- mobApp PR #15 fail-closed remediation برای Revenue LTV provenance/missingness را اضافه کرده؛ exact-head Python readiness با 47 تست و NestJS build/unit test موفق‌اند. PR هنوز Draft و stacked بر PR #6 است؛ Issue #13 باز می‌ماند و ادعاهای LTV تجاری ممنوع است. Issue #16 نیز 54 یافته npm audit را به‌عنوان release security gate پیگیری می‌کند.
