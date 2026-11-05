@@ -362,10 +362,10 @@ Issue [#9](https://github.com/yarsalam/ai-packs/issues/9) تا ثبت GO مست�
 
 
 ### Revenue LTV missingness/provenance remediation — IN_PROGRESS
-- mobApp PR #15: https://github.com/yarsalam/mobApp/pull/15; head `a026a86402094de018de10f42337cfeebce3c532`; stacked on PR #6.
+- mobApp PR #15: https://github.com/yarsalam/mobApp/pull/15; head `e36995ba0a25b1ab1162fa1ffa817f435ca1d610`; stacked on PR #6.
 - Synthetic defaults in the Revenue feature store are now represented as missing; per-feature provenance is required by the Python LTV API; incomplete input returns `422 insufficient_data`.
 - Nest attribution preserves insufficient data as null; legacy feature cache namespace is bypassed.
-- New API contract tests are added to the Python readiness workflow. Exact-head CI is awaiting GitHub Actions result.
+- Python readiness passed on the exact head (47 passed, 18 warnings); NestJS build and focused feature-store provenance unit tests passed. Issue #16 separately tracks the npm audit findings from the build.
 - Issue #13 remains OPEN: refunds/chargebacks, currency-safe realized revenue, cohort maturity/censoring and temporal validation are not yet solved. Revenue remains NO-GO for commercial LTV/ROI claims.
 
 
