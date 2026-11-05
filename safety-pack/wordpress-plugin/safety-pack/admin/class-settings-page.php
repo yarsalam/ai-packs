@@ -194,6 +194,7 @@ class SettingsPage {
                             const labels = {
                                 ordinary_request: 'درخواست معمولی',
                                 text_analysis_or_recommendation: 'تحلیل متن یا پیشنهاد',
+                                remote_url_audit: 'ممیزی URL از راه دور',
                                 batch_request: 'درخواست دسته‌ای',
                                 image_or_face_verification: 'تصویر یا تأیید چهره',
                                 model_training: 'آموزش مدل'
