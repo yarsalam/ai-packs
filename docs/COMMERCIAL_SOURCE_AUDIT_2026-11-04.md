@@ -241,3 +241,12 @@ Verified behavior:
 - Legacy mixed snapshots migrate only explicit engine-tagged result rows; untagged rows are omitted rather than misattributed.
 - Regression tests cover engine isolation, safe migration, snapshot provenance and API engine selection. Exact-head Python AI readiness workflow is in progress.
 - PR #12 remains Draft/stacked on PR #6; WordPress history/trend UI is still NOT_STARTED.
+
+
+### Revenue LTV missingness/provenance remediation — mobApp PR #15 IN_PROGRESS (2026-11-05)
+- PR: https://github.com/yarsalam/mobApp/pull/15; branch `fix/revenue-ltv-provenance-fail-closed-2026-11-05`; exact head `a026a86402094de018de10f42337cfeebce3c532`.
+- Removes synthetic defaults from the Nest Revenue feature store, marks unavailable inputs as null, attaches per-feature source/as-of/window/units/transformation/revision, and changes the cache namespace to avoid reusing legacy fabricated values.
+- Python `/predict/ltv` now requires finite values plus complete matching provenance and returns explicit `422 insufficient_data` for incomplete inputs; training rejects incomplete labeled rows.
+- Nest attribution preserves this state as `null` instead of silently returning a cohort-average number.
+- Exact-head CI has not yet reported a run at the time of this update; PR remains Draft and stacked on mobApp PR #6.
+- This is a narrow fail-closed remediation, not closure of Issue #13. Currency normalization, refund/chargeback handling, cohort maturity/censoring, temporal validation and full source provenance remain OPEN. Do not claim commercial LTV/CAC/payback/ROI readiness.
