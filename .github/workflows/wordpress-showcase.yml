@@ -79,4 +79,4 @@ jobs:
           name: yarsalam-ai-products-preview
           path: dist/yarsalam-ai-products-preview.zip
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 14
