@@ -41,6 +41,11 @@ def get_json(api_url, token, path, opener=None, sleeper=None):
                 raise RuntimeError("Unexpected GitHub API response shape; details redacted")
             return data
         except HTTPError as exc:
+            # The error is file-like; close its response body because it is never read.
+            try:
+                exc.close()
+            except OSError:
+                pass
             retryable = exc.code in TRANSIENT_HTTP_STATUSES
             if not retryable or attempt == MAX_API_ATTEMPTS - 1:
                 raise RuntimeError("GitHub API request failed; diagnostic details redacted")

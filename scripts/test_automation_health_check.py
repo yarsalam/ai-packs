@@ -185,6 +185,26 @@ class HealthMonitorTests(unittest.TestCase):
         self.assertEqual(len(calls), 1)
         self.assertEqual(delays, [])
 
+    def test_http_error_response_is_closed(self):
+        errors = []
+
+        def opener(request, timeout):
+            error = HTTPError(request.full_url, 403, "forbidden", None, None)
+            errors.append(error)
+            raise error
+
+        with self.assertRaisesRegex(RuntimeError, "details redacted"):
+            get_json(
+                "https://api.github.com",
+                "test-token",
+                "/repos/yarsalam/ai-packs",
+                opener=opener,
+                sleeper=lambda _delay: None,
+            )
+
+        self.assertEqual(len(errors), 1)
+        self.assertTrue(errors[0].fp.closed)
+
     def test_transient_retry_limit_is_bounded(self):
         calls, delays = [], []
 
