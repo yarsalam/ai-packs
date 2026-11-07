@@ -17,13 +17,15 @@ SUCCESS_RUN = {
 }
 
 
-def reader_for(main_runs=None, schedule_runs=None, jobs=None, workflow_state="active"):
+def reader_for(main_runs=None, schedule_runs=None, jobs=None, workflow_state="active", active_runs=None):
     if main_runs is None:
         main_runs = [SUCCESS_RUN]
     if schedule_runs is None:
         schedule_runs = []
     if jobs is None:
         jobs = {}
+    if active_runs is None:
+        active_runs = []
 
     def read(path):
         if path.endswith("/actions/workflows?per_page=100"):
@@ -35,6 +37,10 @@ def reader_for(main_runs=None, schedule_runs=None, jobs=None, workflow_state="ac
             }]}
         if path.endswith("/actions/runs?branch=main&per_page=50"):
             return {"workflow_runs": main_runs}
+        if path.endswith("/actions/runs?status=queued&per_page=100"):
+            return {"workflow_runs": [r for r in active_runs if r.get("status") == "queued"]}
+        if path.endswith("/actions/runs?status=in_progress&per_page=100"):
+            return {"workflow_runs": [r for r in active_runs if r.get("status") == "in_progress"]}
         if path.endswith("/actions/workflows/7/runs?per_page=20"):
             return {"workflow_runs": schedule_runs}
         if "/actions/runs/" in path and path.endswith("/jobs?per_page=100"):
@@ -107,23 +113,64 @@ class HealthMonitorTests(unittest.TestCase):
         self.assertNotIn("logs_url", output)
         self.assertNotIn("Authorization", output)
 
-    def test_old_queued_job_is_detected(self):
-        runs = [{
+    def test_old_queued_pr_job_is_detected(self):
+        pr_run = {
             "id": 2,
-            "name": "Gateway",
+            "name": "Gateway PR",
+            "event": "pull_request",
+            "head_branch": "feature/example",
             "status": "queued",
             "created_at": "2026-11-05T10:00:00Z",
             "head_sha": "123456789",
             "html_url": "https://github.com/yarsalam/ai-packs/actions/runs/2",
-        }, SUCCESS_RUN]
+        }
         jobs = {2: [{
             "name": "matrix",
             "status": "queued",
             "created_at": "2026-11-05T10:00:00Z",
         }]}
-        report = snapshot(REPO, reader_for(main_runs=runs, jobs=jobs), now=NOW, current_run_id="9")
+        report = snapshot(
+            REPO, reader_for(jobs=jobs, active_runs=[pr_run]),
+            now=NOW, current_run_id="9",
+        )
         self.assertEqual(report["stale_jobs"][0]["minutes"], 120)
         self.assertIn("stale_jobs_detected", report["issues"])
+
+    def test_old_in_progress_pr_job_is_detected(self):
+        pr_run = {
+            "id": 3,
+            "name": "Gateway PR",
+            "event": "pull_request",
+            "head_branch": "feature/example",
+            "status": "in_progress",
+            "created_at": "2026-11-05T06:00:00Z",
+            "head_sha": "abcdef012",
+            "html_url": "https://github.com/yarsalam/ai-packs/actions/runs/3",
+        }
+        jobs = {3: [{
+            "name": "integration",
+            "status": "in_progress",
+            "started_at": "2026-11-05T06:00:00Z",
+        }]}
+        report = snapshot(
+            REPO, reader_for(jobs=jobs, active_runs=[pr_run]),
+            now=NOW, current_run_id="9",
+        )
+        self.assertEqual(report["stale_jobs"][0]["minutes"], 360)
+        self.assertIn("stale_jobs_detected", report["issues"])
+
+    def test_active_run_api_page_limit_is_reported(self):
+        active = [{
+            "id": index + 100,
+            "name": "queued workflow",
+            "status": "queued",
+            "created_at": "2026-11-05T11:00:00Z",
+            "head_sha": "123456789",
+            "html_url": f"https://github.com/yarsalam/ai-packs/actions/runs/{index + 100}",
+        } for index in range(100)]
+        report = snapshot(REPO, reader_for(active_runs=active), now=NOW, current_run_id="9")
+        self.assertTrue(report["active_run_api_limit_reached"])
+        self.assertIn("active_run_api_limit_reached", report["issues"])
 
     def test_current_scheduled_run_is_not_used_as_previous_baseline(self):
         current = [{
