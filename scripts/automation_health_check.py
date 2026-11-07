@@ -63,7 +63,10 @@ def snapshot(repo, reader, now=None, current_run_id=None):
     now = now or datetime.now(timezone.utc)
     current_id = str(current_run_id or "")
     workflows = reader(f"/repos/{repo}/actions/workflows?per_page=100").get("workflows", [])
+    # Keep main-branch freshness separate from repository-wide active-run detection.
     runs = reader(f"/repos/{repo}/actions/runs?branch=main&per_page=50").get("workflow_runs", [])
+    queued_runs = reader(f"/repos/{repo}/actions/runs?status=queued&per_page=100").get("workflow_runs", [])
+    in_progress_runs = reader(f"/repos/{repo}/actions/runs?status=in_progress&per_page=100").get("workflow_runs", [])
     health = next((w for w in workflows if w.get("path") == ".github/workflows/automation-health.yml"), None)
 
     schedule_state, previous = "workflow_not_found", None
@@ -123,14 +126,21 @@ def snapshot(repo, reader, now=None, current_run_id=None):
                 "url": run.get("html_url", ""),
             })
 
-    active = [
-        r for r in eligible_runs
-        if r.get("status") in ("queued", "in_progress")
-    ]
+    # Query queued and in-progress runs without a branch filter: a PR can hang too.
+    active_by_id = {}
+    for run in queued_runs + in_progress_runs:
+        run_id = run.get("id")
+        if run_id is None or str(run_id) == current_id:
+            continue
+        if run.get("status") not in ("queued", "in_progress"):
+            continue
+        active_by_id[str(run_id)] = run
+    active = list(active_by_id.values())
     active.sort(
         key=lambda r: iso(r.get("created_at")) or datetime.max.replace(tzinfo=timezone.utc)
     )
     active_runs_truncated = len(active) > MAX_ACTIVE_RUNS_TO_INSPECT
+    active_run_api_limit_reached = len(queued_runs) >= 100 or len(in_progress_runs) >= 100
     active = active[:MAX_ACTIVE_RUNS_TO_INSPECT]
 
     stale = []
@@ -168,6 +178,8 @@ def snapshot(repo, reader, now=None, current_run_id=None):
         issues.append("stale_jobs_detected")
     if active_runs_truncated:
         issues.append("active_run_scan_truncated")
+    if active_run_api_limit_reached:
+        issues.append("active_run_api_limit_reached")
     if inactive:
         issues.append("inactive_workflows_detected")
     if last_success_state == "missing":
@@ -194,6 +206,7 @@ def snapshot(repo, reader, now=None, current_run_id=None):
         "main_runs_checked": len(eligible_runs),
         "active_runs_checked": len(active),
         "active_runs_truncated": active_runs_truncated,
+        "active_run_api_limit_reached": active_run_api_limit_reached,
         "last_successful_main_run": ({
             "workflow": last_success.get("name", "unnamed"),
             "created_at": last_success.get("created_at"),
@@ -240,7 +253,9 @@ def render(report):
     if report["inactive_workflows"]:
         lines.append("- **Inactive workflows:** " + ", ".join(report["inactive_workflows"][:10]))
     if report["active_runs_truncated"]:
-        lines.append("- **Active-run scan:** truncated at the oldest 10 active runs.")
+        lines.append("- **Active-run scan:** only the oldest 10 active runs were inspected.")
+    if report["active_run_api_limit_reached"]:
+        lines.append("- **Active-run API scan:** a queued/in-progress query reached the 100-run page limit; additional active runs may exist.")
     if report["recent_failures"]:
         lines += ["", "### Recent main failures"]
         lines += [f"- [{item['workflow']}]({item['url']}) — `{item['sha']}`" for item in report["recent_failures"]]
