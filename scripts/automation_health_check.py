@@ -9,7 +9,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 MAX_API_ATTEMPTS = 3
-TRANSIENT_HTTP_STATUSES = {408, 429, 502, 503, 504}
+TRANSIENT_HTTP_STATUSES = {500, 502, 503, 504}
 SCHEDULE_STALE_AFTER = timedelta(hours=36)
 SUCCESS_STALE_AFTER = timedelta(hours=36)
 MAX_ACTIVE_RUNS_TO_INSPECT = 10

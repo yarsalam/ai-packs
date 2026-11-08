@@ -215,6 +215,46 @@ class HealthMonitorTests(unittest.TestCase):
         self.assertEqual(len(calls), 3)
         self.assertEqual(delays, [1, 2])
 
+    def test_4xx_http_errors_are_not_retried(self):
+        for status in (400, 408, 429, 403):
+            with self.subTest(status=status):
+                calls, delays = [], []
+
+                def opener(request, timeout):
+                    calls.append(timeout)
+                    raise HTTPError(request.full_url, status, "client error", None, None)
+
+                with self.assertRaisesRegex(RuntimeError, "details redacted"):
+                    get_json(
+                        "https://api.github.com",
+                        "test-token",
+                        "/repos/yarsalam/ai-packs",
+                        opener=opener,
+                        sleeper=delays.append,
+                    )
+                self.assertEqual(len(calls), 1)
+                self.assertEqual(delays, [])
+
+    def test_transient_http_500_retries_then_succeeds(self):
+        calls, delays = [], []
+
+        def opener(request, timeout):
+            calls.append(timeout)
+            if len(calls) == 1:
+                raise HTTPError(request.full_url, 500, "server error", None, None)
+            return FakeResponse(b'{"ok": true}')
+
+        result = get_json(
+            "https://api.github.com",
+            "test-token",
+            "/repos/yarsalam/ai-packs",
+            opener=opener,
+            sleeper=delays.append,
+        )
+        self.assertEqual(result, {"ok": True})
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(delays, [1])
+
     def test_permanent_http_error_is_not_retried(self):
         calls, delays = [], []
 
