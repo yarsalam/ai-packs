@@ -48,13 +48,15 @@ jobs:
     timeout-minutes: 240
     steps:
       - name: Checkout ai-packs
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
+          persist-credentials: false
           ref: ${{ github.sha }}
 
       - name: Checkout mobApp source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
+          persist-credentials: false
           repository: yarsalam/mobApp
           ref: ${{ github.event_name == 'pull_request' && '4344cb05afe461551e1bfdc379b26a3c0fedddd9' || (inputs.mobapp_ref || '4344cb05afe461551e1bfdc379b26a3c0fedddd9') }}
           path: upstream/mobApp
@@ -65,7 +67,7 @@ jobs:
         run: echo "mobapp_sha=$(git -C upstream/mobApp rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.11"
 
@@ -150,7 +152,7 @@ jobs:
           done
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
       - name: Build each service image for validation only
         env:

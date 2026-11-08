@@ -1,0 +1,91 @@
+name: AI Packs automation health
+
+on:
+  pull_request:
+    paths:
+      - "scripts/automation_health_check.py"
+      - "scripts/test_automation_health_check.py"
+      - ".github/workflows/automation-health.yml"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/automation_health_check.py"
+      - ".github/workflows/automation-health.yml"
+  schedule:
+    - cron: "37 3 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ai-packs-automation-health-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Compile health monitor and tests
+        run: python3 -m py_compile scripts/automation_health_check.py scripts/test_automation_health_check.py
+      - name: Unit-test sanitized health detection
+        run: python3 -m unittest scripts.test_automation_health_check -v
+
+  scheduled-health:
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Run read-only sanitized Actions health snapshot
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/automation_health_check.py
+
+  notify-health-failure:
+    name: Post sanitized automation health notice
+    needs: scheduled-health
+    if: always() && needs.scheduled-health.result == 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Post failure-only human handoff
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+          [[ "$RUN_NUMBER" =~ ^[0-9]+$ ]]
+          [[ "$RUN_ATTEMPT" =~ ^[0-9]+$ ]]
+          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
+          run_url="https://github.com/$REPOSITORY/actions/runs/$RUN_ID"
+          body="### Automated health alert
+
+          The scheduled/read-only automation health job failed or reported a degraded repository state.
+
+          - Run: [#$RUN_NUMBER (attempt $RUN_ATTEMPT)]($run_url)
+          - Event: $EVENT_NAME
+          - Commit: ${HEAD_SHA:0:7}
+
+          Review the sanitized job summary and follow the operator runbook. This notice contains no logs, artifacts, tokens, environment values, or repository data. No job was automatically cancelled, retried, merged, published, or deployed."
+          gh api --method POST "repos/$REPOSITORY/issues/28/comments" --field body="$body" >/dev/null
