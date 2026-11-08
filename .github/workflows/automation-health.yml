@@ -52,3 +52,40 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: python3 scripts/automation_health_check.py
+
+  notify-health-failure:
+    name: Post sanitized automation health notice
+    needs: scheduled-health
+    if: always() && needs.scheduled-health.result == 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Post failure-only human handoff
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+          [[ "$RUN_NUMBER" =~ ^[0-9]+$ ]]
+          [[ "$RUN_ATTEMPT" =~ ^[0-9]+$ ]]
+          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
+          run_url="https://github.com/$REPOSITORY/actions/runs/$RUN_ID"
+          body="### Automated health alert
+
+          The scheduled/read-only automation health job failed or reported a degraded repository state.
+
+          - Run: [#$RUN_NUMBER (attempt $RUN_ATTEMPT)]($run_url)
+          - Event: $EVENT_NAME
+          - Commit: ${HEAD_SHA:0:7}
+
+          Review the sanitized job summary and follow the operator runbook. This notice contains no logs, artifacts, tokens, environment values, or repository data. No job was automatically cancelled, retried, merged, published, or deployed."
+          gh api --method POST "repos/$REPOSITORY/issues/28/comments" --field body="$body" >/dev/null

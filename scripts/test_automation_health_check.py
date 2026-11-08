@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 from datetime import datetime, timezone
 from urllib.error import HTTPError
 
@@ -269,6 +270,22 @@ class HealthMonitorTests(unittest.TestCase):
             )
         self.assertEqual(len(calls), 3)
         self.assertEqual(delays, [1, 2])
+
+
+
+class WorkflowNotificationContractTests(unittest.TestCase):
+    def test_scheduled_health_failure_has_issue_scoped_sanitized_notice(self):
+        root = Path(__file__).resolve().parents[1]
+        workflow = (root / ".github" / "workflows" / "automation-health.yml").read_text(encoding="utf-8")
+        self.assertIn("notify-health-failure:", workflow)
+        self.assertIn("needs: scheduled-health", workflow)
+        self.assertIn("if: always() && needs.scheduled-health.result == 'failure'", workflow)
+        self.assertIn("permissions:\n      issues: write", workflow)
+        self.assertIn('repos/$REPOSITORY/issues/28/comments', workflow)
+        self.assertIn("sanitized job summary", workflow)
+        self.assertNotIn("contents: write", workflow)
+        self.assertNotIn("actions: write", workflow)
+        self.assertNotIn("pull-requests: write", workflow)
 
 
 if __name__ == "__main__":
