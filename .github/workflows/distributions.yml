@@ -27,13 +27,17 @@ concurrency:
 jobs:
   build-distributions:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - name: Checkout ai-packs
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
 
       - name: Checkout original microservices
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
+          persist-credentials: false
           repository: yarsalam/mobApp
           ref: ${{ inputs.mobapp_ref || '4344cb05afe461551e1bfdc379b26a3c0fedddd9' }}
           path: upstream/mobApp
@@ -69,7 +73,7 @@ jobs:
           done
 
       - name: Upload distribution archives
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ai-pack-distributions
           path: |
