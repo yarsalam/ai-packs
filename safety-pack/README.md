@@ -2,6 +2,24 @@
 
 # Safety Pack — راهنمای Deploy
 
+## نسخهٔ نمایشی مستقل و غیرتولیدی
+
+برای نمایش تجربهٔ اپراتور بدون نصب backend یا ارسال داده، فایل [دموی ایستای synthetic](demo/index.html) را مستقیماً در مرورگر باز کنید. این صفحه کاملاً local است و هیچ API، مدل زنده، cookie یا ذخیره‌سازی ندارد؛ اعداد و رکوردها ساختگی‌اند و تغییر تصمیم‌ها فقط در همان صفحه انجام می‌شود. این demo را با دموهای متصل به Gateway در افزونهٔ WordPress اشتباه نگیرید.
+
+پیشنهاد پایلوت مشروط و داخلی در [SAFETY_CONDITIONAL_PILOT_OFFER_FA.md](../docs/SAFETY_CONDITIONAL_PILOT_OFFER_FA.md) قرار دارد و تا ثبت GO در Issue #8 قابل ارسال به مشتری نیست.
+
+
+## دمو و ممیزی بازار
+
+- [دموی تعاملی کنسول Trust & Safety](demo/index.html) — محیط HTML مستقل با دادهٔ ساختگی؛ شامل صف بررسی، پرونده، کاربران، اعتراض‌ها، سیاست‌ها، تحلیل و اتصال.
+- [ممیزی رقابتی و بازار فارسی](../docs/SAFETY_COMPETITIVE_AND_PERSIAN_MARKET_AUDIT_FA.md) — مقایسهٔ Checkstep/Hive و بررسی ParsHate/PHATE/ParsCN/FarsiShield و جانشین‌های بازار ایران.
+
+## معماری و برنامهٔ ساخت
+
+- [معماری هدف و برنامهٔ ساخت مرحله‌ای](../docs/SAFETY_PRODUCT_ARCHITECTURE_AND_BUILD_PLAN_FA.md) — مرز محصول، زیرساخت، امنیت، مدل داده، API، مراحل توسعه و معیارهای پذیرش.
+- [ممیزی رقابتی و بازار فارسی](../docs/SAFETY_COMPETITIVE_AND_PERSIAN_MARKET_AUDIT_FA.md)
+- [دموی تعاملی کنسول](demo/index.html)
+
 ## ساختار
 
 ```
