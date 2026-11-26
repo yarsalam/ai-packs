@@ -9,6 +9,11 @@
 پیشنهاد پایلوت مشروط و داخلی در [SAFETY_CONDITIONAL_PILOT_OFFER_FA.md](../docs/SAFETY_CONDITIONAL_PILOT_OFFER_FA.md) قرار دارد و تا ثبت GO در Issue #8 قابل ارسال به مشتری نیست.
 
 
+## دمو و ممیزی بازار
+
+- [دموی تعاملی کنسول Trust & Safety](demo/index.html) — محیط HTML مستقل با دادهٔ ساختگی؛ شامل صف بررسی، پرونده، کاربران، اعتراض‌ها، سیاست‌ها، تحلیل و اتصال.
+- [ممیزی رقابتی و بازار فارسی](../docs/SAFETY_COMPETITIVE_AND_PERSIAN_MARKET_AUDIT_FA.md) — مقایسهٔ Checkstep/Hive و بررسی ParsHate/PHATE/ParsCN/FarsiShield و جانشین‌های بازار ایران.
+
 ## ساختار
 
 ```
