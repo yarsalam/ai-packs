@@ -14,6 +14,12 @@
 - [دموی تعاملی کنسول Trust & Safety](demo/index.html) — محیط HTML مستقل با دادهٔ ساختگی؛ شامل صف بررسی، پرونده، کاربران، اعتراض‌ها، سیاست‌ها، تحلیل و اتصال.
 - [ممیزی رقابتی و بازار فارسی](../docs/SAFETY_COMPETITIVE_AND_PERSIAN_MARKET_AUDIT_FA.md) — مقایسهٔ Checkstep/Hive و بررسی ParsHate/PHATE/ParsCN/FarsiShield و جانشین‌های بازار ایران.
 
+## معماری و برنامهٔ ساخت
+
+- [معماری هدف و برنامهٔ ساخت مرحله‌ای](../docs/SAFETY_PRODUCT_ARCHITECTURE_AND_BUILD_PLAN_FA.md) — مرز محصول، زیرساخت، امنیت، مدل داده، API، مراحل توسعه و معیارهای پذیرش.
+- [ممیزی رقابتی و بازار فارسی](../docs/SAFETY_COMPETITIVE_AND_PERSIAN_MARKET_AUDIT_FA.md)
+- [دموی تعاملی کنسول](demo/index.html)
+
 ## ساختار
 
 ```
