@@ -32,6 +32,21 @@ CREATE TABLE IF NOT EXISTS safety_api_keys (
  UNIQUE (key_hash), UNIQUE (tenant_id,id)
 );
 CREATE INDEX IF NOT EXISTS safety_api_keys_tenant_status_idx ON safety_api_keys(tenant_id,status);
+-- Narrow bootstrap lookup used before tenant context is known.
+-- Grant SELECT on this table only to the API-key resolver DB role; never expose
+-- it through tenant-facing CRUD endpoints. It contains only key metadata/hash.
+CREATE TABLE IF NOT EXISTS safety_api_key_auth_lookup (
+ key_hash CHAR(64) PRIMARY KEY,
+ tenant_id UUID NOT NULL,
+ api_key_id UUID NOT NULL,
+ scopes TEXT[] NOT NULL,
+ status TEXT NOT NULL CHECK (status IN ('active','revoked')),
+ expires_at TIMESTAMPTZ,
+ FOREIGN KEY (tenant_id,api_key_id)
+   REFERENCES safety_api_keys(tenant_id,id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS safety_api_key_lookup_tenant_idx
+ ON safety_api_key_auth_lookup(tenant_id);
 CREATE TABLE IF NOT EXISTS safety_policies (
  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id UUID NOT NULL REFERENCES safety_tenants(id) ON DELETE CASCADE,
