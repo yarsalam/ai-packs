@@ -5,6 +5,7 @@
 **وضعیت فعلی: preview فنی، نه محصول تجاری تأییدشده.** قبل از فروش عمومی باید build و CI، مجوز مدل‌ها، benchmark کیفیت، هزینهٔ واقعی inference و آزمون امنیت/بار تأیید شوند.
 
 - [ارزیابی فنی و تجاری](./docs/PRODUCT_AUDIT_2026-10-28.md)
+- [نقشهٔ راه شرکت محصول‌محور و ورود ۹۰روزه به بازار](./docs/AI_COMPANY_PRODUCT_ROADMAP.md)
 - [نقشهٔ راه تجاری‌سازی](./docs/COMMERCIALIZATION_ROADMAP.md)
 - [وضعیت اجرایی و تصمیم‌های جاری تجاری‌سازی](./docs/status/COMMERCIALIZATION_STATUS.md)
 - [منشأ مدل‌ها و شروط انتشار تجاری](./docs/MODEL_PROVENANCE.md)
