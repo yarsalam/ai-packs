@@ -6,7 +6,7 @@
 
 دموی اولیه فقط داشبورد ایستا با سه رکورد و چند کنترل محلی بود؛ از نظر عمق workflow با محصولات بالغ بازار قابل رقابت نبود. نسخهٔ جدید دمو بر چرخهٔ کامل عملیات Trust & Safety بنا شده است: ingest، detection signals، tenant policy، allow/review/enforce، صف انسانی، پرونده و context، اقدام، audit، اعتراض، analytics، نقش‌ها و integration.
 
-**نتیجهٔ بازار فارسی:** در جست‌وجوی عمومی، منابع پژوهشی فارسی و پروژه‌های متن‌باز/آزمایشی پیدا شد؛ اما شواهد کافی از یک SaaS ایرانی تثبیت‌شده با محصول سازمانی کامل شامل policy، صف انسانی، user-risk، appeals، audit و SLA پیدا نشد. این اثبات نبود رقیب نیست؛ ابزارهای خصوصی، پروژه‌های قراردادی یا محصولات کم‌نمایه ممکن است وجود داشته باشند. فیلترهای واژه و قابلیت‌های داخلی شبکه‌های اجتماعی، جانشین‌های ارزان و مهم‌اند.
+**نتیجهٔ بازار فارسی:** در جست‌وجوی عمومی، منابع پژوهشی فارسی و پروژه‌های متن‌باز/آزمایشی پیدا شد؛ اما شواهد کافی از یک SaaS ایرانی تثبیت‌شده با محصول سازمانی کامل شامل policy، صف انسانی، user-risk، appeals، audit و SLA پیدا نشد. این اثبات نبود رقیب نیست؛ ابزارهای خصوصی، پروژه‌های قراردادی یا محصولات کم‌نمایه ممکن است وجود داشته باشند. فیلترهای واژه و قابلیت‌های داخلی شبکه‌های اجتماعی، جانشین‌های ارزان و مهم‌اند. همچنین Respondology نشان می‌دهد حداقل یک vendor تجاری جهانی، Persian را در فهرست زبان‌های کامنت moderation خود اعلام کرده است؛ بنابراین ادعای «هیچ رقیب فارسی وجود ندارد» نادرست است.
 
 **موضع پیشنهادی:** با ادعای «اولین/بهترین سامانهٔ تعدیل محتوای فارسی» وارد بازار نشویم. wedge پیشنهادی برای اعتبارسنجی: کنسول بازبینی انسانی و قواعد اختصاصی فارسی برای پلتفرم اجتماعی/دوطرفه، ابتدا در spam، انتقال گفتگو به بیرون، آزار و تهدید متنی. ادعای کیفیت مدل تا benchmark مستقل ممنوع.
 
@@ -18,9 +18,10 @@
 | Hive Moderation Dashboard | custom rules برای post و user؛ action دستی/خودکار؛ review feed؛ high-risk users/posts؛ thresholds؛ reports، appeals، analytics، logs و Spam Manager | workflow عملیاتی، user-level rules، نقش‌ها، history و callback | تمایز بالقوه فقط با taxonomy و تجربهٔ فارسی/فینگلیش و vertical خاص، آن هم پس از اثبات کیفیت. |
 | Besedo / Implio | در منابع عمومی ترکیب AI و human moderation برای marketplace/classifieds و چندرسانه‌ای توصیف شده | تناسب عمودی با آگهی و marketplace؛ rule و عملیات انسانی | ورود به marketplace نیازمند taxonomy اختصاصی آگهی/کلاهبرداری و مشتری واقعی است. |
 | Alice (سابق ActiveFence) | محصول enterprise Trust & Safety و risk intelligence؛ تمرکز بر ریسک محتوا و کاربر | دید ریسک گسترده و enterprise | برای محصول اول بیش از حد وسیع؛ قابلیت‌های enterprise را فعلاً تقلید نکنیم. |
+| Respondology / Moderate | ابزار تجاری مدیریت کامنت شبکه‌های اجتماعی؛ ترکیب keyphrase و business rules، generative AI و human moderation؛ analytics در سطح comment و اتصال به Instagram/Facebook/TikTok/YouTube/LinkedIn/Threads. صفحهٔ رسمی Persian را در فهرست زبان‌ها نام می‌برد. | نزدیک‌ترین رقیب تجاری یافت‌شده برای moderation فارسی در کامنت‌های social؛ لایهٔ انسانی و عملیات سریع؛ مدل SaaS و قیمت عمومی | تمرکز بر commentهای برند و کمپین، نه الزاماً پیام خصوصی و رفتار حساب در اپ دوست‌یابی. صفحهٔ FAQ از ۲۸ زبان و Persian نام می‌برد، صفحهٔ محصول جای دیگر ۱۰۰+ زبان می‌گوید و جدول قیمت Standard را English-only و Plus/Enterprise را چندزبانه می‌داند؛ پوشش واقعی فارسی و tier آن باید در demo فروشنده تأیید شود. ادعاهای سرعت/درصد vendor claims هستند. |
 | FarsiShield (GitHub) | README از Persian/English/Finglish، normalization و evasion detection، lexicon، multi-tenant، API/SDK، policy editor، logs و analytics نام می‌برد | نمونهٔ متن‌باز مستقیم‌تر برای profanity فارسی و Finglish؛ نشان می‌دهد «فقط واژه‌نامه» تمایز نیست | در زمان بررسی ۰ ستاره/۰ fork، یک commit، مجوز مخزن نامشخص و فایل LICENSE قابل دریافت نبود. بلوغ، حقوق استفاده، امنیت و کیفیت مستقل تأیید نشده؛ رقیب تجاری اثبات‌شده محسوب نمی‌شود. |
 
-Checkstep و Hive صرفاً classifier نیستند؛ محصول اصلی آن‌ها سیستم تصمیم و عملیات است: policy، rule، context، صف، اقدام، تاریخچه، اعتراض، نقش و تحلیل.
+Respondology را باید رقیب تجاری مستقیم‌تر برای کامنت شبکه‌های اجتماعی دانست؛ با این حال، use case آن با پیام‌های خصوصی و user-risk در پلتفرم‌های دوطرفه یکسان نیست. Checkstep و Hive صرفاً classifier نیستند؛ محصول اصلی آن‌ها سیستم تصمیم و عملیات است: policy، rule، context، صف، اقدام، تاریخچه، اعتراض، نقش و تحلیل.
 
 منابع:
 - Checkstep onboarding: https://training.checkstep.com/help/getting-started
@@ -31,6 +32,7 @@ Checkstep و Hive صرفاً classifier نیستند؛ محصول اصلی آن�
 - Hive actions/history: https://docs.thehive.ai/docs/actions
 - Besedo: https://besedo.com/
 - Alice: https://alice.io/llm
+- Respondology Moderate: https://respondology.com/moderate/ و pricing: https://respondology.com/pricing-new/
 - FarsiShield: https://github.com/mamathew98/farsi-shield
 
 ## ۳. بررسی نمونه‌های فارسی
@@ -54,6 +56,10 @@ Checkstep و Hive صرفاً classifier نیستند؛ محصول اصلی آن�
 ### ParsCN
 شامل ۱٬۱۰۰ جفت hate-speech / counter-narrative، شش گروه هدف و شش راهبرد پاسخ است. برای مطالعهٔ counter-narrative مفید است، اما benchmark عمومی spam، تماس بیرونی، تهدید یا رفتار حساب نیست. README مجوز CC BY 4.0 را اعلام می‌کند؛ زنجیرهٔ حقوق upstream هر نمونهٔ مشتق‌شده باید جداگانه بررسی شود.
 منابع: https://github.com/zahrasafdari/ParsCN و https://zenodo.org/records/18266930
+
+### Respondology / Moderate — رقیب تجاری با ذکر صریح Persian
+صفحهٔ رسمی Moderate توضیح می‌دهد که محصول از سه لایهٔ keyphrase/business rules، generative AI و human moderators استفاده می‌کند؛ analytics در سطح هر comment و اتصال به شبکه‌های اجتماعی را ارائه می‌دهد. FAQ همان صفحه Persian را در فهرست زبان‌های پشتیبانی‌شده می‌آورد. در عین حال، منابع خود شرکت بین ۲۸ زبان و ۱۰۰+ زبان اختلاف دارند؛ جدول قیمت Standard را English-only و Plus/Enterprise را چندزبانه معرفی می‌کند. پس وجود Persian در FAQ به‌تنهایی اثبات نمی‌کند که در تمام پلن‌ها یا با کیفیت یکسان پوشش داده می‌شود؛ باید در demo و قرارداد پرسیده شود. این محصول برای comment moderation برندها و کمپین‌هاست و جایگزین مستقیم تمام نیازهای private-message moderation یا user-risk در dating/social apps نیست.
+منابع: https://respondology.com/moderate/ ، https://respondology.com/platform-overview/ ، https://respondology.com/pricing-new/
 
 ### FarsiShield
 README عمومی از normalization فارسی/عربی، تشخیص دورزدن واژه، lexicon فارسی/انگلیسی/Finglish، tenant، API key، policy editor، dashboard و Docker نام می‌برد. metadata عمومی در زمان بررسی: ایجاد سپتامبر ۲۰۲۶، یک commit، صفر star/fork، مجوز نامشخص و فایل LICENSE غیرقابل دریافت. ادعاهای README قابلیت پایدار یا تجاری را ثابت نمی‌کند. پیش از استفاده از کد/واژه‌نامه، مجوز و امنیت بررسی شود.
